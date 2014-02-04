@@ -11,3 +11,4 @@ before_install:
 script:
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("MCInsurance"))`); Pkg.pin("MCInsurance"); Pkg.resolve()'
   - julia -e 'using MCInsurance; @assert isdefined(:MCInsurance); @assert typeof(MCInsurance) === Module'
+  - julia test/runtests.jl

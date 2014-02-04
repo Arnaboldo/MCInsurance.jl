@@ -1,0 +1,14 @@
+ig_name,proc_labels,asset_dur,asset_coupon,asset_amount
+riskfree_bonds,short_rate,1,0.02,4300
+riskfree_bonds,short_rate,2,0.025,8500
+riskfree_bonds,short_rate,5,0.03,13000
+riskfree_bonds,short_rate,1,0.025,21000
+riskfree_bonds,short_rate,3,0.04,43000
+riskfree_bonds,short_rate,3,0.035,39000
+riskfree_bonds,short_rate,1,0.02,13000
+riskfree_bonds,short_rate,7,0.025,8000
+stocks,US,NA,NA,43000
+stocks,EU,NA,NA,85000
+stocks,Asia,NA,NA,22000
+stocks,EU,NA,NA,22000
+cash,short_rate,NA,NA,10000

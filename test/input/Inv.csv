@@ -1,0 +1,4 @@
+ig_name,ig_type,proc_name,ig_target
+riskfree_bonds,IGRiskfreeBonds,ShortRate,0.5
+stocks,IGStocks,Stocks,0.3
+cash,IGCash,ShortRate,0.2

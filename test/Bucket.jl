@@ -1,0 +1,194 @@
+using Distributions
+using DataFrames
+using Base.Test
+
+using MCInsurance
+
+
+get_lc_cat = function(i::Int)
+     [tf.init-lc.all[i,"ph_y_birth"],               # curr. age
+      if lc.all[i,"ph_gender"] == "M" 1 else 2 end, # gender
+      lc.all[i,"ph_qx_be_name"],                    # best est qx
+      lc.all[i,"risk"] ]                            # risk class
+end
+
+lc_bucket = listcontracts(buckets, lc)
+
+## Test accumulation conditional cashflows and probabilities per bucket
+tmp_cond = zeros(Float64,tf.n_c+1,N_COND, buckets.n)
+tmp_exp_ben = zeros( Float64, tf.n_c+1, 2, buckets.n)
+cond_start = zeros(Int,N_COND)
+cond_end = zeros(Int,N_COND)
+for b = 1:buckets.n
+    for i in lc_bucket[b]
+        cond_start[QX] =    lc.all[i,"c_start_QX"]
+        cond_start[SX] =    lc.all[i,"c_start_SX"]
+        cond_start[PX] =    lc.all[i,"c_start_PX"]
+        cond_start[PREM] =  1
+        cond_start[C_INIT]= 1
+        cond_start[C_ABS]=  1
+        cond_start[C_IS]=   1
+        cond_start[C_PREM]= 1
+        cond_end[QX] =     lc.all[i,"c_end_QX"]
+        cond_end[SX] =     lc.all[i,"c_end_SX"]
+        cond_end[PX] =     min(1000,lc.all[i,"c_end_PX"])
+        cond_end[PREM] =   lc.all[i,"c_end_PREM"]
+        cond_end[C_INIT] = lc.all[i,"dur"]
+        cond_end[C_ABS] =  lc.all[i,"dur"]
+        cond_end[C_IS] =   lc.all[i,"dur"]
+        cond_end[C_PREM] = lc.all[i,"c_end_PREM"]
+
+        cond_cf_b =
+            condcf(lc,i,df_products, loadings(lc,i,df_products,"cost"))
+        lc_start = lc.all[i,"y_start"]
+        for yr = tf.init:(tf.final-1)
+            for j = 1:N_COND
+                if ((lc_start+cond_start[j]-1 <= yr)
+                    & (lc_start+cond_end[j]-1 >= yr)
+                    & (lc_start <= yr))
+                    tmp_cond[yr-tf.init+1,j,b] += cond_cf_b[yr-lc_start+1,j]
+                    
+                    if j == QX
+                        tmp_exp_ben[yr-tf.init+1, QX,b] +=
+                            df_qx[yr-lc.all[i,"ph_y_birth"]+1,
+                                  lc.all[i,"ph_qx_be_name"]] *
+                                  cond_cf_b[yr- lc_start+1, QX]
+                    elseif j == SX
+                        tmp_exp_ben[yr-tf.init+1, SX,b] +=
+                            sx(lc,i,df_products)[yr-lc_start+1]*
+                            cond_cf_b[yr-lc_start+1,SX] *
+                            lc.all[i,"be_sx_fac"]
+
+                    end
+                end
+            end
+        end
+    end
+    for t = 1:(tf.n_c), j = 1:N_COND
+        ## Conditional cashflows are correct
+        @test_approx_eq_eps(tmp_cond[t,j,b],
+                            buckets.all[b].cond[t,j],
+                            tol)
+        if j in [QX,SX]
+            ## Test that expected QX, SX benefits coincide
+            @test_approx_eq_eps(tmp_exp_ben[t,j,b],
+                            buckets.all[b].cond[t,j] * buckets.all[b].prob_be[t,j],
+                            tol)
+        end
+    end
+end
+
+
+## Test that technical provisions calculated from buckets coincide with
+## individual calculation, if for the averaging of sx is accounted for. --------
+
+interest = 0.05
+disc = exp(-interest) * ones(Float64, 200)
+tp = zeros(Float64,lc.age_max+1, buckets.n)
+tp_lc = zeros(Float64, lc.age_max+1, lc.n)
+
+# Technical provisions per bucket
+for b = 1:buckets.n
+    b_n_c = buckets.all[b].n_c
+    prob_b = Array(Float64, max(b_n_c, tf.n_c), 3 )
+   for t = 1:b_n_c
+         #   if t > 
+        for X in (QX,SX)
+            prob_b[ t:b_n_c, X] = buckets.all[b].prob_be[t:b_n_c, X]
+        end
+        prob_b[:,PX] = 1-prob_b[:,QX]-prob_b[:,SX]
+        tp[t,b] = tpeop(prob_b[t:b_n_c,:],
+                        disc[t:b_n_c],
+                        buckets.all[b].cond[t:b_n_c,:])
+    end
+end
+
+# Technial provisions per contract, where we replace sx with the averaged
+# sx over the corresponding bucket.
+delta = Array(Int, lc.n) # delta between y_start of i and  smallest y_start
+                         # in the same bucket
+cond_cf = Array(Array{Float64,2}, lc.n) # conditional cashflows
+ssx =  Array(Array{Float64,1}, lc.n)    # true sx probs before averaging
+
+for b = 1:buckets.n
+    qx_be_name = buckets.all[b].cat[3]
+    new_bucket=true
+    # In order to calculate the average SX we need to synchronize
+    # the contracts in bucket b
+    # lc 1: ......|----------------------------|........
+    # lc 2: ...........|--------------|.................
+    # lc 3: ..|----------------------------|............
+    # delta:  0   4    9
+    y_first = Inf
+    for i in lc_bucket[b]
+        y_first = int(min(y_first,lc.all[i,"y_start"]))
+    end
+    for i in lc_bucket[b]
+        delta[i] = lc.all[i,"y_start"] - y_first
+        cond_cf[i] = condcf(lc, i, df_products,
+                            loadings(lc,i,df_products,"cost"))
+        ssx[i] =  sx(lc, i, df_products) * lc.all[i,"be_sx_fac"]
+    end
+    ## calculate average sx for bucket
+    prob_sx = zeros(Float64,2*lc.age_max)
+    for t = 1:(2*lc.age_max)
+        weight_sx = 0
+        for i in lc_bucket[b]
+           if ((t - delta[i]) >= 1) &
+               (t-delta[i] <= lc.all[i,"dur"])
+               prob_sx[t] +=  ssx[i][t-delta[i]] * cond_cf[i][t-delta[i],SX]
+               weight_sx += cond_cf[i][t-delta[i],SX]
+           end
+        end
+        prob_sx[t] = prob_sx[t]/min(-eps(),weight_sx)
+    end
+    ## process all contracts in bucket
+    for i in lc_bucket[b]
+       age_range = [lc.all[i,"ph_age_start"]:lc.all[i,"ph_age_end"]]
+        prob_lc = Array(Float64, lc.all[i,"dur"], 3)
+        prob_lc[:,QX] =  df_qx[age_range+1, qx_be_name]
+        for tau = 1:lc.all[i,"dur"]
+           prob_lc[tau,SX] = prob_sx[tau+delta[i]]
+        end
+        prob_lc[:,PX] = 1-prob_lc[:,QX]-prob_lc[:,SX]
+    if i==4 (x=prob_lc) end
+         for tau = 1:lc.all[i,"dur"]           
+              tp_lc[tau,i] = tpeop(prob_lc[tau:lc.all[i,"dur"],:],
+                                   disc[tau:lc.all[i,"dur"]],
+                                   cond_cf[i][tau:lc.all[i,"dur"],:])
+        end
+    end
+end
+
+# test that the technical provisions calculated above coincide
+
+for t = 1:lc.age_max
+    for b = 1:buckets.n
+        tmp_tp = 0
+        for i in lc_bucket[b]
+            tau = t+(tf.init-lc.all[i,"y_start"])
+            if (tau > 0) & (tau <= lc.age_max) 
+                tmp_tp += tp_lc[tau,i]
+            end
+        end
+        @test_approx_eq_eps(tp[t,b], tmp_tp, tol)
+    end
+end
+
+
+## Test that future contracts are not processed --------------------------------
+nf_lc_all = lc.all[lc.all["y_start"] .<= tf.init,:]
+nf_lc = LC(nrow(nf_lc_all), lc.age_min, lc.age_max, nf_lc_all)
+nf_buckets = Buckets(nf_lc, tf, df_products, df_qx)
+@test nf_buckets == buckets
+
+
+## Test whether adding new contracts only works --------------------------------
+new_lc_all = lc.all[lc.all["y_start"] .== tf.init,:]
+new_lc = LC(nrow(new_lc_all), lc.age_min, lc.age_max, new_lc_all)
+new_buckets_direct = Buckets(new_lc, tf, df_products, df_qx)
+new_buckets = Buckets(tf)
+for i in 1:lc.n
+    add!(new_buckets, 1, tf, lc, i,df_products, df_qx, false)
+end
+@test new_buckets_direct == new_buckets

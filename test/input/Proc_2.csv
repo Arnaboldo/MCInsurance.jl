@@ -1,0 +1,5 @@
+proc_name,proc_labels,v_init,std,corr.01,corr.02,corr.03,corr.04
+ShortRate,short_rate,0.02,0.02,1,0.2,0.5,0.1
+Stocks,US,1,0.005,0.2,1,0.3,0.1
+Stocks,EU,1,0.005,0.5,0.3,1,0.1
+Stocks,Asia,1,0.005,0.1,0.1,0.1,1

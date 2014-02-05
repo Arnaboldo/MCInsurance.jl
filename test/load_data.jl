@@ -6,27 +6,40 @@ using MCInsurance
 
 tol = 1e-8  # Testing tolerance for floating points
 
+const file_general = joinpath(dirname(@__FILE__), "input/General.csv")
+const file_proc_1 = joinpath(dirname(@__FILE__), "input/Proc_1.csv")
+const file_proc_2 = joinpath(dirname(@__FILE__), "input/Proc_2.csv")
+const file_inv = joinpath(dirname(@__FILE__), "input/Inv.csv")
+const file_inv_target = joinpath(dirname(@__FILE__), "input/Inv_target.csv")
+const file_inv_Port_Start = joinpath(dirname(@__FILE__), "input/Inv_Port_Start.csv")
+const file_tech_interest = joinpath(dirname(@__FILE__), "input/Tech_Interest.csv")
+const file_qx = joinpath(dirname(@__FILE__), "input/Qx.csv")
+const file_products = joinpath(dirname(@__FILE__), "input/Prod.csv")
+const file_ph = joinpath(dirname(@__FILE__), "input/PH.csv")
+const file_lc = joinpath(dirname(@__FILE__), "input/LC.csv")
+const file_fluct = joinpath(dirname(@__FILE__), "input/Rnd_FLuct.csv")
+
 # General parameters
-df_general = readtable("input/General.csv")
+df_general = readtable(file_general)
 
 # Capital market
-df_proc_1 = readtable("input/Proc_1.csv")
-df_proc_2 = readtable("input/Proc_2.csv")
+df_proc_1 = readtable(file_proc_1)
+df_proc_2 = readtable(file_proc_2)
 
 # Investment strategy
-df_inv = readtable("input/Inv.csv")
-df_inv_target = readtable("input/Inv_Target.csv")
-df_inv_port_start = readtable("input/Inv_Port_Start.csv")
+df_inv = readtable(file_inv)
+df_inv_target = readtable(file_inv_target)
+df_inv_port_start = readtable(file_inv_Port_Start)
 
 # life insurance contracts
-df_tech_interest = readtable("input/Tech_Interest.csv")
-df_qx = readtable("input/Qx.csv")
-df_products = readtable("input/Prod.csv")
-df_ph = readtable("input/PH.csv")
-df_lc = readtable("input/LC.csv")
+df_tech_interest = readtable(file_tech_interest)
+df_qx = readtable(file_qx)
+df_products = readtable(file_products)
+df_ph = readtable(file_ph)
+df_lc = readtable(file_lc)
 
 # Projection
-df_fluct = readtable("input/Rnd_FLuct.csv")
+df_fluct = readtable(file_fluct)
 
 # Process inputs: general ------------------------------------------------------
 

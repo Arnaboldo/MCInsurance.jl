@@ -19,7 +19,7 @@ The type `Process` provides a common interface for stochastic processes. It has 
 * `ProcessIndex`: Examples sub-types are `Brownian` and `GeomBrownian`. Projected values represent _n_-dimensional indices.
 * `ProcessShortRate`:  Example sub-types are `Vasicek`, `CIR` (Cox Ingersoll Ross), `ManualShortRate` (values are provided directly). Projected values represent the (continuously compounding) short rate.
 
-An _n_-dimensional stochastic process with parameters _p_  assigns for each Monte Carlo scenario `mc` and for each `t`  an `n`-dimensional value `proc.v_bop[mc,t,:]`. This value represent the value of the index or the 1-period yield at the beginning of period `t`. The value  `proc.yield[mc,t,:]` always represents a yield, provided it can be defined.
+An _n_-dimensional stochastic process with parameters _p_  assigns to each Monte Carlo scenario `mc` and to each period `t`  an _n_-dimensional value `proc.v_bop[mc,t,:]`. This value represent the value of the index or the 1-period yield at the beginning of period `t`. The value  `proc.yield[mc,t,:]` always represents a yield, provided it can be defined.
   
 ###Capital market
 
@@ -29,7 +29,7 @@ The type `CapMkt` models a simple capital market that is based on several stocha
 
 The investment activities of the insurer are captured by the type `Invest`.  It contains a capital market and several investment groups  which corresponds to different asset types.  At this point in time, the investment groups `IGCash`, `IGRiskfreeBonds`, `IGStocks` are implemented.  It is possible, to have several investment groups of the same type but with different characteristics, for instance in order to implement _general accounts_ and _separate accounts_.
 
-The asset allocation is driven via market values, i.e, at the beginning of each time period  each investment group (and each financial instrument within each investment group) is allocated a market value, given as a percentage of the total market value of  existing assets.  
+The asset allocation is driven via market values, i.e, at the beginning of each time period   each investment group (and each financial instrument within each investment group) is allocated a market value, given as a percentage of the total market value of  existing assets.  
 
 For the projection of risk-free bonds the following simplifications are made:
 
@@ -41,9 +41,9 @@ These approximations help keeping the number of risk-free bonds to be modeled do
 
 ###Insurance contracts
 
-Insurance products are modeled through profiles for premium, costs, and benefits. This makes it possible to  define different insurance products through inputs.  For each insurance product there is an associated  function that models lapse probabilities.  At present, only linear lapse functions are implemented.
+Insurance products are modeled through profiles for premium, costs, and benefits. This makes it possible to define different insurance products through inputs.  For each insurance product there is an associated  function that models lapse probabilities.  At present, only linear lapse functions are implemented.
 
-Policy holders and insurance contracts are given as different inputs, and it is possible to associate with one policy holder several insurance products.  However, this association will be lost once the insurance contracts are condensed into [buckets](#buckets).
+Policy holders and insurance contracts are given as different inputs, and it is possible to associate with one policy holder several insurance products.  However, this association will be lost, once the insurance contracts are condensed into [buckets](#buckets).
 
 For each insurance contract a _conditional cashflow_ is calculated, which for each period provides the cashflows, that would occur, if they were triggered by the corresponding biometric event.[^2] 
 
@@ -56,17 +56,17 @@ Similar contracts are condensed into instances `bucket` of type `Bucket`. Each `
 * mortality table,
 * risk class.
 
-All  contracts matching `bucket.cat` are combined into a single conditional cashflow.  The bucket also records how many insurance contracts have been combined (`bucket.n`). The lapse probabilities used by the  bucket are the weighted average of the lapse probabilities of the individual contracts.  Using this average rather than the individual lapse probabilities does incur an approximation error.  However, usually lapse probabilities  cannot be estimated to a very high degree of accuracy. In many applications the approximation error introduced through our simplification  will be dominated by the unavoidable inaccuaracy of individual lapse probability estimates. 
+All  contracts matching `bucket.cat` are combined into a single conditional cashflow.  The bucket also records how many insurance contracts have been combined (`bucket.n`). The lapse probabilities used by the  bucket are the weighted average of the lapse probabilities of the individual contracts.  Using this average rather than the individual lapse probabilities does incur an approximation error.  However, in many applications this approximation error  will be dominated by the unavoidable inaccuaracy of individual lapse probability estimates. 
 
 The type `Buckets` holds all buckets and some additional information.
 
 ###Fluctuations
 
-The type `Fluct` handels stochastic fluctuations of mortality, lapse, and administration costs.  Fluctations are modeled via a factor that follows a geometric Brownian motion.  It is also possible to provide fluctuations by hand or no fluctuations at all.  
+The type `Fluct` handels stochastic fluctuations of mortality, lapse, and administration costs.  Fluctations are modeled via a factor that follows a geometric Brownian motion.  It is also possible to provide fluctuations manually or no fluctuations at all.  
 
 ###Cash-flows
 
-Cashflows are handeled by the type `CFlow`.  They act on instances of `Buckets` and `Fluct` and provide a table with projection values of the most important quantities for each Monte Carlo scenario.
+Cashflows are handeled by the type `CFlow`.  They act on instances of `Buckets` and `Fluct` and provide a table with projection values for the most important quantities for each Monte Carlo scenario `mc`.
 
 ##Book 
 
@@ -76,7 +76,7 @@ The book is in an early project phase.  We plan to offer it to a scientific publ
 * academics
 * insurance regulators with actuarial background
 
-We assume that the reader is familiar with mathematics at a level of a typical undergraduate degree.
+We assume that the reader is familiar with mathematics at a level of a typical undergraduate math degree.
 
 -------------------------------------------------------------------------------
 

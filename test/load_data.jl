@@ -17,7 +17,7 @@ const file_qx = joinpath(dirname(@__FILE__), "input/QX.csv")
 const file_products = joinpath(dirname(@__FILE__), "input/Prod.csv")
 const file_ph = joinpath(dirname(@__FILE__), "input/PH.csv")
 const file_lc = joinpath(dirname(@__FILE__), "input/LC.csv")
-const file_fluct = joinpath(dirname(@__FILE__), "input/Rnd_FLuct.csv")
+const file_fluct = joinpath(dirname(@__FILE__), "input/Rnd_Fluct.csv")
 
 # General parameters
 df_general = readtable(file_general)

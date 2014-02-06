@@ -88,7 +88,8 @@ end
 
 ## surrender probabilities: linearly increasing or decreasing
 function sx ( lc::LC, i::Int, products::DataFrame )
-    prob_sx = zeros( Float64, lc.all[i,"ph_age_end"]-lc.all[i,"ph_age_start"]+1)
+    prob_sx = zeros( Float64,
+                    lc.all[i,"ph_age_end"]-lc.all[i,"ph_age_start"]+1)
 
     if !((lc.all[i,"c_start_SX"]==0) | (lc.all[i,"c_end_SX"]==0))
         prob_sx[lc.all[i,"c_start_SX"]:lc.all[i,"c_end_SX"] ] =
@@ -177,8 +178,8 @@ function lc!(lc::LC,
              tf::TimeFrame,   ## not used
              qx_df::DataFrame,
              tech_interest::DataFrame)
-    lc.age_min =  minimum(qx_df[:,"age_period"])-1
-    lc.age_max = maximum(qx_df[:,"age_period"])-1
+    lc.age_min =  int64(minimum(qx_df[:,"age_period"])-1)
+    lc.age_max = int64(maximum(qx_df[:,"age_period"])-1)
     prod_id_dict = Dict(products["name"],[1:size(products,1)])
 
     lc.all = join(ph, lc.all, on = "ph_id", kind = :inner)
@@ -193,12 +194,29 @@ function lc!(lc::LC,
                 "c_start_PX","c_end_PX", "c_start_PREM", "c_end_PREM"]
         ## We replace NA by 0 in order to be able to work with 
         ## int64 arrays rather than with arrays of NAtype
-        lc.all[ind] = int64( min( array(lc.all[ind],0),
-                                 lc.age_max+1-lc.all["ph_age_start"]) )
+        ## lc.all[ind] = int64( min( array(lc.all[ind],0),
+        ##                          lc.age_max+1-lc.all["ph_age_start"]) )
+
+        ## broken in Julia 0.3.0 preview:                            
+        #   lc.all[ind] = int64( min(lc.all[ind],
+        #                       lc.age_max+1-lc.all["ph_age_start"]) )
+        ## work-around:
+        for i = 1:lc.n
+            lc.all[ind] = int64( min(lc.all[i, ind],
+                                 lc.age_max+1-lc.all[i, "ph_age_start"]) )
+        end
     end
-    lc.all["dur"] = max( lc.all["c_end_QX"], lc.all["c_end_SX"],
-                         lc.all["c_end_PX"], lc.all["c_end_PREM"] )
-     
+    ## broken in Julia 0.3.0 preview:                            
+    #lc.all["dur"] = max( lc.all["c_end_QX"], lc.all["c_end_SX"],
+    #                     lc.all["c_end_PX"], lc.all["c_end_PREM"] )
+    ## work-around:
+    lc.all["dur"] = zeros(Int, lc.n)
+    for i = 1:lc.n
+        lc.all[i,"dur"] =
+             max(lc.all[i, "c_end_QX"], lc.all[i, "c_end_SX"],
+                 lc.all[i, "c_end_PX"], lc.all[i, "c_end_PREM"] )
+    end
+                
     lc.all["ph_age_end"] = lc.all["ph_age_start"]+lc.all["dur"]-1
     lc.all["risk"] = ones(Int,lc.n)  ## currently a dummy variable
 

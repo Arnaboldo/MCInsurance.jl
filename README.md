@@ -2,7 +2,7 @@
 
 This Julia package provides multi-period Monte Carlo simulations for life insurance.
 
-The primary application is the preparation of examples for a planned co-authored book on market consistent risk management in insurance.[^1]
+The primary application is the preparation of examples for a planned co-authored book on market consistent risk management in insurance.<a name="f1back"></a>[^1](#f1)
 
 ##Organization of the model
 
@@ -45,9 +45,10 @@ Insurance products are modeled through profiles for premium, costs, and benefits
 
 Policy holders and insurance contracts are given as different inputs, and it is possible to associate with one policy holder several insurance products.  However, this association will be lost, once the insurance contracts are condensed into [buckets](#buckets).
 
-For each insurance contract a _conditional cashflow_ is calculated, which for each period provides the cashflows, that would occur, if they were triggered by the corresponding biometric event.[^2] 
+For each insurance contract a _conditional cashflow_ is calculated, which for each period provides the cashflows, that would occur, if they were triggered by the corresponding biometric event.<a name="f2back"></a>[^2](#f2) 
 
-###Buckets {#buckets}
+<a name="buckets"></a>
+###Buckets 
 
 Similar contracts are condensed into instances `bucket` of type `Bucket`. Each `bucket` is associated with a category `bucket.cat` of insurance conrtracts. At present, `bucket.cat` holds the following information:
 
@@ -82,6 +83,6 @@ We assume that the reader is familiar with mathematics at a level of a typical u
 
 [![Build Status](https://travis-ci.org/mkriele/MCInsurance.jl.png)](https://travis-ci.org/mkriele/MCInsurance.jl)
 
-[^1]:  While other applications are also intended,  the code may not be suitable for a production environment without further testing.
+<a name="f1"></a>^1:  While other applications are also intended,  the code may not be suitable for a production environment without further testing. [back](#f1back)
 
-[^2]: Here lapse is considered a biometric event.
+<a name="f2"></a>^2: Here lapse is considered a biometric event. [back](#f2back)

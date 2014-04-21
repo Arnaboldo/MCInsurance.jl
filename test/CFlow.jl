@@ -17,7 +17,7 @@ for mc = 1:n_mc
                 prob_b[ t:buckets.all[b].n_c, X] =
                     buckets.all[b].prob_be[t:buckets.all[b].n_c, X]
             end
-            prob_b[:,PX] = 1-prob_b[:,QX]-prob_b[:,SX]
+            prob_b[:,PX] = 1 .- prob_b[:,QX] - prob_b[:,SX]
             # accumulate technical provisions
             tmp_tp[t] +=  lx_boc * prob_b[t,PX] *
                           tpeop(prob_b[t:buckets.all[b].n_c,:],

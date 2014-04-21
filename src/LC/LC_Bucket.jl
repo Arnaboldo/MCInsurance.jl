@@ -49,7 +49,7 @@ function add!(me::Buckets,
               qx_df::DataFrame,      # mortality tables
               existing::Bool = true) # default: add exist. contr.
 
-    c_start = lc.all[i,"y_start"]-tf.init+1 #inception cycle
+    c_start = lc.all[i, :y_start]-tf.init+1 #inception cycle
     if ((c_curr < c_start) |              # no future contracts 
         (!existing & (c_curr > c_start))) # add existing contr.?
         return
@@ -64,20 +64,20 @@ function add!(me::Buckets,
     else
         b_n_c = me.all[b].n_c
     end
-    n_c = max(lc.all[i,"dur"]- (tf.init-lc.all[i,"y_start"]), tf.n_c, b_n_c)
+    n_c = max(lc.all[i, :dur]- (tf.init-lc.all[i, :y_start]), tf.n_c, b_n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
     cond = zeros(Float64, n_c, N_COND)
     cond_cf = condcf(lc, i, products, loadings(lc,i,products,"cost"))
     for j = 1:N_COND
-        cond[:,j] = insertc(tf_cond, lc.all[i,"y_start"], cond_cf[:,j], true)
+        cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
     prob_be = zeros( Float64, (n_c, 2) )
-    prob_be[:,QX] = qx_df[ cat[1] + [1:n_c], cat[3] ]
+    prob_be[:,QX] = qx_df[ cat[1] .+ [1:n_c], cat[3] ]
     # we insure that sx-prob = 0 if there is no sx-benefit,
     # even if lc-data record sx-prob != 0
     prob_be[:,SX] =
-        lc.all[i,"be_sx_fac"] *
-        insertc(tf_cond, lc.all[i,"y_start"], sx(lc,i,products), true) .*
+        lc.all[i, :be_sx_fac] *
+        insertc(tf_cond, lc.all[i, :y_start], sx(lc,i,products), true) .*
         cond[:,SX ] ./ min(-eps(), cond[:,SX ])
     # create new bucket or merge into existing bucket 
     if b == 0 
@@ -176,9 +176,9 @@ function getind(me::Buckets,  cat::Vector{Any})
 end
 
 function getcat(lc::LC, i::Int, tf::TimeFrame)
-    [tf.init-lc.all[i,"ph_y_birth"],               # current age
-     if lc.all[i,"ph_gender"] == "M" 1 else 2 end, # gender
-     lc.all[i,"ph_qx_be_name"],                    # qx_be table
-     lc.all[i,"risk"] ]                            # risk class
+    [tf.init-lc.all[i, :ph_y_birth],               # current age
+     if lc.all[i, :ph_gender] == "M" 1 else 2 end, # gender
+     symbol(lc.all[i, :ph_qx_be_name]),            # qx_be table
+     lc.all[i, :risk] ]                            # risk class
 end
 

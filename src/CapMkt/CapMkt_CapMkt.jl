@@ -40,12 +40,12 @@ function CapMkt(name::ASCIIString,
                 df_proc_1::DataFrame,
                 df_proc_2::DataFrame)
     
-    stdev = Float64 [df_proc_2[j,"std"] for j=1:nrow(df_proc_2)] 
+    stdev = Float64 [df_proc_2[j,:std] for j=1:nrow(df_proc_2)] 
     corr = Array(Float64, (length(stdev),length(stdev)) )
         
     offset = 0
     for j = 1:ncol(df_proc_2)
-        if ismatch(r"corr*",names(df_proc_2)[j])
+        if ismatch(r"corr*",string(names(df_proc_2)[j]))
             corr[:,j-offset] = df_proc_2[names(df_proc_2)[j]]
         else
             offset = j
@@ -53,7 +53,7 @@ function CapMkt(name::ASCIIString,
     end
     proc_info = Array(StochProcessInfo, nrow(df_proc_1))
     for i = 1:nrow(df_proc_1)
-        proc_info[i] = StochProcessInfo(ascii(df_proc_1[i, "proc_name"]),
+        proc_info[i] = StochProcessInfo(ascii(df_proc_1[i, :proc_name]),
                                         df_proc_1, df_proc_2)
     end
     CapMkt(name, tf, n_mc, (stdev*stdev') .* corr,  proc_info )

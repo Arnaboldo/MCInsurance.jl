@@ -20,18 +20,18 @@ function Fluct(tf::TimeFrame, n_mc::Int,  df::DataFrame)
     cov = Array(Float64, fluct.n, fluct.n )
     col = 0
     for j = 1:size(df,2)
-        if (ismatch(r"corr*",names(df)[j])) & (!isna(df[1,j]))
+        if (ismatch(r"corr*",string(names(df)[j]))) & (!isna(df[1,j]))
             col += 1
             cov[:,col] = dropna(df[names(df)[j]])
         end
     end
-    stdev = float(df["std"])
+    stdev = float(df[:std])
     cov =(stdev*stdev') .* cov
     tf_c = TimeFrame(tf.init, tf.final, tf.final-tf.init)
     fluct.fac = GeomBrownian("proc_fac",
                             fluct.labels,
-                            float(df["init"]),
-                            float(df["drift"]),
+                            float(df[:init]),
+                            float(df[:drift]),
                             tf_c,
                             cov,
                             n_mc ).v_bop[:,2:end,:]

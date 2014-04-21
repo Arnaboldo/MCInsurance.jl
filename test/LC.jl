@@ -6,8 +6,8 @@ using MCInsurance
 
 ## Test that ph data have correctly been joined to lc: -------------------------
 for i = 1:lc.n
-    for col in convert(Array{ASCIIString,1},names(df_ph)) 
-        @test lc.all[i,col] == df_ph[lc.all[i,"ph_id"],col]
+    for col in names(df_ph) 
+        @test lc.all[i,col] == df_ph[lc.all[i, :ph_id],col]
     end
 end
 
@@ -17,10 +17,10 @@ end
 sx_dur = function(i::Int)
     ## born on January 1st, 0:00h; contract ends December 31st
     ## otherwise no +1 (and a more complicated time model)
-    if ( (lc.all[i,"c_start_SX"] == 0) | (lc.all[i,"c_end_SX"] == 0) )
+    if ( (lc.all[i, :c_start_SX] == 0) | (lc.all[i, :c_end_SX] == 0) )
         return 0 
     else
-        return lc.all[i,"c_end_SX"] - lc.all[i,"c_start_SX"] + 1
+        return lc.all[i, :c_end_SX] - lc.all[i, :c_start_SX] + 1
     end
 end
 
@@ -35,20 +35,22 @@ test_prof = zeros(Float64, lc.n, 4)
 for i in 1:lc.n 
     if sx_dur(i) != 0
         # First sx-value is correct
-        @test_approx_eq_eps(df_products[lc.all[i,"prod_id"],"start_SX"],
+        @test_approx_eq_eps(df_products[lc.all[i, :prod_id], :start_SX],
                             sx(lc,i,df_products)[1],
                             tol)
         # Last sx-value is correct
         if sx_dur(i) > 1 # sx_dur = 1: we take first value regardless of last value
-            @test_approx_eq_eps(df_products[lc.all[i,"prod_id"],"end_SX"],
+            @test_approx_eq_eps(df_products[lc.all[i, :prod_id], :end_SX],
                                 sx(lc,i,df_products)[sx_dur(i)],
                                 tol)
         end
         # sx-values are linear
         if sx_dur(i) >=3  # we need at least 3 points to check linearity
              for d = 3:sx_dur(i)
-                @test_approx_eq_eps(sx(lc,i,df_products)[2]-sx(lc,i,df_products)[1],
-                                    sx(lc,i,df_products)[d]-sx(lc,i,df_products)[d-1],
+                @test_approx_eq_eps(sx(lc,i,df_products)[2]-
+                                    sx(lc,i,df_products)[1],
+                                    sx(lc,i,df_products)[d]-
+                                    sx(lc,i,df_products)[d-1],
                                     tol)
               end  
         end
@@ -57,53 +59,53 @@ end
 
 ## Test benefit-premium profile ------------------------------------------------
 for i in 1:lc.n 
-    prod_id = lc.all[i,"prod_id"]
-    dur = (lc.all[i,"ph_age_end"] - lc.all[i,"ph_age_start"] + 1)
+    prod_id = lc.all[i, :prod_id]
+    dur = (lc.all[i, :ph_age_end] - lc.all[i, :ph_age_start] + 1)
     prob_sx = zeros(Float64, dur)
     sx_prof = zeros(Float64, dur)
-    qx = df_qx[:,lc.all[i,"qx_name"]] ## according to age cycle
-    tech_int = df_tech_interest[:,df_products[prod_id, "interest_name"]]
+    qx = df_qx[:,symbol(lc.all[i, :qx_name])] ## according to age cycle
+    tech_int = df_tech_interest[:,symbol(df_products[prod_id,:interest_name])]
     prof = profile(lc, i, df_products)
     for t = 1:dur
         ## check qx and px profile
-        if lc.all[i,"prod_name"] == "M_CB_CP"
+        if lc.all[i,:prod_name] == "M_CB_CP"
             @test_approx_eq_eps(prof[t,QX], 1, tol)
             if (t == dur)
                 @test_approx_eq_eps(prof[t,PX], 1, tol)
             elseif (t < dur) 
                 @test_approx_eq_eps(prof[t,PX], 0, tol)
             end
-        elseif lc.all[i,"prod_name"] == "T_CB_CP"
+        elseif lc.all[i,:prod_name] == "T_CB_CP"
             @test_approx_eq_eps(prof[t,QX], 1, tol)
             @test_approx_eq_eps(prof[t,PX], 0, tol)
-        elseif lc.all[i,"prod_name"] == "T_DB_CP"
+        elseif lc.all[i,:prod_name] == "T_DB_CP"
             @test_approx_eq_eps(prof[t,QX], 1-(t-1)/(dur-1) , tol)
             @test_approx_eq_eps(prof[t,PX], 0, tol)
-        elseif lc.all[i,"prod_name"] == "A_CB_CP"
+        elseif lc.all[i,:prod_name] == "A_CB_CP"
             @test_approx_eq_eps(prof[t,QX], 0, tol)
-            if (t < lc.all[i,"c_start_PX"]) 
+            if (t < lc.all[i, :c_start_PX]) 
                 @test_approx_eq_eps(prof[t,PX], 0, tol)
             else
                 @test_approx_eq_eps(prof[t,PX], 1, tol)
             end            
         else
             print("lc.all: $i, There is not test for " *
-                  " Contract type $(lc.all[i,"prod_name"])" )
+                  " Contract type $(lc.all[i,:prod_name])" )
         end
         ## check sx profile
         if sx_dur(i) > 0
             for d = 0:(sx_dur(i)-1)
-                sx_prof[lc.all[i,"c_start_SX"]+d] =
-                    df_products[prod_id,"prof_start_SX"] +
-                    d * (df_products[prod_id,"prof_end_SX"] -
-                         df_products[prod_id,"prof_start_SX"] ) /
+                sx_prof[lc.all[i, :c_start_SX]+d] =
+                    df_products[prod_id, :prof_start_SX] +
+                    d * (df_products[prod_id, :prof_end_SX] -
+                         df_products[prod_id, :prof_start_SX] ) /
                     max(sx_dur(i)-1, 1)
             end
         end
         @test_approx_eq_eps(prof[t,SX], sx_prof[t], tol)
          ## check prem profile
-        prem_prof = [ones(Float64, lc.all[i,"c_end_PREM"]),
-                     zeros(Float64, dur-lc.all[i,"c_end_PREM"])]
+        prem_prof = [ones(Float64, lc.all[i, :c_end_PREM]),
+                     zeros(Float64, dur-lc.all[i, :c_end_PREM])]
         @test_approx_eq_eps(prof[t,PREM], prem_prof[t], tol)
     end
 end
@@ -121,14 +123,15 @@ for i = 1:lc.n
     load =
         loadings(lc,i,df_products, "cost") +
         loadings(lc,i,df_products, "profit")
-    age_range = [lc.all[i,"ph_age_start"]:lc.all[i,"ph_age_end"]]
-    qx = df_qx[age_range+1, lc.all[i,"qx_name"]]
+    age_range = [lc.all[i, :ph_age_start]:lc.all[i,:ph_age_end]]
+    qx = df_qx[age_range .+ 1, symbol(lc.all[i, :qx_name])]
     prob_sx = sx(lc, i, df_products)
-    px = 1-qx-prob_sx
-    interest = convert(Array,df_tech_interest[1:length(age_range),
-                                    df_products[lc.all[i,"prod_id"],
-                                             "interest_name"]
-                                    ] ) 
+    px = 1 .- qx - prob_sx
+    interest = convert(Array,
+                       df_tech_interest[1:length(age_range),
+                                        symbol(df_products[lc.all[i, :prod_id],
+                                                           :interest_name])
+                                        ] ) 
     v = cumprod(exp(-interest))
     prof = profile(lc, i, df_products)
     P =  price(lc, i, df_products, load, df_qx, df_tech_interest)
@@ -142,11 +145,11 @@ for i = 1:lc.n
         ## cashflow at the end of period
         tmp_equiv -=
             cum_px * v[t] * (load[L_ABS] +
-                             lc.all[i,"is"] * load[L_IS] +
+                             lc.all[i,:is] * load[L_IS] +
                              P * prof[t,PREM] * load[L_PREM])
         tmp_equiv -=
-            cum_px * v[t] * (px[t] * prof[t,PX] * lc.all[i,"is"] +
-                             qx[t] * prof[t,QX] * lc.all[i,"is"] )
+            cum_px * v[t] * (px[t] * prof[t,PX] * lc.all[i,:is] +
+                             qx[t] * prof[t,QX] * lc.all[i,:is] )
         tmp_equiv -=
             cum_px * v[t] * prob_sx[t] *
             sum(prof[1:t,PREM] .* prof[1:t,SX]) * P
@@ -158,22 +161,22 @@ end
 
 ## Test that technical provisions are correct ----------------------------------
 for i = 1:lc.n
-    tmp_tp = zeros(Float64, lc.all[i,"dur"])
-    prob = Array(Float64, lc.all[i,"dur"], 3)
-    r = 0.03 * ones(Float64,lc.all[i,"dur"])
+    tmp_tp = zeros(Float64, lc.all[i,:dur])
+    prob = Array(Float64, lc.all[i,:dur], 3)
+    r = 0.03 * ones(Float64,lc.all[i,:dur])
     v = cumprod(exp(-r))
 
-    age_range = [lc.all[i,"ph_age_start"]:lc.all[i,"ph_age_end"]]
-    prob[:,QX] = df_qx[age_range+1, lc.all[i,"qx_name"]]
+    age_range = [lc.all[i,:ph_age_start]:lc.all[i, :ph_age_end]]
+    prob[:,QX] = df_qx[age_range .+ 1, symbol(lc.all[i, :qx_name])]
     prob[:,SX] = sx(lc, i, df_products)
-    prob[:,PX] = 1-prob[:,QX]-prob[:,SX]
+    prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
     load =  loadings(lc,i,df_products,"cost")
     cond_cf = condcf(lc, i, df_products, load)
 
-    for tau = 1:lc.all[i,"dur"]
+    for tau = 1:lc.all[i,:dur]
         ## Technical provisions are counted negative.
         cum_px = 1
-        for t = (tau+1):lc.all[i,"dur"]
+        for t = (tau+1):lc.all[i,:dur]
             tmp_tp[tau] +=
                cum_px * exp(r[t]) * v[t] / v[tau] * cond_cf[t,PREM]
             tmp_tp[tau] +=
@@ -190,9 +193,9 @@ for i = 1:lc.n
             cum_px *= prob[t,PX]                      
         end
          @test_approx_eq_eps(tmp_tp[tau],
-                             tpeop(prob[tau:lc.all[i,"dur"],:],
-                                   exp(-r)[tau:lc.all[i,"dur"]],
-                                   cond_cf[tau:lc.all[i,"dur"],:]),
+                             tpeop(prob[tau:lc.all[i,:dur],:],
+                                   exp(-r)[tau:lc.all[i,:dur]],
+                                   cond_cf[tau:lc.all[i,:dur],:]),
                              tol)
     end
 end

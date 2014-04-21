@@ -45,7 +45,7 @@ Insurance products are modeled through profiles for premium, costs, and benefits
 
 Policy holders and insurance contracts are given as different inputs, and it is possible to associate with one policy holder several insurance products.  However, this association will be lost, once the insurance contracts are condensed into [buckets](#buckets).
 
-For each insurance contract a _conditional cashflow_ is calculated, which for each period provides the cashflows, that would occur, if they were triggered by the corresponding biometric event.<a name="f2back"></a>[^2](#f2) 
+For each insurance contract a _conditional cash-flow_ is calculated, which for each period provides the cash-flows, that would occur, if they were triggered by the corresponding biometric event.<a name="f2back"></a>[^2](#f2) 
 
 <a name="buckets"></a>
 ###Buckets 
@@ -57,17 +57,17 @@ Similar contracts are condensed into instances `bucket` of type `Bucket`. Each `
 * mortality table,
 * risk class.
 
-All  contracts matching `bucket.cat` are combined into a single conditional cashflow.  The bucket also records how many insurance contracts have been combined (`bucket.n`). The lapse probabilities used by the  bucket are the weighted average of the lapse probabilities of the individual contracts.  Using this average rather than the individual lapse probabilities does incur an approximation error.  However, in many applications this approximation error  will be dominated by the unavoidable inaccuaracy of individual lapse probability estimates. 
+All  contracts matching `bucket.cat` are combined into a single conditional cash-flow.  The bucket also records how many insurance contracts have been combined (`bucket.n`). The lapse probabilities used by the  bucket are the weighted average of the lapse probabilities of the individual contracts.  Using this average rather than the individual lapse probabilities does incur an approximation error.  However, in many applications this approximation error  will be dominated by the unavoidable inaccuracy of individual lapse probability estimates. 
 
 The type `Buckets` holds all buckets and some additional information.
 
 ###Fluctuations
 
-The type `Fluct` handels stochastic fluctuations of mortality, lapse, and administration costs.  Fluctations are modeled via a factor that follows a geometric Brownian motion.  It is also possible to provide fluctuations manually or no fluctuations at all.  
+The type `Fluct` handels stochastic fluctuations of mortality, lapse, and administration costs.  Fluctuations are modeled via a factor that follows a geometric Brownian motion.  It is also possible to provide fluctuations manually or no fluctuations at all.  
 
 ###Cash-flows
 
-Cashflows are handeled by the type `CFlow`.  They act on instances of `Buckets` and `Fluct` and provide a table with projection values for the most important quantities for each Monte Carlo scenario `mc`.
+Cash-Flows are handled by the type `CFlow`.  They act on instances of `Buckets` and `Fluct` and provide a table with projection values for the most important quantities for each Monte Carlo scenario `mc`.
 
 ##Book 
 

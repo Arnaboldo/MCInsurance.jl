@@ -18,7 +18,7 @@ i_bonds, i_stocks, i_cash = 1:3
 
 inv_info = Array(InvestInfo, nrow(df_inv))
 for i = 1:nrow(df_inv)
-    inv_info[i] = InvestInfo(ascii(df_inv[i, "ig_name"]),
+    inv_info[i] = InvestInfo(ascii(df_inv[i, :ig_name]),
                              df_inv, df_inv_port_start, df_inv_target)
 end
 

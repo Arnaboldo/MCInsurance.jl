@@ -5,7 +5,7 @@ function IGCash( name::ASCIIString,
                 port_start::DataFrame,
                 n::Int
                 )
-    labels = [port_start[1,"proc_labels"]]
+    labels = [port_start[1,:proc_labels]]
     mv_init =       zeros(Float64,  n )
     mv_eop =        zeros(Float64, proc.n_mc, proc.n_p, n ) # = 0
     mv_total_eop =  zeros(Float64, proc.n_mc, proc.n_p )
@@ -13,7 +13,7 @@ function IGCash( name::ASCIIString,
     mv_alloc_bop =  zeros(Float64, n )
     mv_total_init = 0
 
-    mv_total_init = port_start["asset_amount"][1]
+    mv_total_init = port_start[1, :asset_amount]
 
     IGCash(name, proc, port_start, labels, n,
            mv_init, mv_total_init, mv_eop, mv_total_eop, cash_eop,

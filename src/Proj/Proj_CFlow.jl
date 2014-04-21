@@ -37,7 +37,7 @@ function CFlow(buckets::Buckets,
                         buckets.all[b].
                             prob_be[t:buckets.all[b].n_c, X]
                 end
-                prob[:,PX] = 1-prob[:,QX]-prob[:,SX]
+                prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
                 for X = (QX, SX, PX)
                     cf.v[mc,t,X] +=
                         lx[b] * prob[t,X] *

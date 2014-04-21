@@ -16,8 +16,8 @@ function IGStocks( name::ASCIIString,
 
     amount_init = zeros(Float64, n)
     for j=1:n, k=1:nrow(port_start)
-        if port_start["proc_labels"][k] == proc.labels[j]
-            amount_init[j] += port_start["asset_amount"][k]
+        if port_start[k, :proc_labels] == proc.labels[j]
+            amount_init[j] += port_start[k, :asset_amount]
         end
     end
     mv_init = amount_init .*  proc.v_init

@@ -23,11 +23,11 @@ function IGRiskfreeBonds(name::ASCIIString,
     mv_normbond_curr = zeros(Float64, n )
 
     for j=1:n, k=1:nrow(port_start)
-        if port_start["asset_dur"][k] == j  ## duration
+        if port_start[k, :asset_dur] == j  ## duration
             coupon_init[j] +=
-                 port_start["asset_coupon"][k] *
-                 port_start["asset_amount"][k] 
-            amount_init[j] += port_start["asset_amount"][k]
+                 port_start[k, :asset_coupon] *
+                 port_start[k, :asset_amount]
+            amount_init[j] += port_start[k, :asset_amount]
         end
     end
     coupon_init = coupon_init ./ max(eps(), amount_init)
@@ -116,7 +116,7 @@ function reallocbop!(me::IGRiskfreeBonds, mc::Int, t::Int )
         max(0,me.mv_alloc_bop - amount_old .* me.mv_normbond_curr)
     ## coupon for new investments
     coupon_mkt =
-        (1-exp(-me.proc.dt * [1:me.n] .* me.riskfree_bop)) ./
+        (1 .- exp(-me.proc.dt * [1:me.n] .* me.riskfree_bop)) ./
         me.mv_normcf_curr
     ## curr: _bop(t) ---------------------------------------------
     me.amount_curr = amount_old + amount_new

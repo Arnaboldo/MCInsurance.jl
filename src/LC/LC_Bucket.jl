@@ -178,7 +178,7 @@ end
 function getcat(lc::LC, i::Int, tf::TimeFrame)
     [tf.init-lc.all[i, :ph_y_birth],               # current age
      if lc.all[i, :ph_gender] == "M" 1 else 2 end, # gender
-     symbol(lc.all[i, :ph_qx_be_name]),            # qx_be table
+     lc.all[i, :ph_qx_be_name],            # qx_be table
      lc.all[i, :risk] ]                            # risk class
 end
 

@@ -34,8 +34,37 @@ df_inv_port_start = readtable(file_inv_Port_Start)
 # life insurance contracts
 df_tech_interest = readtable(file_tech_interest)
 df_qx = readtable(file_qx)
-df_products = readtable(file_products)
+df_products = readtable(file_products,
+                        eltypes = [UTF8String,    ## name
+                                    Float64,       ## prof_start_QX,
+                                    Float64,       ## prof_end_QX,
+                                    Float64,       ## prof_start_SX,
+                                    Float64,       ## prof_end_SX,
+                                    Float64,       ## prof_start_PX,
+                                    Float64,       ## prof_end_PX
+                                    Float64,       ## prof_start_PREM
+                                    Float64,       ## prof_end_PREM                    
+                                    Float64,       ## profit_C_INIT,
+                                    Float64,       ## profit_C_ABS
+                                    Float64,       ## profit_C_IS
+                                    Float64,       ## profit_C_PREM
+                                    Float64,       ## cost_C_INIT
+                                    Float64,       ## cost_C_ABS
+                                    Float64,       ## cost_C_IS
+                                    Float64,       ##cost_C_PREM
+                                    Float64,       ## start_SX
+                                    Float64,       ## end_SX
+                                    UTF8String,    ## qx_name
+                                    UTF8String     ## interest_name
+                                    ] )
+
+df_products[:interest_name] =
+    [symbol(df_products[i,:interest_name]) for i=1:nrow(df_products)]
+    
 df_ph = readtable(file_ph)
+df_ph[:ph_qx_be_name] =
+    [symbol(df_ph[i,:ph_qx_be_name]) for i=1:nrow(df_ph)]
+
 df_lc = readtable(file_lc)
 
 # Projection

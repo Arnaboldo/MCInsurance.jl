@@ -108,7 +108,7 @@ function price(lc::LC,
     age_range = [lc.all[i,:ph_age_start]:lc.all[i,:ph_age_end]]
     prob    = zeros( Float64, (length(age_range), 3) )
     ## qx_df starts with age_period = 1, i.e. age = 0. Hence +1
-    prob[:,QX] = qx_df[age_range .+ 1, symbol(lc.all[i, :qx_name]) ]
+    prob[:,QX] = qx_df[age_range .+ 1, lc.all[i, :qx_name] ]
     prob[:,SX] = sx(lc, i, products)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
 
@@ -118,9 +118,8 @@ function price(lc::LC,
     pop!(lx_bop)
     v = cumprod(exp(-convert(Array,
                              tech_interest[1:lc.all[i,:dur],
-                                           symbol(products[lc.all[i,:prod_id],
-                                                           :interest_name])
-                                           ]) ) )
+                                           products[lc.all[i,:prod_id],
+                                                    :interest_name] ] ) ) )
     v_bop = deepcopy(v)
     unshift!(v_bop,1)
     pop!(v_bop)
@@ -183,7 +182,7 @@ function lc!(lc::LC,
     lc.all[:prod_id] = [prod_id_dict[lc.all[i, :prod_name]] for i = 1:lc.n]
     lc.all[:ph_age_start] =  lc.all[:y_start] - lc.all[:ph_y_birth]
     lc.all[:qx_name] =
-        [ ascii( lc.all[i, :ph_gender] * "_" *
+        [ symbol( lc.all[i, :ph_gender] * "_" *
                 products[prod_id_dict[lc.all[i, :prod_name]], :qx_name])
             for i = 1:lc.n]
     for ind in [:c_start_QX, :c_end_QX, :c_start_SX, :c_end_SX,

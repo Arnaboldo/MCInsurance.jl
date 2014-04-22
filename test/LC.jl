@@ -63,8 +63,8 @@ for i in 1:lc.n
     dur = (lc.all[i, :ph_age_end] - lc.all[i, :ph_age_start] + 1)
     prob_sx = zeros(Float64, dur)
     sx_prof = zeros(Float64, dur)
-    qx = df_qx[:,symbol(lc.all[i, :qx_name])] ## according to age cycle
-    tech_int = df_tech_interest[:,symbol(df_products[prod_id,:interest_name])]
+    qx = df_qx[:,lc.all[i, :qx_name]] ## according to age cycle
+    tech_int = df_tech_interest[:,df_products[prod_id,:interest_name]]
     prof = profile(lc, i, df_products)
     for t = 1:dur
         ## check qx and px profile
@@ -124,14 +124,13 @@ for i = 1:lc.n
         loadings(lc,i,df_products, "cost") +
         loadings(lc,i,df_products, "profit")
     age_range = [lc.all[i, :ph_age_start]:lc.all[i,:ph_age_end]]
-    qx = df_qx[age_range .+ 1, symbol(lc.all[i, :qx_name])]
+    qx = df_qx[age_range .+ 1, lc.all[i, :qx_name]]
     prob_sx = sx(lc, i, df_products)
     px = 1 .- qx - prob_sx
     interest = convert(Array,
                        df_tech_interest[1:length(age_range),
-                                        symbol(df_products[lc.all[i, :prod_id],
-                                                           :interest_name])
-                                        ] ) 
+                                        df_products[lc.all[i, :prod_id],
+                                                    :interest_name] ] ) 
     v = cumprod(exp(-interest))
     prof = profile(lc, i, df_products)
     P =  price(lc, i, df_products, load, df_qx, df_tech_interest)
@@ -167,7 +166,7 @@ for i = 1:lc.n
     v = cumprod(exp(-r))
 
     age_range = [lc.all[i,:ph_age_start]:lc.all[i, :ph_age_end]]
-    prob[:,QX] = df_qx[age_range .+ 1, symbol(lc.all[i, :qx_name])]
+    prob[:,QX] = df_qx[age_range .+ 1, lc.all[i, :qx_name]]
     prob[:,SX] = sx(lc, i, df_products)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
     load =  loadings(lc,i,df_products,"cost")

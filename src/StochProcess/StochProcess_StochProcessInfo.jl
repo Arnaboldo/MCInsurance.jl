@@ -1,15 +1,18 @@
 ## Constructors ----------------------------------------------------------------
-function StochProcessInfo(name::ASCIIString,
+function StochProcessInfo(name::String,
                           df_proc_1::DataFrame,
                           df_proc_2::DataFrame)
     
     proc_1 = df_proc_1[ df_proc_1[:proc_name] .== name, :]
     proc_2 = df_proc_2[ df_proc_2[:proc_name] .== name, :]   
-    labels = Array(ASCIIString, 0)
+    labels = Array(String, 0)
     v_init = Array(Float64, 0)
+    v_determ_bop = Array(Float64, nrow(proc_2), 0)
     for j = 1: nrow(proc_2)
         push!(labels, proc_2[j,:proc_labels])
-        push!(v_init, proc_2[j,:v_init])
+        if !isna(proc_2[j,:v_init])
+            push!(v_init, proc_2[j,:v_init])
+        end
     end
     param = Array(Float64,0)
     for j = 1:ncol(proc_1)
@@ -17,6 +20,12 @@ function StochProcessInfo(name::ASCIIString,
             push!(param,proc_1[1,j])
         end
     end
-    StochProcessInfo(ascii(proc_1[1, :proc_type]), name, labels, v_init, param)
+    for j = 1:ncol(proc_2)
+        if ismatch(r"v_bop*",string(names(proc_2)[j])) & !isna(proc_2[1,j])
+            v_determ_bop = hcat(v_determ_bop, proc_2[:,j])
+        end
+    end
+    StochProcessInfo(proc_1[1, :proc_type],
+                     name, labels, v_init, v_determ_bop, param)
 end
      

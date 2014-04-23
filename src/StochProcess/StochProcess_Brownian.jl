@@ -1,8 +1,8 @@
 
 ## Constructors --------------------------------------------
 ## Standard, Interface to AssetGroupIndex
-function Brownian(name::ASCIIString,
-                  labels::Vector{ASCIIString},
+function Brownian(name::String,
+                  labels::Vector{String},
                   v_init::Vector{Float64},
                   drift::Vector{Float64},
                   tf::TimeFrame,
@@ -48,8 +48,8 @@ function Brownian(name::ASCIIString,
 end
 
 ## Construct Process including noise
-function Brownian (name::ASCIIString,
-                   labels::Vector{ASCIIString},
+function Brownian (name::String,
+                   labels::Vector{String},
                    v_init::Vector{Float64},
                    drift::Vector{Float64},
                    tf::TimeFrame,

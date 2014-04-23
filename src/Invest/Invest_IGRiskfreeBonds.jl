@@ -1,6 +1,6 @@
 ## Constructors --------------------------------------------------
 ## Minimal constructor
-function IGRiskfreeBonds(name::ASCIIString,
+function IGRiskfreeBonds(name::String,
                           proc::ProcessShortRate,
                           port_start::DataFrame,
                           n::Int   )

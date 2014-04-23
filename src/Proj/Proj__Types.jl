@@ -9,7 +9,7 @@ const C_ALL, ASSET_EOP, TP_EOP, DIV_EOP, SURPLUS_EOP, CYCLE = 5:10
 type Fluct
     n::Int                        ## # of GeomBrownian 1d-processes
     kind::String                  ## type of fluctuation factors
-    labels::Vector{ASCIIString}   ## labels for GeomBrownian
+    labels::Vector{String}        ## labels for GeomBrownian
     fac::Array{Float64,3}         ## factors representing fluctuation
     d::Dict{Int,Int}              ## convenience to access factors
 end
@@ -19,5 +19,5 @@ type CFlow
     n_mc::Int64                   ## # monte carlo scenarios
     tf::TimeFrame                 ## time frame (from buckets)
     v::Array{Float64,3}           ## values
-    labels::Vector{ASCIIString}   ## labels of output quantities
+    labels::Vector{String}        ## labels of output quantities
 end

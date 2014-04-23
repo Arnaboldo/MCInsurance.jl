@@ -12,10 +12,10 @@ abstract IG
 
 type IGStocks <: IG
     ## constructor
-    name::ASCIIString                 ## name of investment group
+    name::UTF8String                 ## name of investment group
     proc::ProcessIndex                ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{ASCIIString}       ## identifies assets
+    labels::Vector{UTF8String}       ## identifies assets
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -30,7 +30,7 @@ end
 
 type IGRiskfreeBonds <: IG
     ## constructor
-    name::ASCIIString                 ## name of investment group
+    name::UTF8String                 ## name of investment group
     proc::ProcessShortRate            ## stochastic process
     port_start::DataFrame             ## initial portfolio
     labels::Vector{Int}               ## identifies assets
@@ -56,10 +56,10 @@ end
 
 type IGCash <: IG
     ## constructor
-    name::ASCIIString                 ## name investment group
+    name::String                 ## name investment group
     proc::ProcessShortRate            ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{ASCIIString}       ## identifies assets
+    labels::Vector{String}       ## identifies assets
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -73,16 +73,16 @@ end
 
 
 type InvestInfo
-    ig_name::ASCIIString
-    ig_type::ASCIIString
-    proc_name::ASCIIString
+    ig_name::String
+    ig_type::String
+    proc_name::String
     port_start::DataFrame
     target_dict::Dict{Any,Float64}
 end
 
 
 type Invest
-    name::ASCIIString             ## name of investment scheme
+    name::String             ## name of investment scheme
     cap_mkt::CapMkt               ## capital market
     n::Int
     ig::Vector{IG}                ## investment group

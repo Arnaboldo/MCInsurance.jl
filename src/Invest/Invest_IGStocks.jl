@@ -1,7 +1,7 @@
 ## Constructors --------------------------------------------------
 
 ## Minimal constructor
-function IGStocks( name::ASCIIString,
+function IGStocks( name::String,
                   proc::ProcessIndex,
                   port_start::DataFrame,
                   n::Int

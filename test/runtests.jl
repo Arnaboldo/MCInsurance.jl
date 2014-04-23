@@ -11,7 +11,3 @@ for t in tests
     include("$(t).jl")
 end
     println("* end of test run")
-
-
-
-

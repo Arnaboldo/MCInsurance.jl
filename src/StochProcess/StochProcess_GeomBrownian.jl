@@ -1,8 +1,8 @@
 
 ## Constructors --------------------------------------------------
 ## Standard, Interface to AssetGroupIndex
-function GeomBrownian(name::ASCIIString,
-                      labels::Vector{ASCIIString},
+function GeomBrownian(name::String,
+                      labels::Vector{String},
                       v_init::Vector{Float64},
                       drift::Vector{Float64},
                       tf::TimeFrame,
@@ -36,8 +36,8 @@ function GeomBrownian(name::ASCIIString,
 end
 
 ## Construct Process including noise
-function GeomBrownian(name::ASCIIString,
-                      labels::Vector{ASCIIString},
+function GeomBrownian(name::String,
+                      labels::Vector{String},
                       v_init::Vector{Float64},
                       drift::Vector{Float64},
                       tf::TimeFrame,

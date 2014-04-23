@@ -1,7 +1,7 @@
 ## Constructors --------------------------------------------
 ## Standard
-function CIR (name::ASCIIString,
-              labels::Vector{ASCIIString},
+function CIR (name::String,
+              labels::Vector{String},
               v_init::Float64,
               a::Float64,
               v_infty::Float64,
@@ -31,8 +31,8 @@ function CIR (name::ASCIIString,
 end
 
 ## Interface to AsseretGroupShortRate
-function CIR(name::ASCIIString,
-             labels::Vector{ASCIIString},
+function CIR(name::String,
+             labels::Vector{String},
              v_init::Vector{Float64},
              param::Vector{Float64},
              tf::TimeFrame,
@@ -43,8 +43,8 @@ function CIR(name::ASCIIString,
 end
 
 ## Construct Process including noise
-function CIR(name::ASCIIString,
-             labels::Vector{ASCIIString},
+function CIR(name::String,
+             labels::Vector{String},
              v_init::Float64,
              a::Float64,
              v_infty::Float64,

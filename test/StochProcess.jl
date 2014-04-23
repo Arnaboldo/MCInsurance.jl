@@ -13,23 +13,37 @@ processes = ["brown", "geombrown", "cir", "vasicek", "manual"]
 D = Dict( processes, [1:5] )
 
 info = Array(StochProcessInfo,length(D))
-
-info[D["brown"]] = StochProcessInfo("Brownian", "brown", ["a", "b", "c"],
+info_dummy_v_determ_bop = Array(Float64,0,0)
+info[D["brown"]] = StochProcessInfo("Brownian",
+                                    "brown",
+                                    ["a", "b", "c"],
                                     [1,2,3.],             # v_init
+                                    info_dummy_v_determ_bop,
                                     [0.0, 0.5, 1.0] )     # drift
-info[D["geombrown"]] = StochProcessInfo("GeomBrownian", "geombrown",
+info[D["geombrown"]] = StochProcessInfo("GeomBrownian",
+                                        "geombrown",
                                         ["a", "b", "c"],
                                         [1,2,3.],         # v_init
+                                        info_dummy_v_determ_bop,
                                         [0.0, 0.5, 1.0] ) # drift
-info[D["cir"]] = StochProcessInfo("CIR",  "cir",["a", "b", "c"],
+info[D["cir"]] = StochProcessInfo("CIR",
+                                  "cir",
+                                  ["a", "b", "c"],
                                   [0.02],           # v_init
+                                  info_dummy_v_determ_bop,
                                   [0.5, 0.01] )     # a, v_infty
-info[D["vasicek"]] = StochProcessInfo("Vasicek", "vasicek", ["a", "b", "c"],
+info[D["vasicek"]] = StochProcessInfo("Vasicek",
+                                      "vasicek",
+                                      ["a", "b", "c"],
                                       [0.02],       # v_init
+                                      info_dummy_v_determ_bop,
                                       [0.5, 0.01] ) # a, v_infty
 info[D["manual"]] =
-    StochProcessInfo("ManualShortRate", "manual", ["a", "b", "c"],    
+    StochProcessInfo("ManualShortRate",
+                     "manual",
+                     ["a", "b", "c"],    
                      [-1000000.],   # v_init: to be ignored
+                     info_dummy_v_determ_bop,
                      Float64[t/100 for mc=1:n_mc, t=1:tf.n_p+1, d=1] ) # v_bop
  
 n_dim= [length(info[i].v_init) for i =1:length(D)]

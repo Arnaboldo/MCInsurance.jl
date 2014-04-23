@@ -2,7 +2,7 @@
 
 ## InvestInfo 
 
-function InvestInfo(name::ASCIIString,
+function InvestInfo(name::String,
                     df_inv::DataFrame,
                     df_inv_port_start::DataFrame,
                     df_inv_target::DataFrame)
@@ -25,7 +25,7 @@ function InvestInfo(name::ASCIIString,
         port_start[j, :asset_amount] = float64( port_start[j,:asset_amount])
     end
     
-    InvestInfo(name, ascii(inv[1, :ig_type]), ascii(inv[1, :proc_name]),
+    InvestInfo(name, (inv[1, :ig_type]), (inv[1, :proc_name]),
                port_start, target_dict )    
 end
 
@@ -34,10 +34,10 @@ end
 
 # Main constructor
 
-function Invest(name::ASCIIString,
+function Invest(name::String,
                 cap_mkt::CapMkt,
                 info::Vector{InvestInfo},
-                target_dict::Dict{ASCIIString,Float64}
+                target_dict::Dict{String,Float64}
                 )
     n_ig =          length(info)
     ig =            Array(IG, n_ig)
@@ -87,19 +87,19 @@ end
         
 # Constructor from DataFrames
         
-function Invest(name::ASCIIString,
+function Invest(name::String,
                 cap_mkt::CapMkt,
                 df_inv::DataFrame,
                 df_inv_port_start::DataFrame,
                 df_inv_target::DataFrame)
     invest_info = Array(InvestInfo, nrow(df_inv))
     for i = 1:nrow(df_inv)
-        invest_info[i] = InvestInfo(ascii(df_inv[i, :ig_name]),
+        invest_info[i] = InvestInfo(df_inv[i, :ig_name],
                                     df_inv, df_inv_port_start, df_inv_target)
     end
     Invest(name, cap_mkt, invest_info,
-           Dict(ASCIIString[df_inv[j,:ig_name] for j in 1:nrow(df_inv)],
-               Float64[df_inv[j,:ig_target] for j in 1:nrow(df_inv)] ) )
+           Dict(String[(df_inv[j,:ig_name]) for j in 1:nrow(df_inv)],
+                Float64[df_inv[j,:ig_target] for j in 1:nrow(df_inv)] ) )
 end
 
         

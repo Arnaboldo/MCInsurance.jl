@@ -1,6 +1,6 @@
 ## Constructors --------------------------------------------------
 ## Minimal constructor
-function IGCash( name::ASCIIString,
+function IGCash( name::String,
                 proc::ProcessShortRate,
                 port_start::DataFrame,
                 n::Int

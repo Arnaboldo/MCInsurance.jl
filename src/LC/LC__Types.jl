@@ -1,5 +1,5 @@
 export QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM,
-       L_INIT, L_ABS, L_IS, L_PREM,
+       L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM,
        N_COND
 export LC,  lc!, loadings, sx, profile, condcf, price, tpeop
 export Bucket, Buckets, getcat, getind, add!, listcontracts
@@ -10,7 +10,7 @@ const QX,SX,PX,PREM, C_INIT,C_ABS,C_IS,C_PREM = 1:8
 const N_COND = 8
 const N_BEN_PREM = 4
 ## Indices: Loadings
-L_INIT, L_ABS, L_IS, L_PREM = 1:4
+const L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM = 1:5
 
 type LC
     n::Int                      ## # contracts

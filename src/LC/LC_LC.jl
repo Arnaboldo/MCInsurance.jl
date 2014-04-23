@@ -26,11 +26,12 @@ function loadings(lc::LC,
                   i::Int,
                   products::DataFrame,
                   l_type::String)
-    load = zeros(Float64, 4)
-    load[L_INIT] = products[lc.all[i, :prod_id],symbol(l_type * "_C_INIT")]
-    load[L_ABS]  = products[lc.all[i, :prod_id],symbol(l_type * "_C_ABS")]
-    load[L_IS]   = products[lc.all[i, :prod_id],symbol(l_type * "_C_IS")]
-    load[L_PREM] = products[lc.all[i, :prod_id],symbol(l_type * "_C_PREM")]
+    load = zeros(Float64, 5)
+    load[L_INIT_ABS] = products[lc.all[i, :prod_id],symbol(l_type * "_INIT_ABS")]
+    load[L_INIT_IS] = products[lc.all[i, :prod_id],symbol(l_type * "_INIT_IS")]
+    load[L_ABS]  = products[lc.all[i, :prod_id],symbol(l_type * "_ABS")]
+    load[L_IS]   = products[lc.all[i, :prod_id],symbol(l_type * "_IS")]
+    load[L_PREM] = products[lc.all[i, :prod_id],symbol(l_type * "_PREM")]
     return load
 end
 
@@ -72,8 +73,10 @@ function condcf(lc::LC,
     cf[:,SX] = -prof[:,SX] .* [1:lc.all[i, :dur]] * lc.all[i, :prem]
     cf[:,PX] = -prof[:,PX] * lc.all[i, :is]
     cf[:,PREM] = prof[:,PREM] * lc.all[i, :prem]
-    cf[:,C_INIT] = -[costs[L_INIT],
-                     zeros(Float64, lc.all[i,:dur]-1)]
+    cf[:,C_INIT] = -[costs[L_INIT_ABS]+ costs[L_INIT_IS] * lc.all[i, :is],
+                     zeros(Float64, lc.all[i,:dur]-1)] 
+        
+    
     cf[:,C_ABS] =  -costs[L_ABS] * cf[:,C_ABS]
     cf[:,C_IS] = -costs[L_IS] * lc.all[i, :is] * cf[:,C_IS]  
     cf[:,C_PREM] = -costs[L_PREM] * prof[:,PREM] * lc.all[i, :prem]
@@ -124,11 +127,12 @@ function price(lc::LC,
     unshift!(v_bop,1)
     pop!(v_bop)
 
-    num = load[L_INIT] + sum( lx_bop .* v .*
-                             ( load[L_ABS] .+
-                              lc.all[i, :is] * (load[L_IS] .+
-                                                prob[:,PX] .* prof[:,PX] +
-                                                prob[:,QX] .* prof[:,QX]) ) )
+    num =
+        load[L_INIT_ABS] + load[L_INIT_IS] * lc.all[i, :is] +
+        sum( lx_bop .* v .* (load[L_ABS] .+
+                             lc.all[i, :is] * (load[L_IS] .+
+                                               prob[:,PX] .* prof[:,PX] +
+                                               prob[:,QX] .* prof[:,QX]) ) )
     denom =  sum(lx_bop .*
                  (prof[:,PREM] .* (v_bop - v * load[L_PREM]) -
                   v .* prob[:,SX] .* cumsum(prof[:,PREM] .* prof[:,SX]) ) )

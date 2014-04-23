@@ -135,7 +135,7 @@ for i = 1:lc.n
     prof = profile(lc, i, df_products)
     P =  price(lc, i, df_products, load, df_qx, df_tech_interest)
     cum_px = 1
-    tmp_equiv = -load[L_INIT]
+    tmp_equiv = -load[L_INIT_ABS]-load[L_INIT_IS] * lc.all[i,:is]
     for t = 1:length(age_range)
         ## cashflow at the beginning of period
         ## projected to the end of the period

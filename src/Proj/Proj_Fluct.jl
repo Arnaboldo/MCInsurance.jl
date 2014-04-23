@@ -72,7 +72,7 @@ function show(io::IO, me::Fluct)
     println(io, "Type:     $(string(typeof(me)))")
     println(io, "n:        $(me.n)")
     println(io, "kind:     $(me.kind)")
-    print(  io, "labels:     $(me.labels')")
+    println(  io, "labels:   $(transpose(me.labels))")
     println(io, "fac size: $(size(me.fac))")
  end
 

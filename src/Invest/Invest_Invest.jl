@@ -5,8 +5,8 @@
 function InvestInfo(name::String,
                     df_inv::DataFrame,
                     df_inv_port_start::DataFrame,
-                    df_inv_target::DataFrame)
-
+                    df_inv_target::DataFrame
+                    )
     inv = df_inv[df_inv[:ig_name] .== name,:]
     target = df_inv_target[df_inv_target[:ig_name] .== name, 2:end]
     port_start = df_inv_port_start[df_inv_port_start[:ig_name].== name, 2:end]
@@ -112,8 +112,8 @@ function show(io::IO, me::Invest)
     println(io,"cap_mkt.tf  : $(me.cap_mkt.tf)")
     println(io,"cap_mkt.n_mc: $(me.cap_mkt.n_mc)")
     ig_names = [me.ig[i].name for i=1:me.n]
-    print(io,"ig          : $(ig_names')")
-    print(io,"target      : $(me.ig_target')")
+    println(io,"ig          : $(transpose(ig_names))")
+    println(io,"target      : $(me.ig_target')")
 end
 
 

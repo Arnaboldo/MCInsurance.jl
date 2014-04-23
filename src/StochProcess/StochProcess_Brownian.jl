@@ -63,16 +63,16 @@ end
 
 ## Utility functions ---------------------------------------------
 function show(io::IO, me::Brownian)
-    print(io,"Type              : ");
+    print(io,  "Type            : ");
     println(io, string(typeof(me)))
-    print(io,"name              : "); println(io,me.name)
-    print(io,"labels'        : "); print(io,me.labels')
-    print(io,"v_init'        : "); print(io,me.v_init')
-    print(io,"drift'            : "); print(io,me.drift')
-    println(io,"cov               : ")
+    print(io,  "name           : "); println(io,me.name)
+    println(io,"labels         : "); println(io,transpose(me.labels))
+    print(io,  "v_init'        : "); println(io,me.v_init')
+    print(io,  "drift'         : "); print\ln(io,me.drift')
+    print(io,  "cov            : ")
     print(io,me.cov)
-    print(io,"dt                : "); println(io,me.dt)
-    print(io,"(n_mc n_p dim): "); print(io, size(me.noise))
+    print(io,  "dt             : "); println(io,me.dt)
+    print(io,  "(n_mc n_p dim) : "); print(io, size(me.noise))
 end
 
 determbop(me::Brownian) =

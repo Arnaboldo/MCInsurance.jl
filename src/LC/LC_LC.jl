@@ -198,8 +198,8 @@ function lc!(lc::LC,
              tf::TimeFrame,   ## not used
              qx_df::DataFrame,
              tech_interest::DataFrame)
-    lc.age_min =  int64(minimum(qx_df[:,:age_period])-1)
-    lc.age_max = int64(maximum(qx_df[:, :age_period])-1)
+    lc.age_min =  1 
+    lc.age_max =  nrow(qx_df) - 1 
     prod_id_dict = Dict(products[:name],[1:size(products,1)])
 
     lc.all = join(ph, lc.all, on = :ph_id, kind = :inner)

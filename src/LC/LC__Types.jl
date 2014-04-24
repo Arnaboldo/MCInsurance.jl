@@ -1,14 +1,14 @@
-export QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM,
-       L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM,
-       N_COND
-export LC,  lc!, loadings, sx, profile, condcf, price, tpeop
+export QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM, N_COND,
+       C_INIT_ABS, C_INIT_IS, N_PROF,
+       L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM       
+export LC,  lc!, costloadings, profitloadings, sx, profile, condcf, price, tpeop
 export Bucket, Buckets, getcat, getind, add!, listcontracts
 
-## Indices: Conditional Cashflows
-##          (QX,SX are also used for modifying probabilities)
-const QX,SX,PX,PREM, C_INIT,C_ABS,C_IS,C_PREM = 1:8
+## Indices: Conditional Cashflows cond  (QX, SX are also used for probabilities)
+const QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM = 1:8
 const N_COND = 8
-const N_BEN_PREM = 4
+## Indices: Profile (C_INIT_ABS replaces C_INIT in cond, C_INIT_IS additional)
+const C_INIT_ABS, C_INIT_IS, N_PROF = 5, 9, 9 
 ## Indices: Loadings
 const L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM = 1:5
 

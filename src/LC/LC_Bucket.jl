@@ -14,8 +14,7 @@ function Buckets(lc::LC,
                  qx_df::DataFrame)
     buckets = Buckets(tf)
     for i = 1:lc.n
-        add!(buckets,1, tf, lc, i, products, qx_df, true)
-        
+        add!(buckets,1, tf, lc, i, products, qx_df, true)     
     end
     for b = 1:buckets.n
         buckets.n_c = max(buckets.n_c, buckets.all[b].n_c)
@@ -67,7 +66,7 @@ function add!(me::Buckets,
     n_c = max(lc.all[i, :dur]- (tf.init-lc.all[i, :y_start]), tf.n_c, b_n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
     cond = zeros(Float64, n_c, N_COND)
-    cond_cf = condcf(lc, i, products, loadings(lc,i,products,"cost"))
+    cond_cf = condcf(lc, i, products, costloadings(lc,i,products))
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
@@ -128,7 +127,7 @@ function merge!(me::Buckets,
     me.all[b].sx_weights += cond[:,SX]
 end
 
-## grow the table Bucket.cond if it is too short
+## grow duration of table Bucket.cond if current duration is too short
 function grow!(me::Bucket,
                n_c::Int,
                prob_be_qx::Vector{Float64})

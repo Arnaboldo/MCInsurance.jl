@@ -65,7 +65,8 @@ for i in 1:lc.n
     sx_prof = zeros(Float64, dur)
     qx = df_qx[:,lc.all[i, :qx_name]] ## according to age cycle
     tech_int = df_tech_interest[:,df_products[prod_id,:interest_name]]
-    prof = profile(lc, i, df_products)
+    costs = costloadings(lc,i,df_products) 
+    prof = profile(lc, i, df_products, costs)
     for t = 1:dur
         ## check qx and px profile
         if lc.all[i,:prod_name] == "M_CB_CP"
@@ -121,8 +122,8 @@ for i = 1:lc.n
     ## loadings are so high that a lapse benefit of 90% premium
     ## sum is only sustainable at a very high premium level.
     load =
-        loadings(lc,i,df_products, "cost") +
-        loadings(lc,i,df_products, "profit")
+        costloadings(lc,i,df_products) +
+        profitloadings(lc,i,df_products)
     age_range = [lc.all[i, :ph_age_start]:lc.all[i,:ph_age_end]]
     qx = df_qx[age_range .+ 1, lc.all[i, :qx_name]]
     prob_sx = sx(lc, i, df_products)
@@ -132,7 +133,7 @@ for i = 1:lc.n
                                         df_products[lc.all[i, :prod_id],
                                                     :interest_name] ] ) 
     v = cumprod(exp(-interest))
-    prof = profile(lc, i, df_products)
+    prof = profile(lc, i, df_products, load)
     P =  price(lc, i, df_products, load, df_qx, df_tech_interest)
     cum_px = 1
     tmp_equiv = -load[L_INIT_ABS]-load[L_INIT_IS] * lc.all[i,:is]
@@ -169,7 +170,7 @@ for i = 1:lc.n
     prob[:,QX] = df_qx[age_range .+ 1, lc.all[i, :qx_name]]
     prob[:,SX] = sx(lc, i, df_products)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
-    load =  loadings(lc,i,df_products,"cost")
+    load =  costloadings(lc,i,df_products)
     cond_cf = condcf(lc, i, df_products, load)
 
     for tau = 1:lc.all[i,:dur]

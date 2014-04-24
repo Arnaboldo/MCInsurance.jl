@@ -25,36 +25,54 @@ end
 function loadings(lc::LC,
                   i::Int,
                   products::DataFrame,
-                  l_type::String)
-    load = zeros(Float64, 5)
-    load[L_INIT_ABS] = products[lc.all[i, :prod_id],symbol(l_type * "_INIT_ABS")]
-    load[L_INIT_IS] = products[lc.all[i, :prod_id],symbol(l_type * "_INIT_IS")]
-    load[L_ABS]  = products[lc.all[i, :prod_id],symbol(l_type * "_ABS")]
-    load[L_IS]   = products[lc.all[i, :prod_id],symbol(l_type * "_IS")]
-    load[L_PREM] = products[lc.all[i, :prod_id],symbol(l_type * "_PREM")]
+                  ind::Vector{Symbol})
+    load = Array(Float64, 5)
+    for L in (L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM)
+        load[L] =  products[lc.all[i, :prod_id], ind[L]]
+    end
     return load
 end
 
-function profile( lc::LC,
-                 i::Int,
-                 products::DataFrame )
-    # prof: QX SX PX PREM
-    prof = zeros( Float64, (lc.all[i, :dur], N_BEN_PREM) )
+function costloadings(lc::LC, i::Int, products::DataFrame)
+    return loadings(lc, i, products,
+                    [:cost_INIT_ABS, :cost_INIT_IS,
+                     :cost_ABS, :cost_IS, :cost_PREM])
+end    
 
-    d = ["QX"=>QX, "SX"=>SX, "PX"=>PX, "PREM"=>PREM]
-    for WX in keys(d)
-        if ((lc.all[i, symbol("c_start_"*WX)] > 0) &
-            (lc.all[i, symbol("c_end_"*WX) ] > 0))
-            prof[lc.all[i,symbol("c_start_"*WX)]:lc.all[i,symbol("c_end_"*WX)],
-                 d[WX]] =
-                     linspace(products[lc.all[i,:prod_id],
-                                       symbol("prof_start_"*WX)],
-                              products[lc.all[i,:prod_id],
-                                       symbol("prof_end_"*WX)],
-                              lc.all[i,symbol("c_end_"*WX)] -
-                              lc.all[i,symbol("c_start_"*WX)] + 1)
+function profitloadings(lc::LC, i::Int, products::DataFrame)
+    return loadings(lc, i, products,
+                    [:profit_INIT_ABS, :profit_INIT_IS,
+                     :profit_ABS, :profit_IS, :profit_PREM])
+end    
+
+
+function profile(lc::LC,
+                 i::Int,
+                 products::DataFrame ,
+                 costs::Vector{Float64})
+    # prof: QX SX PX PREM
+    prof = zeros( Float64, lc.all[i, :dur], N_PROF )
+    
+    ind = [[:c_start_QX   :c_end_QX   :prof_start_QX   :prof_end_QX],
+           [:c_start_SX   :c_end_SX   :prof_start_SX   :prof_end_SX],
+           [:c_start_PX   :c_end_PX   :prof_start_PX   :prof_end_PX],
+           [:c_start_PREM :c_end_PREM :prof_start_PREM :prof_end_PREM]]
+
+    for WX in (QX, SX, PX, PREM)
+        if (lc.all[i, ind[WX, 1]] > 0) & (lc.all[i, ind[WX, 2]] > 0)
+            prof[ lc.all[i, ind[WX, 1]]:lc.all[i, ind[WX, 2]], WX] =
+                      linspace(products[lc.all[i, :prod_id], ind[WX, 3]],
+                               products[lc.all[i, :prod_id], ind[WX, 4]],
+                               lc.all[i,ind[WX, 2]] - lc.all[i,ind[WX, 1]] + 1)
         end
     end
+
+    prof[1, C_INIT_ABS]  = costs[L_INIT_ABS]
+    prof[1, C_INIT_IS] = costs[L_INIT_IS]
+    prof[:, C_ABS] = costs[L_ABS] * ones(Float64, lc.all[i,:dur])
+    prof[:, C_IS] = costs[L_IS] * ones(Float64, lc.all[i,:dur])
+    prof[:, C_PREM] = costs[L_PREM] * prof[:,PREM]
+    
     return prof
 end
 
@@ -63,23 +81,21 @@ end
 function condcf(lc::LC,
                 i::Int,
                 products::DataFrame,
-                costs::Vector{Float64})
-    cf = ones(Float64,
-              lc.all[i,:dur], length(costs)+N_BEN_PREM )
+                costs::Vector{Float64}
+                )
+    cf = Array(Float64, lc.all[i,:dur], N_COND)
+    prof = profile(lc, i, products, costs)
 
-    prof = profile(lc,i, products )
+    cf[:,QX]     = - prof[:,QX] * lc.all[i, :is]
+    cf[:,SX]     = - prof[:,SX] .* [1:lc.all[i, :dur]] * lc.all[i, :prem]
+    cf[:,PX]     = - prof[:,PX] * lc.all[i, :is]
+    cf[:,PREM]   = prof[:,PREM] * lc.all[i, :prem]
 
-    cf[:,QX] = -prof[:,QX] * lc.all[i, :is]
-    cf[:,SX] = -prof[:,SX] .* [1:lc.all[i, :dur]] * lc.all[i, :prem]
-    cf[:,PX] = -prof[:,PX] * lc.all[i, :is]
-    cf[:,PREM] = prof[:,PREM] * lc.all[i, :prem]
-    cf[:,C_INIT] = -[costs[L_INIT_ABS]+ costs[L_INIT_IS] * lc.all[i, :is],
-                     zeros(Float64, lc.all[i,:dur]-1)] 
-        
-    
-    cf[:,C_ABS] =  -costs[L_ABS] * cf[:,C_ABS]
-    cf[:,C_IS] = -costs[L_IS] * lc.all[i, :is] * cf[:,C_IS]  
-    cf[:,C_PREM] = -costs[L_PREM] * prof[:,PREM] * lc.all[i, :prem]
+    cf[:,C_INIT] = - prof[:,C_INIT_ABS] - prof[:, C_INIT_IS] * lc.all[i, :is]
+
+    cf[:,C_ABS]  = - prof[:,C_ABS] 
+    cf[:,C_IS]   = - prof[:,C_IS] * lc.all[i, :is]   
+    cf[:,C_PREM] = - prof[:,C_PREM] * lc.all[i, :prem]
 
     return cf
 end
@@ -115,7 +131,7 @@ function price(lc::LC,
     prob[:,SX] = sx(lc, i, products)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
 
-    prof = profile(lc, i, products ) 
+    prof = profile(lc, i, products, load ) 
     lx_bop = cumprod(prob[:,PX])
     unshift!(lx_bop,1)
     pop!(lx_bop)
@@ -128,16 +144,46 @@ function price(lc::LC,
     pop!(v_bop)
 
     num =
-        load[L_INIT_ABS] + load[L_INIT_IS] * lc.all[i, :is] +
-        sum( lx_bop .* v .* (load[L_ABS] .+
-                             lc.all[i, :is] * (load[L_IS] .+
+        prof[1, C_INIT_ABS] + prof[1, C_INIT_IS] * lc.all[i, :is] +
+        sum( lx_bop .* v .* (prof[:, C_ABS] +
+                             lc.all[i, :is] * (prof[:,C_IS] +
                                                prob[:,PX] .* prof[:,PX] +
                                                prob[:,QX] .* prof[:,QX]) ) )
     denom =  sum(lx_bop .*
-                 (prof[:,PREM] .* (v_bop - v * load[L_PREM]) -
+                 (prof[:,PREM] .* (v_bop - v .* prof[:, C_PREM]) -
                   v .* prob[:,SX] .* cumsum(prof[:,PREM] .* prof[:,SX]) ) )
     return num/denom
 end
+
+function price2(prob::Array{Float64,2},
+                tech_discount::Vector{Float64},
+                cond_cf::Array{Float64,2} )
+
+    lx_bop = cumprod(prob[:,PX])
+    unshift!(lx_bop,1)
+    pop!(lx_bop)
+    v = cumprod(exp(-convert(Array,
+                             tech_interest[1:lc.all[i,:dur],
+                                           products[lc.all[i,:prod_id],
+                                                    :interest_name] ] ) ) )
+    v_bop = deepcopy(v)
+    unshift!(v_bop,1)
+    pop!(v_bop)
+
+    num = cond_cf[1,C_INIT] +
+          sum(lx_bop .* v .* (prof[:,C_ABS] .+
+                              prof[:,C_IS] * lc.all[i, :is] .+
+                              prob[:,PX] .* cond_cf[:,PX] .+
+                              prob[:,QX] .* cond_cf[:,QX] ) )
+                              
+    denin =  sum(lx_bop .*
+                 (prof[:,PREM] .* (v_bop - v * load[L_PREM]) -
+                  v .* prob[:,SX] .* cumsum(prof[:,PREM] .* prof[:,SX]) ) )                                             
+    
+
+ 
+end
+    
 
 ## Technical provisions
 
@@ -222,8 +268,8 @@ function lc!(lc::LC,
     lc.all[:prem] = zeros(Float64, lc.n)
     for i = 1:lc.n
         lc.all[i, :prem] =  price(lc, i, products,
-                                  loadings(lc,i,products, "cost") +
-                                  loadings(lc,i,products, "profit"),
+                                  costloadings(lc,i,products) +
+                                  profitloadings(lc,i,products),
                                   qx_df, tech_interest)
     end
     return lc

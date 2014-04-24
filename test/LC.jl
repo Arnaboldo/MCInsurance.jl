@@ -144,9 +144,9 @@ for i = 1:lc.n
             cum_px * v[t] * exp(interest[t]) * prof[t,PREM] * P
         ## cashflow at the end of period
         tmp_equiv -=
-            cum_px * v[t] * (load[L_ABS] +
-                             lc.all[i,:is] * load[L_IS] +
-                             P * prof[t,PREM] * load[L_PREM])
+            cum_px * v[t] * (load[L_ABS] * exp(t*load[L_INFL]) +
+                             lc.all[i,:is] * load[L_IS] * exp(t*load[L_INFL]) +
+                             P * prof[t,PREM] * load[L_PREM] * exp(t*load[L_INFL]))
         tmp_equiv -=
             cum_px * v[t] * (px[t] * prof[t,PX] * lc.all[i,:is] +
                              qx[t] * prof[t,QX] * lc.all[i,:is] )

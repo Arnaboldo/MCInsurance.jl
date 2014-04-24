@@ -26,8 +26,8 @@ function loadings(lc::LC,
                   i::Int,
                   products::DataFrame,
                   ind::Vector{Symbol})
-    load = Array(Float64, 5)
-    for L in (L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM)
+    load = Array(Float64, 6)
+    for L in (L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL)
         load[L] =  products[lc.all[i, :prod_id], ind[L]]
     end
     return load
@@ -36,13 +36,15 @@ end
 function costloadings(lc::LC, i::Int, products::DataFrame)
     return loadings(lc, i, products,
                     [:cost_INIT_ABS, :cost_INIT_IS,
-                     :cost_ABS, :cost_IS, :cost_PREM])
+                     :cost_ABS, :cost_IS, :cost_PREM,
+                     :cost_INFL])
 end    
 
 function profitloadings(lc::LC, i::Int, products::DataFrame)
     return loadings(lc, i, products,
                     [:profit_INIT_ABS, :profit_INIT_IS,
-                     :profit_ABS, :profit_IS, :profit_PREM])
+                     :profit_ABS, :profit_IS, :profit_PREM,
+                     :profit_INFL])
 end    
 
 
@@ -69,10 +71,11 @@ function profile(lc::LC,
 
     prof[1, C_INIT_ABS]  = costs[L_INIT_ABS]
     prof[1, C_INIT_IS] = costs[L_INIT_IS]
-    prof[:, C_ABS] = costs[L_ABS] * ones(Float64, lc.all[i,:dur])
-    prof[:, C_IS] = costs[L_IS] * ones(Float64, lc.all[i,:dur])
-    prof[:, C_PREM] = costs[L_PREM] * prof[:,PREM]
-    
+    prof[:, C_ABS] = costs[L_ABS] * exp([1:(lc.all[i,:dur])] * costs[L_INFL])
+    prof[:, C_IS] = costs[L_IS] * exp([1:(lc.all[i,:dur])] * costs[L_INFL])
+    prof[:, C_PREM] =
+        costs[L_PREM] * prof[:,PREM] .* exp([1:(lc.all[i,:dur])] * costs[L_INFL])
+
     return prof
 end
 
@@ -155,35 +158,7 @@ function price(lc::LC,
     return num/denom
 end
 
-function price2(prob::Array{Float64,2},
-                tech_discount::Vector{Float64},
-                cond_cf::Array{Float64,2} )
-
-    lx_bop = cumprod(prob[:,PX])
-    unshift!(lx_bop,1)
-    pop!(lx_bop)
-    v = cumprod(exp(-convert(Array,
-                             tech_interest[1:lc.all[i,:dur],
-                                           products[lc.all[i,:prod_id],
-                                                    :interest_name] ] ) ) )
-    v_bop = deepcopy(v)
-    unshift!(v_bop,1)
-    pop!(v_bop)
-
-    num = cond_cf[1,C_INIT] +
-          sum(lx_bop .* v .* (prof[:,C_ABS] .+
-                              prof[:,C_IS] * lc.all[i, :is] .+
-                              prob[:,PX] .* cond_cf[:,PX] .+
-                              prob[:,QX] .* cond_cf[:,QX] ) )
-                              
-    denin =  sum(lx_bop .*
-                 (prof[:,PREM] .* (v_bop - v * load[L_PREM]) -
-                  v .* prob[:,SX] .* cumsum(prof[:,PREM] .* prof[:,SX]) ) )                                             
-    
-
- 
-end
-    
+   
 
 ## Technical provisions
 

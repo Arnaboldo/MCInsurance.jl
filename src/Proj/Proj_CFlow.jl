@@ -110,7 +110,7 @@ function df(cf::CFlow, mc::Int, digits::Int=1)
         dframe[cf.labels[i]] =
             round(reshape(cf.v[mc,:,i], size(cf.v,2)), digits)
     end
-    dframe["CYCLE"] = int( dframe["CYCLE"])
+    dframe[:CYCLE] = int( dframe[:CYCLE])
     dframe
 end
     

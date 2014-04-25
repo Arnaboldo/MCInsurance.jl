@@ -154,7 +154,7 @@ function price(lc::LC,
                                                prob[:,QX] .* prof[:,QX]) ) )
     denom =  sum(lx_bop .*
                  (prof[:,PREM] .* (v_bop - v .* prof[:, C_PREM]) -
-                  v .* prob[:,SX] .* cumsum(prof[:,PREM] .* prof[:,SX]) ) )
+                  v .* prob[:,SX] .* prof[:,SX] .* cumsum(prof[:,PREM]) ) )
     return num/denom
 end
 

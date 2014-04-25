@@ -151,8 +151,7 @@ for i = 1:lc.n
             cum_px * v[t] * (px[t] * prof[t,PX] * lc.all[i,:is] +
                              qx[t] * prof[t,QX] * lc.all[i,:is] )
         tmp_equiv -=
-            cum_px * v[t] * prob_sx[t] *
-            sum(prof[1:t,PREM] .* prof[1:t,SX]) * P
+            cum_px * v[t] * prob_sx[t] * prof[t,SX] * sum(prof[1:t,PREM]) * P
         cum_px *= px[t]
     end
     @test_approx_eq_eps(tmp_equiv,0, tol)

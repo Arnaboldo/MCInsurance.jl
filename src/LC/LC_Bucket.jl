@@ -63,7 +63,8 @@ function add!(me::Buckets,
     else
         b_n_c = me.all[b].n_c
     end
-    n_c = max(lc.all[i, :dur]- (tf.init-lc.all[i, :y_start]), tf.n_c, b_n_c)
+    dur = max(lc.all[i, :dur]- (tf.init-lc.all[i, :y_start]),  b_n_c)
+    n_c = max(dur, tf.n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
     cond = zeros(Float64, n_c, N_COND)
     cond_cf = condcf(lc, i, products, costloadings(lc,i,products))
@@ -81,7 +82,7 @@ function add!(me::Buckets,
     # create new bucket or merge into existing bucket 
     if b == 0 
         me.n += 1
-        push!(me.all, Bucket(1, n_c, cat, cond, prob_be, cond[:,SX]) )
+        push!(me.all, Bucket(1, n_c, dur, cat, cond, prob_be, cond[:,SX]) )
     else
         merge!(me, b, n_c, cat, cond, prob_be) 
     end    
@@ -109,7 +110,7 @@ end
 ## bucket 
 function merge!(me::Buckets,
                 b::Int,                       # Bucket
-                n_c::Int,                     # remaining dur
+                n_c::Int,                     # length of cond
                 cat::Vector{Any},             # bucket id
                 cond::Array{Float64,2},       # cond. cash-flows
                 prob_be::Array{Float64,2} )   # biom. prob
@@ -152,9 +153,10 @@ function show(io::IO, me::Bucket)
     println( io, "Type:       $(string(typeof(me)))")
     println( io, "n:          $(me.n)")
     println( io, "n_c:        $(me.n_c)")
+    println( io, "dur:        $(me.dur)")
     println( io, "            age  gender  qx_be  risk_class")
     println( io, "cat:        $(transpose(me.cat))")
-    println( io, "cond:       conditional cash-flow, ")
+    print(   io, "cond:       conditional cash-flow, ")
     println( io, "size = $(size(me.cond))")
     print(   io, "prob_be:    best estimate prob qx, sx, ")
     println( io, "size = $(size(me.prob_be))")

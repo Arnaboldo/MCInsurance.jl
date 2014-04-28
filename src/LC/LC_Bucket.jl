@@ -67,7 +67,8 @@ function add!(me::Buckets,
     n_c = max(dur, tf.n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
     cond = zeros(Float64, n_c, N_COND)
-    cond_cf = condcf(lc, i, products, costloadings(lc,i,products))
+    prof = profile(lc, i, products, costloadings(lc,i,products))
+    cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], products, prof)
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end

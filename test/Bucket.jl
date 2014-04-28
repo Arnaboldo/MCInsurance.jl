@@ -38,8 +38,8 @@ for b = 1:buckets.n
         cond_end[C_IS] =   lc.all[i, :dur]
         cond_end[C_PREM] = lc.all[i, :c_end_PREM]
 
-        cond_cf_b =
-            condcf(lc,i,df_products, costloadings(lc,i,df_products))
+        prof = profile(lc, i, df_products, costloadings(lc,i,df_products)) 
+        cond_cf_b = condcf(lc.all[i,:is], lc.all[i,:prem], df_products, prof)
         lc_start = lc.all[i, :y_start]
         for yr = tf.init:(tf.final-1)
             for j = 1:N_COND
@@ -125,8 +125,9 @@ for b = 1:buckets.n
     end
     for i in lc_bucket[b]
         delta[i] = lc.all[i, :y_start] - y_first
-        cond_cf[i] = condcf(lc, i, df_products,
-                            costloadings(lc,i,df_products))
+        
+        prof = profile(lc, i, df_products, costloadings(lc,i,df_products))
+        cond_cf[i] = condcf(lc.all[i,:is], lc.all[i,:prem], df_products, prof)
         ssx[i] =  sx(lc, i, df_products) * lc.all[i, :be_sx_fac]
     end
     ## calculate average sx for bucket

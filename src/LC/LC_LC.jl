@@ -81,24 +81,23 @@ end
 
 
 ## conditional cashflow
-function condcf(lc::LC,
-                i::Int,
+function condcf(is::Float64,
+                prem::Float64,
                 products::DataFrame,
-                costs::Vector{Float64}
+                prof::Array{Float64,2}
                 )
-    cf = Array(Float64, lc.all[i,:dur], N_COND)
-    prof = profile(lc, i, products, costs)
+ #   prof = profile(lc, i, products, costs)
+    dur = size(prof,1)
+    cf = Array(Float64, dur, N_COND)
 
-    cf[:,QX]     = - prof[:,QX] * lc.all[i, :is]
-    cf[:,SX]     = - prof[:,SX] .* [1:lc.all[i, :dur]] * lc.all[i, :prem]
-    cf[:,PX]     = - prof[:,PX] * lc.all[i, :is]
-    cf[:,PREM]   = prof[:,PREM] * lc.all[i, :prem]
-
-    cf[:,C_INIT] = - prof[:,C_INIT_ABS] - prof[:, C_INIT_IS] * lc.all[i, :is]
-
+    cf[:,QX]     = - prof[:,QX] * is
+    cf[:,SX]     = - prof[:,SX] .* [1:dur] * prem
+    cf[:,PX]     = - prof[:,PX] * is
+    cf[:,PREM]   =   prof[:,PREM] * prem
+    cf[:,C_INIT] = - prof[:,C_INIT_ABS] - prof[:, C_INIT_IS] * is
     cf[:,C_ABS]  = - prof[:,C_ABS] 
-    cf[:,C_IS]   = - prof[:,C_IS] * lc.all[i, :is]   
-    cf[:,C_PREM] = - prof[:,C_PREM] * lc.all[i, :prem]
+    cf[:,C_IS]   = - prof[:,C_IS] * is
+    cf[:,C_PREM] = - prof[:,C_PREM] * prem
 
     return cf
 end

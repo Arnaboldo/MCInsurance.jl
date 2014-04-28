@@ -170,7 +170,8 @@ for i = 1:lc.n
     prob[:,SX] = sx(lc, i, df_products)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
     load =  costloadings(lc,i,df_products)
-    cond_cf = condcf(lc, i, df_products, load)
+    prof = profile(lc, i, df_products, load)
+    cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_products, prof)
 
     for tau = 1:lc.all[i,:dur]
         ## Technical provisions are counted negative.

@@ -120,7 +120,7 @@ function getprob(lc::LC,
                  qx_df::DataFrame
                  )
     age_range = lc.all[i,:ph_age_start] .+ [0: lc.all[i,:dur] - 1]
-    prob    = zeros( Float64, length(age_range), 3)
+    prob    = zeros( Float64, length(age_range), 3)    
     ## qx_df starts with age_period = 1, i.e. age = 0. Hence +1
     prob[:,QX] = qx_df[age_range .+ 1, lc.all[i, :qx_name] ]
     prob[:,SX] = getprobsx(lc, i, products)
@@ -154,10 +154,7 @@ function price(is::Float64,
     return num/denom
 end
 
-   
-
 ## Technical provisions
-
 function tpeop (prob::Array{Float64,2},
                 tech_discount::Vector{Float64},
                 cond_cf::Array{Float64,2} )
@@ -174,6 +171,20 @@ function tpeop (prob::Array{Float64,2},
     return tp
 end
 
+function tpveceop (prob::Array{Float64,2},
+                   tech_discount::Vector{Float64},
+                   cond_cf::Array{Float64,2} )
+    dur = size(cond_cf,1)
+    tp = zeros(Float64, dur)
+    tp[dur] = 0.0
+    for t in (dur-1):-1:1
+        tp[t] = tpprev(tp[t+1],
+                       reshape(prob[t+1,:], size(prob,2)),
+                       tech_discount[t+1],
+                       reshape(cond_cf[t+1,:], size(cond_cf,2)) )
+    end
+    return tp
+end
 
 function tpprev(tp::Float64,
                 prob::Vector{Float64},
@@ -194,33 +205,24 @@ function lc!(lc::LC,
              tf::TimeFrame,   ## not used
              qx_df::DataFrame,
              tech_interest::DataFrame)
-    lc.age_min =  1 
-    lc.age_max =  nrow(qx_df) - 1 
     prod_id_dict = Dict(products[:name],[1:size(products,1)])
+    lc.age_min =  1 
+    lc.age_max =  nrow(qx_df) - 1
 
     lc.all = join(ph, lc.all, on = :ph_id, kind = :inner)
-    lc.n = size(lc.all,1)    
-    lc.all[:prod_id] = [prod_id_dict[lc.all[i, :prod_name]] for i = 1:lc.n]
+    lc.n = size(lc.all,1)
+    
     lc.all[:ph_age_start] =  lc.all[:y_start] - lc.all[:ph_y_birth]
-    lc.all[:qx_name] =
-        [ symbol( lc.all[i, :ph_gender] * "_" *
-                products[prod_id_dict[lc.all[i, :prod_name]], :qx_name])
-            for i = 1:lc.n]
-    for ind in [:c_start_QX, :c_end_QX, :c_start_SX, :c_end_SX,
-                :c_start_PX, :c_end_PX, :c_start_PREM, :c_end_PREM]
-        ## We replace NA by 0 in order to be able to work with 
-        ## int64 arrays rather than with arrays of NAtype
-        ## lc.all[ind] = int64( min( array(lc.all[ind],0),
-        ##                          lc.age_max+1-lc.all[:ph_age_start]) )
-
-        ## broken in Julia 0.3.0 preview:                            
-        #   lc.all[ind] = int64( min(lc.all[ind],
-        #                       lc.age_max+1-lc.all[:ph_age_start]) )
-        ## work-around:
+    # convert points in time to integer values
+    for ind in (:c_start_QX, :c_end_QX, :c_start_SX, :c_end_SX,
+                :c_start_PX, :c_end_PX, :c_start_PREM, :c_end_PREM)
         for i = 1:lc.n
-            lc.all[ind] = int64( min(lc.all[i, ind],
-                                 lc.age_max+1-lc.all[i, :ph_age_start]) )
+            if isna(lc.all[i, ind])
+                lc.all[i, ind] = 0 
+            end
         end
+        lc.all[ind] =
+            int(min(lc.all[ind], lc.age_max+1 .- lc.all[:ph_age_start]))
     end
     ## broken in Julia 0.3.0 preview:                            
     #lc.all[:dur] = max( lc.all["c_end_QX"], lc.all["c_end_SX"],
@@ -229,19 +231,22 @@ function lc!(lc::LC,
     lc.all[:dur] = zeros(Int, lc.n)
     for i = 1:lc.n
         lc.all[i,:dur] =
-             max(lc.all[i, :c_end_QX], lc.all[i, :c_end_SX],
-                 lc.all[i, :c_end_PX], lc.all[i, :c_end_PREM] )
-    end
-                
-  #  lc.all[:ph_age_end] = lc.all[:ph_age_start]+lc.all[:dur] .- 1
+            max(lc.all[i, :c_end_QX], lc.all[i, :c_end_SX],
+                lc.all[i, :c_end_PX], lc.all[i, :c_end_PREM] )
+    end    
+    
+    lc.all[:prod_id] = [prod_id_dict[lc.all[i, :prod_name]] for i = 1:lc.n]
+    lc.all[:qx_name] =
+        [ symbol( lc.all[i, :ph_gender] * "_" *
+                products[prod_id_dict[lc.all[i, :prod_name]], :qx_name])
+            for i = 1:lc.n]
     lc.all[:risk] = ones(Int,lc.n)  ## currently a dummy variable
 
     lc.all[:prem] = zeros(Float64, lc.n)
-
     for i = 1:lc.n
         prof = profile(lc, i, products,
                        costloadings(lc,i,products)+profitloadings(lc,i,products))
-        prob =    getprob(lc, i, products,  qx_df )
+        prob = getprob(lc, i, products,  qx_df )
         interest = convert(Array,
                            tech_interest[1:lc.all[i,:dur],
                                          products[lc.all[i,:prod_id],

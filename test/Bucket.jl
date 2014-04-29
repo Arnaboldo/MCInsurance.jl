@@ -21,22 +21,22 @@ cond_start = zeros(Int,N_COND)
 cond_end = zeros(Int,N_COND)
 for b = 1:buckets.n
     for i in lc_bucket[b]
-        cond_start[QX] =    lc.all[i, :c_start_QX]
-        cond_start[SX] =    lc.all[i, :c_start_SX]
-        cond_start[PX] =    lc.all[i, :c_start_PX]
-        cond_start[PREM] =  1
-        cond_start[C_INIT]= 1
-        cond_start[C_ABS]=  1
-        cond_start[C_IS]=   1
-        cond_start[C_PREM]= 1
-        cond_end[QX] =     lc.all[i, :c_end_QX]
-        cond_end[SX] =     lc.all[i, :c_end_SX]
-        cond_end[PX] =     min(1000,lc.all[i, :c_end_PX])
-        cond_end[PREM] =   lc.all[i, :c_end_PREM]
-        cond_end[C_INIT] = lc.all[i, :dur]
-        cond_end[C_ABS] =  lc.all[i, :dur]
-        cond_end[C_IS] =   lc.all[i, :dur]
-        cond_end[C_PREM] = lc.all[i, :c_end_PREM]
+        cond_start[QX] =     lc.all[i, :c_start_QX]
+        cond_start[SX] =     lc.all[i, :c_start_SX]
+        cond_start[PX] =     lc.all[i, :c_start_PX]
+        cond_start[PREM] =   1
+        cond_start[C_INIT]=  1
+        cond_start[C_ABS]=   1
+        cond_start[C_IS]=    1
+        cond_start[C_PREM]=  1
+        cond_end[QX] =       lc.all[i, :c_end_QX]
+        cond_end[SX] =       lc.all[i, :c_end_SX]
+        cond_end[PX] =       min(1000,lc.all[i, :c_end_PX])
+        cond_end[PREM] =     lc.all[i, :c_end_PREM]
+        cond_end[C_INIT] =   lc.all[i, :dur]
+        cond_end[C_ABS] =    lc.all[i, :dur]
+        cond_end[C_IS] =     lc.all[i, :dur]
+        cond_end[C_PREM] =   lc.all[i, :c_end_PREM]
 
         prof = profile(lc, i, df_products, costloadings(lc,i,df_products)) 
         cond_cf_b = condcf(lc.all[i,:is], lc.all[i,:prem], df_products, prof)
@@ -180,16 +180,17 @@ end
 ## Test that future contracts are not processed --------------------------------
 nf_lc_all = lc.all[lc.all[ :y_start] .<= tf.init,:]
 nf_lc = LC(nrow(nf_lc_all), lc.age_min, lc.age_max, nf_lc_all)
-nf_buckets = Buckets(nf_lc, tf, df_products, df_qx)
+nf_buckets = Buckets(nf_lc, tf, df_products, df_qx, df_tech_interest)
 @test nf_buckets == buckets
 
 
 ## Test whether adding new contracts only works --------------------------------
 new_lc_all = lc.all[lc.all[ :y_start] .== tf.init,:]
 new_lc = LC(nrow(new_lc_all), lc.age_min, lc.age_max, new_lc_all)
-new_buckets_direct = Buckets(new_lc, tf, df_products, df_qx)
+new_buckets_direct = Buckets(new_lc, tf, df_products, df_qx, df_tech_interest)
 new_buckets = Buckets(tf)
 for i in 1:lc.n
-    add!(new_buckets, 1, tf, lc, i,df_products, df_qx, false)
+    add!(new_buckets, 1, lc, i,df_products,
+         df_qx, df_tech_interest, false)
 end
 @test new_buckets_direct == new_buckets

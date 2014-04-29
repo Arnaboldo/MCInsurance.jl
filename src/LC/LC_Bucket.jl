@@ -10,11 +10,12 @@ end
 # Buckets: Standard constructor
 function Buckets(lc::LC,
                  tf::TimeFrame,
-                 products::DataFrame,
-                 qx_df::DataFrame)
+                 df_products::DataFrame,
+                 df_qx::DataFrame,
+                 df_interest::DataFrame)
     buckets = Buckets(tf)
     for i = 1:lc.n
-        add!(buckets,1, tf, lc, i, products, qx_df, true)     
+        add!(buckets,1, lc, i, df_products, df_qx, df_interest, true)     
     end
     for b = 1:buckets.n
         buckets.n_c = max(buckets.n_c, buckets.all[b].n_c)
@@ -29,6 +30,7 @@ function isequal(b1::Bucket, b2::Bucket)
     isequal(b1.n_c, b2.n_c) &&
     isequal(b1.cat, b2.cat) &&
     isequal(b1.cond, b2.cond) &&
+    isequal(b1.tp_stat, b2.tp_stat) &&
     isequal(b1.prob_be, b2.prob_be) &&
     isequal(b1.sx_weights, b2.sx_weights)
 end
@@ -41,19 +43,19 @@ end
 
 function add!(me::Buckets,              
               c_curr::Int,           # current projection cycle
-              tf::TimeFrame,         # time frame for projection
               lc::LC,                # portfolio of contracts
               i::Int,                # contract to be added
               products::DataFrame,   # product information
               qx_df::DataFrame,      # mortality tables
-              existing::Bool = true) # default: add exist. contr.
+              interest::DataFrame,   # technical interest rates
+              existing::Bool = true) # default: add existing contract
 
-    c_start = lc.all[i, :y_start]-tf.init+1 #inception cycle
-    if ((c_curr < c_start) |              # no future contracts 
-        (!existing & (c_curr > c_start))) # add existing contr.?
+    c_start = lc.all[i, :y_start]-me.tf.init+1 # inception cycle
+    if ((c_curr < c_start) |                   # no future contracts 
+        (!existing & (c_curr > c_start))   )   # add existing contr.?
         return
     end    
-    cat = getcat(lc, i, tf)
+    cat = getcat(lc, i, me.tf)
 
     ## find bucket
     b = getind(me, cat)    
@@ -63,8 +65,8 @@ function add!(me::Buckets,
     else
         b_n_c = me.all[b].n_c
     end
-    dur = max(lc.all[i, :dur]- (tf.init-lc.all[i, :y_start]),  b_n_c)
-    n_c = max(dur, tf.n_c)
+    dur = max(lc.all[i, :dur]- (me.tf.init-lc.all[i, :y_start]),  b_n_c)
+    n_c = max(dur, me.tf.n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
     cond = zeros(Float64, n_c, N_COND)
     prof = profile(lc, i, products, costloadings(lc,i,products))
@@ -72,7 +74,15 @@ function add!(me::Buckets,
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
-    prob_be = zeros( Float64, (n_c, 2) )
+    tp_stat =
+        insertc(tf_cond, lc.all[i, :y_start],
+                tpveceop(getprob(lc, i, products, qx_df),
+                         exp(-convert(Array, interest[1:lc.all[i,:dur],
+                                                      products[lc.all[i,:prod_id],
+                                                               :interest_name]])),
+                         cond_cf),
+                true)
+    prob_be = zeros( Float64, n_c, 2)
     prob_be[:,QX] = qx_df[ cat[1] .+ [1:n_c], cat[3] ]
     # we insure that sx-prob = 0 if there is no sx-benefit,
     # even if lc-data record sx-prob != 0
@@ -80,10 +90,12 @@ function add!(me::Buckets,
         lc.all[i, :be_sx_fac] *
         insertc(tf_cond, lc.all[i, :y_start], getprobsx(lc,i,products), true) .*
         cond[:,SX ] ./ min(-eps(), cond[:,SX ])
+
     # create new bucket or merge into existing bucket 
     if b == 0 
         me.n += 1
-        push!(me.all, Bucket(1, n_c, dur, cat, cond, prob_be, cond[:,SX]) )
+        push!(me.all, Bucket(1, n_c, dur, cat, cond, tp_stat,
+                             prob_be, cond[:,SX]) )
     else
         merge!(me, b, n_c, cat, cond, prob_be) 
     end    
@@ -136,15 +148,18 @@ function grow!(me::Bucket,
     cond = zeros(Float64, n_c, N_COND)
     prob_be = zeros(Float64, n_c, 2)
     sx_weights = zeros(Float64, n_c)
+    tp_stat = zeros(Float64, n_c)
     for j = 1:N_COND
         cond[1:me.n_c,j] = me.cond[:,j]
     end
+    tp_stat[1:me.n_c] = me.tp_stat
     prob_be[:,QX] =  prob_be_qx
     prob_be[1:me.n_c,SX] = me.prob_be[:,SX]
     sx_weights[1:me.n_c] = me.sx_weights
 
     me.n_c = n_c
     me.cond = cond  
+    me.tp_stat = tp_stat
     me.prob_be = prob_be
     me.sx_weights = sx_weights
 end    
@@ -159,6 +174,8 @@ function show(io::IO, me::Bucket)
     println( io, "cat:        $(transpose(me.cat))")
     print(   io, "cond:       conditional cash-flow, ")
     println( io, "size = $(size(me.cond))")
+    print(   io, "tp_stat:    statutory technical provisions, ")
+    println( io, "size = $(size(me.tp_stat))")
     print(   io, "prob_be:    best estimate prob qx, sx, ")
     println( io, "size = $(size(me.prob_be))")
 end

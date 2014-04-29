@@ -70,7 +70,7 @@ invest = Invest("iii", cap_mkt, df_inv, df_inv_port_start, df_inv_target)
 
 lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)
                
-buckets = Buckets(lc, tf, df_products, df_qx)
+buckets = Buckets(lc, tf, df_products, df_qx, df_tech_interest)
 
 dividend = df_general[1, :capital_dividend]
 discount = exp(-0.05) * ones(Float64, buckets.n_c)  

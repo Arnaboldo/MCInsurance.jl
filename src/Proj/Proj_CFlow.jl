@@ -32,24 +32,21 @@ function CFlow(buckets::Buckets,
                              3 )
                 ## lx (initially) represents the value at BOP
                 for X in (QX,SX)
-                    prob[ t:buckets.all[b].n_c, X] =
+                    prob[t:buckets.all[b].n_c, X] =
                         fluct.fac[mc,t,fluct.d[X]] *
-                        buckets.all[b].
-                            prob_be[t:buckets.all[b].n_c, X]
+                        buckets.all[b].prob_be[t:buckets.all[b].n_c, X]
                 end
                 prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
                 for X = (QX, SX, PX)
                     cf.v[mc,t,X] +=
-                        lx[b] * prob[t,X] *
-                        buckets.all[b].cond[t,X]
+                        lx[b] * prob[t,X] * buckets.all[b].cond[t,X]
                 end
                 cf.v[mc,t,TP_EOP] +=
-                    lx[b] * prob[t,PX] * tpeop(prob[ t:buckets.all[b].n_c, :],
-                                               discount[t:buckets.all[b].n_c],
-                                               buckets.all[b].
-                                               cond[ t:buckets.all[b].n_c, :])
-                cf.v[mc,t,PREM] +=
-                    lx[b] * buckets.all[b].cond[t,PREM]
+                    lx[b] * prob[t,PX] *
+                    tpeop(prob[ t:buckets.all[b].n_c, :],
+                          discount[t:buckets.all[b].n_c],
+                          buckets.all[b].cond[ t:buckets.all[b].n_c, :])
+                cf.v[mc,t,PREM] += lx[b] * buckets.all[b].cond[t,PREM]
                 for C in (C_INIT, C_ABS, C_IS, C_PREM)
                     cf.v[mc,t,C_ALL] +=
                         lx[b] * fluct.fac[mc,t,fluct.d[C]] *

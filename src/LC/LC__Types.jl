@@ -1,17 +1,24 @@
-export QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM, N_COND,
-       C_INIT_ABS, C_INIT_IS, N_PROF,
+export N_COND, QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM,
+       N_PROF, C_INIT_ABS, C_INIT_IS, 
        L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL       
 export LC,  lc!, costloadings, profitloadings, getprobsx, getprob,
        profile, condcf, price, tpeop
 export Bucket, Buckets, getcat, getind, add!, listcontracts
 
-## Indices: Conditional Cashflows cond  (QX, SX are also used for probabilities)
-const QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM = 1:8
+## Indices ---------------------------------------------------------------------
+## Probabilities prob: QX, SX, PX
+## Conditional Cashflows cond:
 const N_COND = 8
-## Indices: Profile (C_INIT_ABS replaces C_INIT in cond, C_INIT_IS additional)
-const C_INIT_ABS, C_INIT_IS, N_PROF = 5, 9, 9 
-## Indices: Loadings
+const QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM = 1:N_COND
+## Profile prof
+## (similar to cond but C_Init -> C_INIT_ABS, (nothing) ->  C_INIT_IS)
+# QX, SX, PX, PREM, C_INIT_ABS, C_ABS, C_IS, C_PREM, C_INIT_IS
+const N_PROF = 9
+const C_INIT_ABS, C_INIT_IS = 5, 9
+## Loadings
 const L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL = 1:6
+
+## Types -----------------------------------------------------------------------
 
 type LC
     n::Int                      ## # contracts
@@ -20,13 +27,13 @@ type LC
     all::DataFrame              ## individual contract data
 end
 
-
 type Bucket
     n::Int                      ## # contracts in bucket
     n_c::Int                    ## max projection cycles
     dur::Int                    ## max remaining duration
     cat::Vector{Any}            ## age, gender, qx_be_name, risk
     cond::Array{Float64,2}      ## conditional cash-flows
+    tp_stat::Vector{Float64}    ## statutory technical provisions
     prob_be::Array{Float64,2}   ## best estimate: QX, SX
     sx_weights::Vector{Float64} ## weights for est. average be SX
 end

@@ -44,6 +44,7 @@ function Invest(name::String,
     port_start =    Array(DataFrame,n_ig)
     mv_total_init = 0.0
     mv_total_eop =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
+    yield_total =   zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
     tmp_dict =      Array(Dict{Any,Float64},n_ig)    
     for i = 1:n_ig
         tmp_dict[i] = deepcopy(info[i].target_dict) # avoid side effects
@@ -82,7 +83,7 @@ function Invest(name::String,
     end
 
     Invest(name, cap_mkt, n_ig, ig, ig_target, asset_target,
-           mv_total_init, mv_total_eop)
+           mv_total_init, mv_total_eop, yield_total)
 end
         
 # Constructor from DataFrames
@@ -136,6 +137,7 @@ function project!(me::Invest,
         project!(me.ig[i], mc, t)
         me.mv_total_eop[mc,t] += me.ig[i].mv_total_eop[mc,t]
     end
+    me.yield_total[mc,t] = me.mv_total_eop[mc,t]/max(eps(), mv_total_bop) - 1
 end
 
    

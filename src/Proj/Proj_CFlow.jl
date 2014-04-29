@@ -1,12 +1,10 @@
 ## Constructors --------------------------------------------------
 
 function CFlow(tf::TimeFrame, n_mc::Int)
-    labels =
-        ["QX","SX", "PX", "PREM", "C_ALL",
-         "ASSET_EOP", "TP_EOP", "DIV_EOP", "SURPLUS_EOP", "CYCLE"]
+    labels = ["QX","SX", "PX", "PREM", "C_ALL", "ASSET_EOP", "TP_EOP",
+              "DIV_EOP", "SURPLUS_EOP", "BONUS", "CYCLE"]
     n = length(labels)
     v = zeros(Float64, (n_mc, tf.n_c, n ))
- #   d = Dict([QX,SX,PX,PREM],[CF_QX,CF_SX,CF_PX,CF_PREM])
     CFlow(n, n_mc, tf, v, labels)
 end
 

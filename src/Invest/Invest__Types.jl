@@ -90,5 +90,6 @@ type Invest
     asset_target::Vector{Any}     ## vector of float64 vectors
     mv_total_init::Float64
     mv_total_eop::Array{Float64,2}
+    yield_total::Array{Float64,2}
 end
 

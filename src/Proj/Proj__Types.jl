@@ -1,9 +1,9 @@
 ## column names for CFlow.v.  QX, SX, PX, PREM: 1:4 
-export C_ALL, ASSET_EOP, TP_EOP, DIV_EOP, SURPLUS_EOP, CYCLE
+export C_ALL, ASSET_EOP, TP_EOP, DIV_EOP, SURPLUS_EOP, BONUS, CYCLE
 export Fluct
 export CFlow, df
 
-const C_ALL, ASSET_EOP, TP_EOP, DIV_EOP, SURPLUS_EOP, CYCLE = 5:10
+const C_ALL, ASSET_EOP, TP_EOP, DIV_EOP, SURPLUS_EOP, BONUS, CYCLE = 5:11
 
 
 type Fluct

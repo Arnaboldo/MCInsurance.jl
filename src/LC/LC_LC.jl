@@ -86,7 +86,6 @@ function condcf(is::Float64,
                 products::DataFrame,
                 prof::Array{Float64,2}
                 )
- #   prof = profile(lc, i, products, costs)
     dur = size(prof,1)
     cf = Array(Float64, dur, N_COND)
 
@@ -103,9 +102,8 @@ function condcf(is::Float64,
 end
 
 ## surrender probabilities: linearly increasing or decreasing
-function sx( lc::LC, i::Int, products::DataFrame )
-    prob_sx = zeros( Float64,
-                    lc.all[i,:ph_age_end]-lc.all[i,:ph_age_start]+1)
+function getprobsx( lc::LC, i::Int, products::DataFrame )
+    prob_sx = zeros( Float64,lc.all[i,:dur])
 
     if !((lc.all[i, :c_start_SX]==0) | (lc.all[i, :c_end_SX]==0))
         prob_sx[lc.all[i, :c_start_SX]:lc.all[i, :c_end_SX] ] =
@@ -116,41 +114,40 @@ function sx( lc::LC, i::Int, products::DataFrame )
     return prob_sx
 end
 
-
-## price of an insurance contract
-function price(lc::LC,
-               i::Int,
-               products::DataFrame,
-               load::Vector{Float64},    # cost loadings
-               qx_df::DataFrame,
-               tech_interest::DataFrame
-               )
-
-    age_range = [lc.all[i,:ph_age_start]:lc.all[i,:ph_age_end]]
-    prob    = zeros( Float64, (length(age_range), 3) )
+function getprob(lc::LC,
+                 i::Int,
+                 products::DataFrame,
+                 qx_df::DataFrame
+                 )
+    age_range = lc.all[i,:ph_age_start] .+ [0: lc.all[i,:dur] - 1]
+    prob    = zeros( Float64, length(age_range), 3)
     ## qx_df starts with age_period = 1, i.e. age = 0. Hence +1
     prob[:,QX] = qx_df[age_range .+ 1, lc.all[i, :qx_name] ]
-    prob[:,SX] = sx(lc, i, products)
+    prob[:,SX] = getprobsx(lc, i, products)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
+    return prob
+end
 
-    prof = profile(lc, i, products, load ) 
+## price of an insurance contract
+function price(is::Float64,
+               products::DataFrame,
+               prof::Array{Float64,2},
+               prob::Array{Float64,2},
+               tech_interest::Vector{Float64}
+               )
     lx_bop = cumprod(prob[:,PX])
     unshift!(lx_bop,1)
     pop!(lx_bop)
-    v = cumprod(exp(-convert(Array,
-                             tech_interest[1:lc.all[i,:dur],
-                                           products[lc.all[i,:prod_id],
-                                                    :interest_name] ] ) ) )
+    v = cumprod(exp(-tech_interest))
     v_bop = deepcopy(v)
     unshift!(v_bop,1)
     pop!(v_bop)
 
     num =
-        prof[1, C_INIT_ABS] + prof[1, C_INIT_IS] * lc.all[i, :is] +
-        sum( lx_bop .* v .* (prof[:, C_ABS] +
-                             lc.all[i, :is] * (prof[:,C_IS] +
-                                               prob[:,PX] .* prof[:,PX] +
-                                               prob[:,QX] .* prof[:,QX]) ) )
+        prof[1, C_INIT_ABS] + prof[1, C_INIT_IS] * is +
+        sum(lx_bop .* v .* (prof[:, C_ABS] + is * (prof[:,C_IS] +
+                                                   prob[:,PX] .* prof[:,PX] +
+                                                   prob[:,QX] .* prof[:,QX]) ))
     denom =  sum(lx_bop .*
                  (prof[:,PREM] .* (v_bop - v .* prof[:, C_PREM]) -
                   v .* prob[:,SX] .* prof[:,SX] .* cumsum(prof[:,PREM]) ) )
@@ -236,16 +233,22 @@ function lc!(lc::LC,
                  lc.all[i, :c_end_PX], lc.all[i, :c_end_PREM] )
     end
                 
-    lc.all[:ph_age_end] = lc.all[:ph_age_start]+lc.all[:dur] .- 1
+  #  lc.all[:ph_age_end] = lc.all[:ph_age_start]+lc.all[:dur] .- 1
     lc.all[:risk] = ones(Int,lc.n)  ## currently a dummy variable
 
     lc.all[:prem] = zeros(Float64, lc.n)
+
     for i = 1:lc.n
-        lc.all[i, :prem] =  price(lc, i, products,
-                                  costloadings(lc,i,products) +
-                                  profitloadings(lc,i,products),
-                                  qx_df, tech_interest)
+        prof = profile(lc, i, products,
+                       costloadings(lc,i,products)+profitloadings(lc,i,products))
+        prob =    getprob(lc, i, products,  qx_df )
+        interest = convert(Array,
+                           tech_interest[1:lc.all[i,:dur],
+                                         products[lc.all[i,:prod_id],
+                                                  :interest_name] ] )
+        lc.all[i, :prem] =  price(lc.all[i,:is], products, prof, prob, interest)
     end
     return lc
 end
 
+ 

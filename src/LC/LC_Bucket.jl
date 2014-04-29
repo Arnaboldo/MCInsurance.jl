@@ -78,7 +78,7 @@ function add!(me::Buckets,
     # even if lc-data record sx-prob != 0
     prob_be[:,SX] =
         lc.all[i, :be_sx_fac] *
-        insertc(tf_cond, lc.all[i, :y_start], sx(lc,i,products), true) .*
+        insertc(tf_cond, lc.all[i, :y_start], getprobsx(lc,i,products), true) .*
         cond[:,SX ] ./ min(-eps(), cond[:,SX ])
     # create new bucket or merge into existing bucket 
     if b == 0 

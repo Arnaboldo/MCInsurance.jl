@@ -43,6 +43,11 @@ function CFlow(buckets::Buckets,
                         lx[b] * prob[t,X] *
                         buckets.all[b].cond[t,X]
                 end
+                cf.v[mc,t,TP_EOP] +=
+                    lx[b] * prob[t,PX] * tpeop(prob[ t:buckets.all[b].n_c, :],
+                                               discount[t:buckets.all[b].n_c],
+                                               buckets.all[b].
+                                               cond[ t:buckets.all[b].n_c, :])
                 cf.v[mc,t,PREM] +=
                     lx[b] * buckets.all[b].cond[t,PREM]
                 for C in (C_INIT, C_ABS, C_IS, C_PREM)
@@ -53,11 +58,6 @@ function CFlow(buckets::Buckets,
                 cost_init +=
                     lx[b] * fluct.fac[mc,t,fluct.d[C_INIT]] *
                     buckets.all[b].cond[t,C_INIT]
-                cf.v[mc,t,TP_EOP] +=
-                    lx[b] * prob[t,PX] * tpeop(prob[ t:buckets.all[b].n_c, :],
-                                               discount[t:buckets.all[b].n_c],
-                                               buckets.all[b].
-                                               cond[ t:buckets.all[b].n_c, :])
                 ## roll forward lx to the end of period: EOP
                 lx[b] = lx[b] * prob[t,PX]
             end

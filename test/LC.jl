@@ -36,21 +36,21 @@ for i in 1:lc.n
     if sx_dur(i) != 0
         # First sx-value is correct
         @test_approx_eq_eps(df_products[lc.all[i, :prod_id], :start_SX],
-                            sx(lc,i,df_products)[1],
+                            getprobsx(lc,i,df_products)[1],
                             tol)
         # Last sx-value is correct
         if sx_dur(i) > 1 # sx_dur = 1: we take first value regardless of last value
             @test_approx_eq_eps(df_products[lc.all[i, :prod_id], :end_SX],
-                                sx(lc,i,df_products)[sx_dur(i)],
+                                getprobsx(lc,i,df_products)[sx_dur(i)],
                                 tol)
         end
         # sx-values are linear
         if sx_dur(i) >=3  # we need at least 3 points to check linearity
              for d = 3:sx_dur(i)
-                @test_approx_eq_eps(sx(lc,i,df_products)[2]-
-                                    sx(lc,i,df_products)[1],
-                                    sx(lc,i,df_products)[d]-
-                                    sx(lc,i,df_products)[d-1],
+                @test_approx_eq_eps(getprobsx(lc,i,df_products)[2]-
+                                    getprobsx(lc,i,df_products)[1],
+                                    getprobsx(lc,i,df_products)[d]-
+                                    getprobsx(lc,i,df_products)[d-1],
                                     tol)
               end  
         end
@@ -60,7 +60,7 @@ end
 ## Test benefit-premium profile ------------------------------------------------
 for i in 1:lc.n 
     prod_id = lc.all[i, :prod_id]
-    dur = (lc.all[i, :ph_age_end] - lc.all[i, :ph_age_start] + 1)
+    dur = lc.all[i, :dur]
     prob_sx = zeros(Float64, dur)
     sx_prof = zeros(Float64, dur)
     qx = df_qx[:,lc.all[i, :qx_name]] ## according to age cycle
@@ -124,9 +124,10 @@ for i = 1:lc.n
     load =
         costloadings(lc,i,df_products) +
         profitloadings(lc,i,df_products)
-    age_range = [lc.all[i, :ph_age_start]:lc.all[i,:ph_age_end]]
+    age_range = [lc.all[i,:ph_age_start]:(lc.all[i,:ph_age_start]
+                                          + lc.all[i,:dur] - 1)]
     qx = df_qx[age_range .+ 1, lc.all[i, :qx_name]]
-    prob_sx = sx(lc, i, df_products)
+    prob_sx = getprobsx(lc, i, df_products)
     px = 1 .- qx - prob_sx
     interest = convert(Array,
                        df_tech_interest[1:length(age_range),
@@ -134,7 +135,12 @@ for i = 1:lc.n
                                                     :interest_name] ] ) 
     v = cumprod(exp(-interest))
     prof = profile(lc, i, df_products, load)
-    P =  price(lc, i, df_products, load, df_qx, df_tech_interest)
+    prob = getprob(lc, i, df_products,  df_qx )
+    interest = convert(Array,
+                       df_tech_interest[1:lc.all[i,:dur],
+                                        df_products[lc.all[i,:prod_id],
+                                                    :interest_name] ])
+    P = price(lc.all[i,:is], df_products, prof, prob, interest)
     cum_px = 1
     tmp_equiv = -load[L_INIT_ABS]-load[L_INIT_IS] * lc.all[i,:is]
     for t = 1:length(age_range)
@@ -165,9 +171,10 @@ for i = 1:lc.n
     r = 0.03 * ones(Float64,lc.all[i,:dur])
     v = cumprod(exp(-r))
 
-    age_range = [lc.all[i,:ph_age_start]:lc.all[i, :ph_age_end]]
+    age_range = [lc.all[i,:ph_age_start]:(lc.all[i,:ph_age_start]
+                                          + lc.all[i,:dur] - 1)]
     prob[:,QX] = df_qx[age_range .+ 1, lc.all[i, :qx_name]]
-    prob[:,SX] = sx(lc, i, df_products)
+    prob[:,SX] = getprobsx(lc, i, df_products)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
     load =  costloadings(lc,i,df_products)
     prof = profile(lc, i, df_products, load)

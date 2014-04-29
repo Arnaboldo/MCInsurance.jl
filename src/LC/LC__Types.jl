@@ -1,7 +1,8 @@
 export QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM, N_COND,
        C_INIT_ABS, C_INIT_IS, N_PROF,
        L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL       
-export LC,  lc!, costloadings, profitloadings, sx, profile, condcf, price, tpeop
+export LC,  lc!, costloadings, profitloadings, getprobsx, getprob,
+       profile, condcf, price, tpeop
 export Bucket, Buckets, getcat, getind, add!, listcontracts
 
 ## Indices: Conditional Cashflows cond  (QX, SX are also used for probabilities)

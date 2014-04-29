@@ -55,7 +55,7 @@ for b = 1:buckets.n
                                   cond_cf_b[yr- lc_start+1, QX]
                     elseif j == SX
                         tmp_exp_ben[yr-tf.init+1, SX,b] +=
-                            sx(lc,i,df_products)[yr-lc_start+1]*
+                            getprobsx(lc,i,df_products)[yr-lc_start+1]*
                             cond_cf_b[yr-lc_start+1,SX] *
                             lc.all[i, :be_sx_fac]
 
@@ -128,7 +128,7 @@ for b = 1:buckets.n
         
         prof = profile(lc, i, df_products, costloadings(lc,i,df_products))
         cond_cf[i] = condcf(lc.all[i,:is], lc.all[i,:prem], df_products, prof)
-        ssx[i] =  sx(lc, i, df_products) * lc.all[i, :be_sx_fac]
+        ssx[i] =  getprobsx(lc, i, df_products) * lc.all[i, :be_sx_fac]
     end
     ## calculate average sx for bucket
     prob_sx = zeros(Float64,2*lc.age_max)
@@ -145,7 +145,7 @@ for b = 1:buckets.n
     end
     ## process all contracts in bucket
     for i in lc_bucket[b]
-       age_range = [lc.all[i, :ph_age_start]:lc.all[i, :ph_age_end]]
+        age_range = lc.all[i,:ph_age_start] .+ [0:lc.all[i,:dur] - 1]
         prob_lc = Array(Float64, lc.all[i, :dur], 3)
         prob_lc[:,QX] =  df_qx[age_range .+ 1, qx_be_name]
         for tau = 1:lc.all[i, :dur]

@@ -34,6 +34,7 @@ type Bucket
     cat::Vector{Any}            ## age, gender, qx_be_name, risk
     cond::Array{Float64,2}      ## conditional cash-flows
     tp_stat::Vector{Float64}    ## statutory technical provisions
+    tp_stat_init::Float64       ## initial statutory technical provisions
     prob_be::Array{Float64,2}   ## best estimate: QX, SX
     sx_weights::Vector{Float64} ## weights for est. average be SX
 end

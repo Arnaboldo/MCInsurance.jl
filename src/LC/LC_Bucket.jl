@@ -74,14 +74,18 @@ function add!(me::Buckets,
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
-    tp_stat =
-        insertc(tf_cond, lc.all[i, :y_start],
-                tpveceop(getprob(lc, i, products, qx_df),
+    tp_stat_calc =
+        tpveceop(getprob(lc, i, products, qx_df),
                          exp(-convert(Array, interest[1:lc.all[i,:dur],
                                                       products[lc.all[i,:prod_id],
                                                                :interest_name]])),
-                         cond_cf),
-                true)
+                         cond_cf)
+    tp_stat = insertc(tf_cond, lc.all[i, :y_start], tp_stat_calc, true)
+    if lc.all[i, :y_start] < me.tf.init
+        tp_stat_init = tp_stat_calc[ me.tf.init-lc.all[i, :y_start]]
+    else
+        tp_stat_init = 0
+    end
     prob_be = zeros( Float64, n_c, 2)
     prob_be[:,QX] = qx_df[ cat[1] .+ [1:n_c], cat[3] ]
     # we insure that sx-prob = 0 if there is no sx-benefit,
@@ -94,7 +98,7 @@ function add!(me::Buckets,
     # create new bucket or merge into existing bucket 
     if b == 0 
         me.n += 1
-        push!(me.all, Bucket(1, n_c, dur, cat, cond, tp_stat,
+        push!(me.all, Bucket(1, n_c, dur, cat, cond, tp_stat, tp_stat_init,
                              prob_be, cond[:,SX]) )
     else
         merge!(me, b, n_c, cat, cond, prob_be) 

@@ -38,7 +38,6 @@ function Fluct(tf::TimeFrame, n_mc::Int,  df::DataFrame)
    return fluct
 end
 
-
 function Fluct(tf::TimeFrame, n_mc::Int, values::Array{Float64,2})
     fluct = Fluct(tf, n_mc, "Array")
     if ((tf.n_c == size(values,1)) & (fluct.n == size(values,2)) )

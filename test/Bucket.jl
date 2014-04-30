@@ -9,10 +9,11 @@ get_lc_cat = function(i::Int)
      [tf.init-lc.all[i,:ph_y_birth],               # curr. age
       if lc.all[i,:ph_gender] == "M" 1 else 2 end, # gender
       lc.all[i,:ph_qx_be_name],                    # best est qx
+      df_products[lc.all[i,:prod_id],:interest_name],
       lc.all[i,:risk] ]                            # risk class
 end
 
-lc_bucket = listcontracts(buckets, lc)
+lc_bucket = listcontracts(buckets, lc, df_products)
 
 ## Test accumulation conditional cashflows and probabilities per bucket
 tmp_cond = zeros(Float64,tf.n_c+1,N_COND, buckets.n)

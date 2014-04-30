@@ -55,7 +55,7 @@ function add!(me::Buckets,
         (!existing & (c_curr > c_start))   )   # add existing contr.?
         return
     end    
-    cat = getcat(lc, i, me.tf)
+    cat = getcat(lc, i, me.tf, products)
 
     ## find bucket
     b = getind(me, cat)    
@@ -84,10 +84,10 @@ function add!(me::Buckets,
     if lc.all[i, :y_start] < me.tf.init
         tp_stat_init = tp_stat_calc[ me.tf.init-lc.all[i, :y_start]]
     else
-        tp_stat_init = 0
+        tp_stat_init = 0.0
     end
     prob_be = zeros( Float64, n_c, 2)
-    prob_be[:,QX] = qx_df[ cat[1] .+ [1:n_c], cat[3] ]
+    prob_be[:,QX] = qx_df[ cat[CAT_AGE] .+ [1:n_c], cat[CAT_QXBE] ]
     # we insure that sx-prob = 0 if there is no sx-benefit,
     # even if lc-data record sx-prob != 0
     prob_be[:,SX] =
@@ -99,20 +99,20 @@ function add!(me::Buckets,
     if b == 0 
         me.n += 1
         push!(me.all, Bucket(1, n_c, dur, cat, cond, tp_stat, tp_stat_init,
-                             prob_be, cond[:,SX]) )
+                             prob_be, cond[:,SX], 1))
     else
-        merge!(me, b, n_c, cat, cond, prob_be) 
+        merge!(me, b, n_c, cat, cond, tp_stat, tp_stat_init, prob_be) 
     end    
 end
 
 ## for each bucket in Buckets get an array with the corresponding
 ## contract indices
-function listcontracts(me::Buckets,lc::LC)
+function listcontracts(me::Buckets,lc::LC, df_products::DataFrame)
     contracts_per_bucket = Array(Any,me.n)
     for b = 1:me.n
         contracts_per_bucket[b] = Array(Int,0)
         for i = 1:lc.n
-            if getcat(lc,i,me.tf) == me.all[b].cat
+            if getcat(lc,i,me.tf, df_products) == me.all[b].cat
                 push!(contracts_per_bucket[b],i)
             end
         end
@@ -130,6 +130,8 @@ function merge!(me::Buckets,
                 n_c::Int,                     # length of cond
                 cat::Vector{Any},             # bucket id
                 cond::Array{Float64,2},       # cond. cash-flows
+                tp_stat::Vector{Float64},
+                tp_stat_init::Float64,
                 prob_be::Array{Float64,2} )   # biom. prob
     if n_c > me.all[b].n_c
         grow!(me.all[b], n_c, prob_be[:,QX])
@@ -138,6 +140,8 @@ function merge!(me::Buckets,
     for j = 1:N_COND       
         me.all[b].cond[:,j] += cond[:,j]
     end
+    me.all[b].tp_stat += tp_stat
+    me.all[b].tp_stat_init += tp_stat_init
     me.all[b].prob_be[:,SX] =
         (cond[:,SX] .* prob_be[:,SX] +
          me.all[b].sx_weights .* me.all[b].prob_be[:,SX] ) ./
@@ -198,10 +202,11 @@ function getind(me::Buckets,  cat::Vector{Any})
     return ind
 end
 
-function getcat(lc::LC, i::Int, tf::TimeFrame)
+function getcat(lc::LC, i::Int, tf::TimeFrame, df_products::DataFrame)
     [tf.init-lc.all[i, :ph_y_birth],               # current age
      if lc.all[i, :ph_gender] == "M" 1 else 2 end, # gender
      lc.all[i, :ph_qx_be_name],            # qx_be table
+     df_products[lc.all[i,:prod_id],:interest_name],
      lc.all[i, :risk] ]                            # risk class
 end
 

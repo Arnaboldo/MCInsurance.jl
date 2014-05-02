@@ -78,3 +78,9 @@ discount = exp(-0.01) * ones(Float64, buckets.n_c)
 fluct = Fluct(tf, n_mc, 1.0)
 cflow = CFlow(buckets, fluct, invest, discount,  df_tech_interest,
               bonus_factor, dividend)
+
+## for test in CFlow.jl:
+## reason: in our tests we will project with different asset allocation,
+##         which affects invest.yield_total
+saved_yield_total = deepcopy(invest.yield_total)
+

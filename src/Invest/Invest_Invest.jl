@@ -11,22 +11,33 @@ function InvestInfo(name::String,
     target = df_inv_target[df_inv_target[:ig_name] .== name, 2:end]
     port_start = df_inv_port_start[df_inv_port_start[:ig_name].== name, 2:end]
     target_dict = Dict{Any,Float64}()
+    mb_dict = Dict{Any,Float64}()
     if any(isna(port_start[:asset_dur]))
         merge!(target_dict, Dict(target[:proc_labels], target[:asset_target]))
+        for j = 1:nrow(target)
+            merge!(mb_dict,
+                   [target[j, :proc_labels] => target[j, :market_benchmark]])
+        end
         port_start = port_start[:, [:proc_labels, :asset_amount]]
         for j = 1:nrow(port_start)
             port_start[j, :proc_labels] = ascii( port_start[j, :proc_labels])
         end
     else
         merge!(target_dict, Dict(target[ :asset_dur], target[ :asset_target]) )
+        for j = 1:nrow(target)
+            merge!(mb_dict,
+                   [target[j, :asset_dur] => target[j, :market_benchmark]])
+        end
         port_start = port_start[:,[ :asset_dur, :asset_coupon, :asset_amount]]
     end
+    
+    
     for j = 1:nrow(port_start)
         port_start[j, :asset_amount] = float64( port_start[j,:asset_amount])
     end
-    
+
     InvestInfo(name, (inv[1, :ig_type]), (inv[1, :proc_name]),
-               port_start, target_dict )    
+               port_start, target_dict, mb_dict )    
 end
 
 
@@ -45,23 +56,44 @@ function Invest(name::String,
     mv_total_init = 0.0
     mv_total_eop =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
     yield_total =   zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
+    yield_market =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
+    yield_cash =    Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
     tmp_dict =      Array(Dict{Any,Float64},n_ig)    
     for i = 1:n_ig
         tmp_dict[i] = deepcopy(info[i].target_dict) # avoid side effects
         if info[i].ig_type=="IGRiskfreeBonds"
-            n = max( maximum(keys(info[i].target_dict)),
+            n = max(maximum(keys(info[i].target_dict)),
                     maximum(info[i].port_start[:asset_dur]) )
             for j = 1:n
                 if !(j in collect(keys(tmp_dict[i])))
                     merge!(tmp_dict[i],[j=>0.0])
+                end    
+                if j in collect(keys(info[i].mb_dict))
+                    for mc = 1:cap_mkt.n_mc, t = 1:cap_mkt.tf.n_p
+                        yield_market[mc,t] +=
+                            info[i].mb_dict[j] *
+                            forwardbop(cap_mkt.proc[cap_mkt.
+                                                    dict_proc[info[i].proc_name]],
+                                       mc,t,j)
+                    end
                 end
             end
         else
             n = cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].dim
+            dict_labels =
+                Dict(cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].labels,
+                     [1:length(cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].
+                               labels)])
             for j in cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].labels
                 if !(j in collect(keys(tmp_dict[i])))  
                     merge!(tmp_dict[i],[j=>0.0])
                 end
+                if j in collect(keys(info[i].mb_dict))
+                    yield_market +=
+                        info[i].mb_dict[j] .*
+                        cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].
+                        yield[:,:,dict_labels[j]]
+                end                
             end
         end
         ig[i] = eval(parse(info[i].ig_type))(
@@ -69,7 +101,7 @@ function Invest(name::String,
                   cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]],
                   info[i].port_start,
                   n )
-        mv_total_init += ig[i].mv_total_init
+        mv_total_init += ig[i].mv_total_init        
     end
     ## construct a target vector that lines up with ig numbering
     ig_target = Float64[target_dict[info[i].ig_name] for i = 1:n_ig]
@@ -82,8 +114,18 @@ function Invest(name::String,
             asset_target[i] / max(eps(),sum(asset_target[i]))
     end
 
+    for i = 1:n_ig
+        if info[i].ig_name == "cash"
+           yield_cash =
+               cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].yield[:,:,1]
+        end
+        for j = 1:ig[i].n
+            
+        end
+    end
+   
     Invest(name, cap_mkt, n_ig, ig, ig_target, asset_target,
-           mv_total_init, mv_total_eop, yield_total)
+           mv_total_init, mv_total_eop, yield_total, yield_cash, yield_market)
 end
         
 # Constructor from DataFrames

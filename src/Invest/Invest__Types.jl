@@ -77,7 +77,8 @@ type InvestInfo
     ig_type::String
     proc_name::String
     port_start::DataFrame
-    target_dict::Dict{Any,Float64}
+    target_dict::Dict{Any,Float64}    ## asset allocation within ig
+    mb_dict::Dict{Any,Float64}        ## percentage of market benchmark
 end
 
 
@@ -91,5 +92,7 @@ type Invest
     mv_total_init::Float64
     mv_total_eop::Array{Float64,2}
     yield_total::Array{Float64,2}
+    yield_cash::Array{Float64,2}     # benchmark
+    yield_market::Array{Float64,2}   # benchmark independent of asset allocation
 end
 

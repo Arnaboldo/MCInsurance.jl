@@ -4,7 +4,7 @@ function LC(lc_all::DataFrame)
     n = size(lc_all,1)
     age_min = 0
     age_max = 0
-    return LC(n, age_min, age_max, lc_all)
+    return LC(n, age_min, age_max, lc_all[lc_all[:process], :])
 end
 
 function LC(df_lc::DataFrame,
@@ -52,7 +52,6 @@ function profile(lc::LC,
                  i::Int,
                  products::DataFrame ,
                  costs::Vector{Float64})
-    # prof: QX SX PX PREM
     prof = zeros( Float64, lc.all[i, :dur], N_PROF )
     
     ind = [[:c_start_QX   :c_end_QX   :prof_start_QX   :prof_end_QX],

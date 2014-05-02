@@ -76,7 +76,7 @@ dividend = df_general[1, :capital_dividend]
 bonus_factor = df_general[1, :bonus_factor]
 
 ## Dynamic policy behavior
-function dynprobsx(sx::Vector{Float64}, invest::Invest, t::Int, mc::Int,
+function dynprobsx(sx::Vector{Float64}, t::Int, mc::Int, invest::Invest, 
                    bonus_rate::Float64)
     if invest.yield_market[mc,t] / max(eps(),invest.yield_cash[mc,t]) - 1 < 0.1
         delta = 0.1
@@ -88,8 +88,6 @@ function dynprobsx(sx::Vector{Float64}, invest::Invest, t::Int, mc::Int,
 
     return  sx .+ (delta + 0.05 * min(6,max(0, si - 1.4)))
  end
-
-
 
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
 fluct = Fluct(tf, n_mc, 1.0)

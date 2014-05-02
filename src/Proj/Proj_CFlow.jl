@@ -59,9 +59,9 @@ function bucketprojecteoc!(cf::CFlow,
         fluct.fac[mc, t, QX] * bucket.prob_be[t:bucket.n_c, QX]
     prob[t:bucket.n_c, SX] =
         getdynprobsx(fluct.fac[mc, t, SX] * bucket.prob_be[t:bucket.n_c, SX],
-                     invest,
                      t,
                      mc,
+                     invest,
                      bonus_rate)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
     for X = (QX, SX, PX)
@@ -101,6 +101,10 @@ function surplusprojecteoc!(cf::CFlow,
     cf.v[mc, t, SURPLUS_EOP] = cf.v[mc, t, ASSET_EOP] + cf.v[mc, t, TP_EOP]
 end
 
+function defaultdynprobsx(sx::Vector{Float64}, t...)
+    return sx
+end
+
 function CFlow(buckets::Buckets,
                fluct::Fluct,
                invest::Invest,
@@ -108,7 +112,7 @@ function CFlow(buckets::Buckets,
                df_stat_interest::DataFrame,
                bonus_factor::Float64,
                dividend::Float64,
-               getdynprobsx::Function = (sx,invest,t,mc,br) -> sx)
+               getdynprobsx::Function = defaultdynprobsx)
     ## buckets.tf == invest.cap_mkt.tf
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     cost_init = Array(Float64,1) # 1-vector: can be passed as reference

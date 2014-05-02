@@ -28,9 +28,9 @@ for mc = 1:n_mc
             prob_b[t:buckets.all[b].n_c, SX] =
                 dynprobsx(fluct.fac[mc, t, SX] *
                                buckets.all[b].prob_be[t:buckets.all[b].n_c, SX],
-                          invest,
                           t,
                           mc,
+                          invest,
                           bonus_rate)
             prob_b[:,PX] = 1 .- prob_b[:,QX] - prob_b[:,SX]
             # accumulate technical provisions

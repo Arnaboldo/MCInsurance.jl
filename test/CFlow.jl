@@ -17,7 +17,7 @@ for mc = 1:n_mc
         for t = 1:tf.n_c
             yield = 0.0
             for t_p in ((t-1) * tf.n_dt+1):(t * tf.n_dt)    
-                yield += saved_yield_total[mc, t_p] ## defined in load_data.jl
+                yield += invest.yield_total[mc, t_p] 
             end
             bonus_rate =
                 bonus_factor *

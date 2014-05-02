@@ -4,6 +4,7 @@ using Base.Test
 using MCInsurance
 
 
+invest_test = Invest("iii", cap_mkt, df_inv, df_inv_port_start, df_inv_target)
 
 
 # -----------------------------------------------------------------------------
@@ -11,7 +12,7 @@ using MCInsurance
 mv_bop = Float64[10.0 * t for t = 1:tf.n_p]
 for mc = 1:n_mc
     for t = 1:tf.n_p
-        project!(invest,mc,t,mv_bop[t])
+        project!(invest_test,mc,t,mv_bop[t])
     end
 end
 
@@ -26,54 +27,54 @@ for i = 1:nrow(df_inv)
 end
 
 ## Test asset allocation for each investment group: 1 = sum(asset_target[i]) ---
-for j in 1:invest.n
-    @test_approx_eq_eps(sum(invest.asset_target[j]), 1, tol)
+for j in 1:invest_test.n
+    @test_approx_eq_eps(sum(invest_test.asset_target[j]), 1, tol)
 end
 
 ## Test asset allocation for all investment groups: 1 = sum(ig_target) ---------
-@test_approx_eq_eps(sum(invest.ig_target), 1, tol)
+@test_approx_eq_eps(sum(invest_test.ig_target), 1, tol)
 
 ## Test that for each investment group:
 ##  mv_total_eop[mc,t] = cash_eop[mc,t] +sum(ig.mv_eop[mc,t,:]) ----------------
-test_total_mv_ig = zeros(Float64,n_mc,tf.n_p,invest.n)
-for j in 1:invest.n
-    test_total_mv_ig[:,:,j] += invest.ig[j].cash_eop
-    for i = 1:invest.ig[j].n
-       test_total_mv_ig[:,:,j] +=  invest.ig[j].mv_eop[:,:,i]
+test_total_mv_ig = zeros(Float64,n_mc,tf.n_p,invest_test.n)
+for j in 1:invest_test.n
+    test_total_mv_ig[:,:,j] += invest_test.ig[j].cash_eop
+    for i = 1:invest_test.ig[j].n
+       test_total_mv_ig[:,:,j] +=  invest_test.ig[j].mv_eop[:,:,i]
     end
-    test_total_mv_ig[:,:,j] -= invest.ig[j].mv_total_eop
+    test_total_mv_ig[:,:,j] -= invest_test.ig[j].mv_total_eop
     for mc = 1:n_mc, t = 1:tf.n_p
         @test_approx_eq_eps(test_total_mv_ig[mc,t,j], 0, tol)
     end
 end
 
-## Test invest.mv_total_eop is the sum of ig[:].mv_total_eop -------------------
+## Test invest_test.mv_total_eop is the sum of ig[:].mv_total_eop -------------------
 for mc = 1:n_mc, t= 1:tf.n_p
     tmp_total_mv = 0
-    for j = 1:invest.n
-        tmp_total_mv += invest.ig[j].mv_total_eop[mc,t]
+    for j = 1:invest_test.n
+        tmp_total_mv += invest_test.ig[j].mv_total_eop[mc,t]
     end
-    @test_approx_eq_eps(tmp_total_mv, invest.mv_total_eop[mc,t], tol)
+    @test_approx_eq_eps(tmp_total_mv, invest_test.mv_total_eop[mc,t], tol)
 end
 
 ## Test cash mv projection -----------------------------------------------------
 for mc = 1:n_mc, t = 1:tf.n_p
-    @test_approx_eq_eps(invest.ig[i_cash].mv_total_eop[mc,t],
-                        invest.ig_target[i_cash] *
-                        invest.asset_target[i_cash][1] *
+    @test_approx_eq_eps(invest_test.ig[i_cash].mv_total_eop[mc,t],
+                        invest_test.ig_target[i_cash] *
+                        invest_test.asset_target[i_cash][1] *
                         mv_bop[t] *
-                        exp(tf.dt*invest.ig[i_cash].proc.yield[mc,t,1]),
+                        exp(tf.dt*invest_test.ig[i_cash].proc.yield[mc,t,1]),
                         tol)  
 end
 
 ## Test stocks mv projection ---------------------------------------------------
-test_mv_stocks = zeros(Float64,n_mc, tf.n_p,invest.ig[i_stocks].n)
-for  mc = 1:n_mc, t = 1:tf.n_p, j = 1:invest.ig[i_stocks].n
-    @test_approx_eq_eps(invest.ig[i_stocks].mv_eop[mc,t,j],                       
-                        invest.ig_target[i_stocks] *
-                        invest.asset_target[i_stocks][j] *
+test_mv_stocks = zeros(Float64,n_mc, tf.n_p,invest_test.ig[i_stocks].n)
+for  mc = 1:n_mc, t = 1:tf.n_p, j = 1:invest_test.ig[i_stocks].n
+    @test_approx_eq_eps(invest_test.ig[i_stocks].mv_eop[mc,t,j],                       
+                        invest_test.ig_target[i_stocks] *
+                        invest_test.asset_target[i_stocks][j] *
                         mv_bop[t] *
-                        exp(tf.dt * invest.ig[i_stocks].proc.yield[mc,t,j]),
+                        exp(tf.dt * invest_test.ig[i_stocks].proc.yield[mc,t,j]),
                         tol)
 end
 

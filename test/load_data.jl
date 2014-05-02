@@ -74,13 +74,24 @@ buckets = Buckets(lc, tf, df_products, df_qx, df_tech_interest)
 
 dividend = df_general[1, :capital_dividend]
 bonus_factor = df_general[1, :bonus_factor]
+
+## Dynamic policy behavior
+function dynprobsx(sx::Vector{Float64}, invest::Invest, t::Int, mc::Int,
+                   bonus_rate::Float64)
+    if invest.yield_market[mc,t] / max(eps(),invest.yield_cash[mc,t]) - 1 < 0.1
+        delta = 0.1
+    else
+        delta = 0.0
+    end
+    si = invest.yield_market[mc,t] / max(eps(),
+                                         bonus_rate + invest.yield_cash[mc,t])
+
+    return  sx .+ (delta + 0.05 * min(6,max(0, si - 1.4)))
+ end
+
+
+
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
 fluct = Fluct(tf, n_mc, 1.0)
 cflow = CFlow(buckets, fluct, invest, discount,  df_tech_interest,
-              bonus_factor, dividend)
-
-## for test in CFlow.jl:
-## reason: in our tests we will project with different asset allocation,
-##         which affects invest.yield_total
-saved_yield_total = deepcopy(invest.yield_total)
-
+              bonus_factor, dividend, dynprobsx)

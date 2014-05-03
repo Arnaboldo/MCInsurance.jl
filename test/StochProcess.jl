@@ -14,34 +14,34 @@ D = Dict( processes, [1:5] )
 
 info = Array(StochProcessInfo,length(D))
 info_dummy_v_determ_bop = Array(Float64,0,0)
-info[D["brown"]] = StochProcessInfo("Brownian",
-                                    "brown",
-                                    ["a", "b", "c"],
+info[D["brown"]] = StochProcessInfo(:Brownian,
+                                    :brown,
+                                    [:a, :b, :c],
                                     [1,2,3.],             # v_init
                                     info_dummy_v_determ_bop,
                                     [0.0, 0.5, 1.0] )     # drift
-info[D["geombrown"]] = StochProcessInfo("GeomBrownian",
-                                        "geombrown",
-                                        ["a", "b", "c"],
+info[D["geombrown"]] = StochProcessInfo(:GeomBrownian,
+                                        :geombrown,
+                                        [:a, :b, :c],
                                         [1,2,3.],         # v_init
                                         info_dummy_v_determ_bop,
                                         [0.0, 0.5, 1.0] ) # drift
-info[D["cir"]] = StochProcessInfo("CIR",
-                                  "cir",
-                                  ["a", "b", "c"],
+info[D["cir"]] = StochProcessInfo(:CIR,
+                                  :cir,
+                                        [:a, :b, :c],
                                   [0.02],           # v_init
                                   info_dummy_v_determ_bop,
                                   [0.5, 0.01] )     # a, v_infty
-info[D["vasicek"]] = StochProcessInfo("Vasicek",
-                                      "vasicek",
-                                      ["a", "b", "c"],
+info[D["vasicek"]] = StochProcessInfo(:Vasicek,
+                                      :vasicek,
+                                        [:a, :b, :c],
                                       [0.02],       # v_init
                                       info_dummy_v_determ_bop,
                                       [0.5, 0.01] ) # a, v_infty
 info[D["manual"]] =
-    StochProcessInfo("ManualShortRate",
-                     "manual",
-                     ["a", "b", "c"],    
+    StochProcessInfo(:ManualShortRate,
+                     :manual,
+                     [:a, :b, :c],
                      [-1000000.],   # v_init: to be ignored
                      info_dummy_v_determ_bop,
                      Float64[t/100 for mc=1:n_mc, t=1:tf.n_p+1, d=1] ) # v_bop
@@ -63,9 +63,9 @@ proc = Array(Process, length(D))
 for i=1:length(D)
     noise[i] = reshape(rand( MvNormal(cov[i]), n_mc * tf.n_p )',
                        n_mc, tf.n_p, n_dim[i] )
-    proc[i] = eval(parse(info[i].type_name))(info[i].name, info[i].labels,
-                                             info[i].v_init, info[i].param,
-                                             tf, cov[i], noise[i] )
+    proc[i] = eval(info[i].type_name)(info[i].name, info[i].labels,
+                                      info[i].v_init, info[i].param,
+                                      tf, cov[i], noise[i] )
 end
     
 msg_v_bop = Array(String,length(D))
@@ -159,17 +159,17 @@ end
     
 ##  determbop test: determbop(proc) = v_bop, where noise is zero ---------------
 for i= 1:length(D)
-    if info[i].type_name == "ManualShortRate"
+    if info[i].type_name == :ManualShortRate
         param = mean(info[i].param,1)
     else
         param = info[i].param
     end
     noise_det = zeros(Float64, (1, tf.n_p, n_dim[i]))
     proc_determ[i] =
-        eval(parse(info[i].type_name))(info[i].name, info[i].labels,
-                                       info[i].v_init, param, tf,
-                                       zeros(Float64, (n_dim[i] ,n_dim[i])),
-                                       noise_det  )
+        eval(info[i].type_name)(info[i].name, info[i].labels,
+                                info[i].v_init, param, tf,
+                                zeros(Float64, (n_dim[i] ,n_dim[i])),
+                                noise_det  )
     @test_approx_eq_eps(determbop(proc[i]),
                         reshape(proc_determ[i].v_bop, tf.n_p+1, n_dim[i] ),
                         tol)

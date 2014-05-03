@@ -1,7 +1,7 @@
 ## Constructors --------------------------------------------
 ## Standard
-function CIR (name::String,
-              labels::Vector{String},
+function CIR (name::Symbol,
+              labels::Vector{Symbol},
               v_init::Float64,
               a::Float64,
               v_infty::Float64,
@@ -31,8 +31,8 @@ function CIR (name::String,
 end
 
 ## Interface to AssetGroupShortRate
-function CIR(name::String,
-             labels::Vector{String},
+function CIR(name::Symbol,
+             labels::Vector{Symbol},
              v_init::Vector{Float64},
              param::Vector{Float64},
              tf::TimeFrame,
@@ -43,8 +43,8 @@ function CIR(name::String,
 end
 
 ## Construct Process including noise
-function CIR(name::String,
-             labels::Vector{String},
+function CIR(name::Symbol,
+             labels::Vector{Symbol},
              v_init::Float64,
              a::Float64,
              v_infty::Float64,

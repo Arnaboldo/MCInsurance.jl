@@ -1,7 +1,7 @@
 ## Constructors --------------------------------------------------
 
 ## Minimal constructor
-function IGStocks( name::String,
+function IGStocks( name::Symbol,
                   proc::ProcessIndex,
                   port_start::DataFrame,
                   n::Int
@@ -16,7 +16,7 @@ function IGStocks( name::String,
 
     amount_init = zeros(Float64, n)
     for j=1:n, k=1:nrow(port_start)
-        if port_start[k, :proc_labels] == proc.labels[j]
+        if port_start[k, :proc_labels] == string(proc.labels[j])
             amount_init[j] += port_start[k, :asset_amount]
         end
     end

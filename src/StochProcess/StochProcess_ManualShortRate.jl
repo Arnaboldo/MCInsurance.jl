@@ -1,7 +1,7 @@
 ## Constructors --------------------------------------------
 ## Standard
-function ManualShortRate (name::String,
-                          labels::Vector{String},
+function ManualShortRate (name::Symbol,
+                          labels::Vector{Symbol},
                           v_bop::Array{Float64, 3},
                           tf::TimeFrame
                           )
@@ -18,8 +18,8 @@ function ManualShortRate (name::String,
 end
 
 ## Interface to CapMkt
-function ManualShortRate(name::String,
-                         labels::Vector{String},
+function ManualShortRate(name::Symbol,
+                         labels::Vector{Symbol},
                          v_init::Vector{Float64},
                          param::Array{Float64, 3},
                          tf::TimeFrame,

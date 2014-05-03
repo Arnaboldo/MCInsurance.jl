@@ -1,7 +1,7 @@
 ## Constructors --------------------------------------------
 ## Standard
-function DetermShortRate (name::String,
-                          labels::Vector{String},
+function DetermShortRate (name::Symbol,
+                          labels::Vector{Symbol},
                           v_bop::Array{Float64, 3},
                           tf::TimeFrame,
                           dim::Int,
@@ -18,8 +18,8 @@ function DetermShortRate (name::String,
 end
 
 ## Interface to CapMkt
-function DetermShortRate(name::String,
-                         labels::Vector{String},
+function DetermShortRate(name::Symbol,
+                         labels::Vector{Symbol},
                          v_determ_bop::Array{Float64,2},
                          tf::TimeFrame,
                          n_mc::Int)

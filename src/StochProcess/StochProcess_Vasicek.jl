@@ -1,7 +1,7 @@
 ## Constructors --------------------------------------------
 ## Standard
-function Vasicek(  name::String,
-                 labels::Vector{String},
+function Vasicek(name::Symbol,
+                 labels::Vector{Symbol},
                  v_init::Float64,
                  a::Float64,
                  v_infty::Float64,
@@ -31,8 +31,8 @@ function Vasicek(  name::String,
 end
 
 ## Interface to AssetGroupShortRate
-function Vasicek(  name::String,
-                 labels::Vector{String},
+function Vasicek(name::Symbol,
+                 labels::Vector{Symbol},
                  v_init::Vector{Float64},
                  param::Vector{Float64},
                  tf::TimeFrame,
@@ -43,8 +43,8 @@ function Vasicek(  name::String,
 end
 
 ## Construct Process including noise
-function Vasicek(  name::String,
-                 labels::Vector{String},
+function Vasicek(name::Symbol,
+                 labels::Vector{Symbol},
                  v_init::Float64,
                  a::Float64,
                  v_infty::Float64,

@@ -12,10 +12,10 @@ abstract IG
 
 type IGStocks <: IG
     ## constructor
-    name::UTF8String                  ## name of investment group
+    name::Symbol                      ## name of investment group
     proc::ProcessIndex                ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{UTF8String}        ## identifies assets
+    labels::Vector{Symbol}            ## identifies assets
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -30,7 +30,7 @@ end
 
 type IGRiskfreeBonds <: IG
     ## constructor
-    name::UTF8String                  ## name of investment group
+    name::Symbol                      ## name of investment group
     proc::ProcessShortRate            ## stochastic process
     port_start::DataFrame             ## initial portfolio
     labels::Vector{Int}               ## identifies assets
@@ -56,10 +56,10 @@ end
 
 type IGCash <: IG
     ## constructor
-    name::String                      ## name investment group
+    name::Symbol                      ## name investment group
     proc::ProcessShortRate            ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{String}            ## identifies assets
+    labels::Vector{Symbol}            ## identifies assets
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -73,9 +73,9 @@ end
 
 
 type InvestInfo
-    ig_name::String
-    ig_type::String
-    proc_name::String
+    ig_name::Symbol
+    ig_type::Symbol
+    proc_name::Symbol
     port_start::DataFrame
     id_asset::Vector{Any}             ## identifies assets in asset_xxx below
     asset_target::Vector{Float64}     ## asset allocation within ig
@@ -84,7 +84,7 @@ end
 
 
 type Invest
-    name::String                      ## name of investment scheme
+    name::Symbol                      ## name of investment scheme
     cap_mkt::CapMkt                   ## capital market
     n::Int
     ig::Vector{IG}                    ## investment groups: IG

@@ -65,8 +65,8 @@ tf = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
 @test tf.n_dt == 2
 
 n_mc = df_general[1, :n_mc]
-cap_mkt = CapMkt("Capital Market", tf, n_mc, df_proc_1, df_proc_2)
-invest = Invest("iii", cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
+cap_mkt = CapMkt(:Capital_Market, tf, n_mc, df_proc_1, df_proc_2)
+invest = Invest(:iii, cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
 
 lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)
                

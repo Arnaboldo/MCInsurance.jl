@@ -1,11 +1,11 @@
 ## Constructors --------------------------------------------------
 ## Minimal constructor
-function IGCash( name::String,
+function IGCash(name::Symbol,
                 proc::ProcessShortRate,
                 port_start::DataFrame,
                 n::Int
                 )
-    labels = [port_start[1,:proc_labels]]
+    labels =        convert(Array{Symbol,1}, [port_start[1,:proc_labels]])
     mv_init =       zeros(Float64,  n )
     mv_eop =        zeros(Float64, proc.n_mc, proc.n_p, n ) # = 0
     mv_total_eop =  zeros(Float64, proc.n_mc, proc.n_p )

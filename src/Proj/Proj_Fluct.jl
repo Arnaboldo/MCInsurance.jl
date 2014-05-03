@@ -1,11 +1,11 @@
 ## Constructors --------------------------------------------------
 
-function Fluct(tf::TimeFrame, n_mc::Int, kind::ASCIIString)
+function Fluct(tf::TimeFrame, n_mc::Int, kind::Symbol)
     labels = ["QX", "SX", "C_INIT", "C_ABS", "C_IS", "C_PREM"]
     n = length(labels)
     d = Dict( int64([eval(parse(labels[i])) for i in 1:n]), [1:n] )
     fac = Array(Float64, n_mc, tf.n_c, n)
-    Fluct(length(labels), kind, labels,fac,d)    
+    Fluct(length(labels), kind, convert(Array{Symbol,1}, labels), fac, d)    
 end
 
 function Fluct(tf::TimeFrame, n_mc::Int,  df::DataFrame)
@@ -16,7 +16,7 @@ function Fluct(tf::TimeFrame, n_mc::Int,  df::DataFrame)
     ##          drift:                  param (drift of Brownian)
     ##          std:                    param (std of Brownian)
     ##          corr.QX...corr.C_PREM:  correlation matrix
-    fluct = Fluct(tf, n_mc, "GeomBrownian")
+    fluct = Fluct(tf, n_mc, :GeomBrownian)
     cov = Array(Float64, fluct.n, fluct.n )
     col = 0
     for j = 1:size(df,2)
@@ -28,7 +28,7 @@ function Fluct(tf::TimeFrame, n_mc::Int,  df::DataFrame)
     stdev = float(df[:std])
     cov =(stdev*stdev') .* cov
     tf_c = TimeFrame(tf.init, tf.final, tf.final-tf.init)
-    fluct.fac = GeomBrownian("proc_fac",
+    fluct.fac = GeomBrownian(:proc_fac,
                             fluct.labels,
                             float(df[:init]),
                             float(df[:drift]),
@@ -39,7 +39,7 @@ function Fluct(tf::TimeFrame, n_mc::Int,  df::DataFrame)
 end
 
 function Fluct(tf::TimeFrame, n_mc::Int, values::Array{Float64,2})
-    fluct = Fluct(tf, n_mc, "Array")
+    fluct = Fluct(tf, n_mc, :Array)
     if ((tf.n_c == size(values,1)) & (fluct.n == size(values,2)) )
         v = Array(Float64, n_mc, size(values,1), size(values,2))
         for mc = 1:n_mc, t=1:tf.n_c, j = 1:fluct.n
@@ -52,7 +52,7 @@ function Fluct(tf::TimeFrame, n_mc::Int, values::Array{Float64,2})
 end
 
 function Fluct(tf::TimeFrame, n_mc::Int, value::Float64)
-    fluct = Fluct(tf, n_mc, "Array")
+    fluct = Fluct(tf, n_mc, :Array)
     fluct.fac[:,:,:] = value 
     return fluct
 end

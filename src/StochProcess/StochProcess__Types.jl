@@ -6,9 +6,9 @@ export StochProcessInfo,
 type StochProcessInfo
     # Interface necessary because different asset groups
     # have different numbers of input parameters
-    type_name::String   ## process type
-    name::String
-    labels::Vector{String}
+    type_name::Symbol           ## process type
+    name::Symbol
+    labels::Vector{Symbol}
     v_init::Vector{Float64}
     v_determ_bop::Array{Float64,2}
     param::Any
@@ -23,8 +23,8 @@ abstract ProcessShortRate <: Process
 
 
 type Brownian <: ProcessIndex
-    name::String           ## name of process
-    labels::Vector{String} ## labels for process components
+    name::Symbol                ## name of process
+    labels::Vector{Symbol}      ## labels for process components
     v_init::Vector{Float64}     ## initial values
     drift::Vector{Float64}      ## parameter for process
     cov::Array{Float64,2}       ## covariance matrix for noise
@@ -38,8 +38,8 @@ type Brownian <: ProcessIndex
 end
 
 type GeomBrownian <: ProcessIndex
-    name::String           ## name of process
-    labels::Vector{String} ## labels for process components
+    name::Symbol                ## name of process
+    labels::Vector{Symbol}      ## labels for process components
     v_init::Vector{Float64}     ## initial values
     drift::Vector{Float64}      ## parameter for process
     cov::Array{Float64,2}       ## covariance matrix for noise
@@ -53,8 +53,8 @@ type GeomBrownian <: ProcessIndex
 end
 
 type Vasicek <: ProcessShortRate
-    name::String           ## name of process
-    labels::Vector{String} ## labels for process components
+    name::Symbol           ## name of process
+    labels::Vector{Symbol} ## labels for process components
     v_init::Float64             ## initial values
     a::Float64                  ## parameter for process
     v_infty::Float64            ## parameter for process
@@ -69,8 +69,8 @@ type Vasicek <: ProcessShortRate
 end
 
 type CIR <: ProcessShortRate
-    name::String           ## name of process
-    labels::Vector{String} ## labels for process components
+    name::Symbol                ## name of process
+    labels::Vector{Symbol}      ## labels for process components
     v_init::Float64             ## initial values
     a::Float64                  ## parameter for process
     v_infty::Float64            ## parameter for process
@@ -85,8 +85,8 @@ type CIR <: ProcessShortRate
 end
 
 type DetermShortRate <: ProcessShortRate
-    name::String           ## name of process
-    labels::Vector{String} ## labels for process components
+    name::Symbol                ## name of process
+    labels::Vector{Symbol}      ## labels for process components
     v_init::Vector{Float64}     ## initial values, filled by v_bo[
     v_bop::Array{Float64,3}     ## projected values beg. of step
     dim::Int                    ## number of assets modeled (=1)
@@ -97,8 +97,8 @@ type DetermShortRate <: ProcessShortRate
 end
 
 type ManualShortRate <: ProcessShortRate
-    name::String           ## name of process
-    labels::Vector{String} ## labels for process components
+    name::Symbol                ## name of process
+    labels::Vector{Symbol}      ## labels for process components
     v_init::Vector{Float64}     ## initial values, filled by v_bo[
     v_bop::Array{Float64,3}     ## projected values beg. of step
     dim::Int                    ## number of assets modeled (=1)

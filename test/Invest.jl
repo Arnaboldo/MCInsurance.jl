@@ -4,7 +4,7 @@ using Base.Test
 using MCInsurance
 
 
-invest_test = Invest("iii", cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
+invest_test = Invest(:iii, cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
 
 
 # -----------------------------------------------------------------------------
@@ -22,7 +22,7 @@ i_bonds, i_stocks, i_cash = 1:3
 
 inv_info = Array(InvestInfo, nrow(df_inv))
 for i = 1:nrow(df_inv)
-    inv_info[i] = InvestInfo(df_inv[i, :ig_name],
+    inv_info[i] = InvestInfo(symbol(df_inv[i, :ig_name]),
                              df_inv, df_inv_port_start, df_inv_asset)
 end
 
@@ -81,7 +81,7 @@ end
 ## Test bond projection --------------------------------------------------------
 
 ## Re-initialize because order of calculation is important for testing bonds
-inv_new = Invest("iii", cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
+inv_new = Invest(:iii, cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
 
 ig_bonds = inv_new.ig[i_bonds]
 

@@ -8,8 +8,8 @@ const C_ALL, ASSET_EOP, TP_EOP, DIV_EOP, SURPLUS_EOP, BONUS, CYCLE = 5:11
 
 type Fluct
     n::Int                        ## # of GeomBrownian 1d-processes
-    kind::String                  ## type of fluctuation factors
-    labels::Vector{String}        ## labels for GeomBrownian
+    kind::Symbol                  ## type of fluctuation factors
+    labels::Vector{Symbol}        ## labels for GeomBrownian
     fac::Array{Float64,3}         ## factors representing fluctuation
     d::Dict{Int,Int}              ## convenience to access factors
 end

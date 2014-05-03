@@ -2,14 +2,14 @@
 
 ## InvestInfo 
 
-function InvestInfo(name::String,
+function InvestInfo(name::Symbol,
                     df_inv::DataFrame,
                     df_inv_port_start::DataFrame,
                     df_inv_asset::DataFrame
                     )
-    inv = df_inv[df_inv[:ig_name] .== name,:]
-    inv_asset = df_inv_asset[df_inv_asset[:ig_name] .== name, :]
-    port_start = df_inv_port_start[df_inv_port_start[:ig_name].== name, :]
+    inv = df_inv[df_inv[:ig_name] .== string(name),:]
+    inv_asset = df_inv_asset[df_inv_asset[:ig_name] .== string(name), :]
+    port_start = df_inv_port_start[df_inv_port_start[:ig_name].== string(name),:]
     asset_target = convert(Array, inv_asset[:asset_target])
     asset_mkt_benchmark = convert(Array, inv_asset[:market_benchmark])
     if any(isna(port_start[:asset_dur]))
@@ -29,7 +29,7 @@ end
 
 # Main constructor
 
-function Invest(name::String,
+function Invest(name::Symbol,
                 cap_mkt::CapMkt,
                 info::Vector{InvestInfo},
                 ig_target::Vector{Float64} 
@@ -47,7 +47,7 @@ function Invest(name::String,
     asset_target =  Array(Any,0)
     asset_int =   Dict{Vector{Any}, Int}()
     for i = 1:n_ig
-        ig_symb[i] = symbol(info[i].ig_name)
+        ig_symb[i] = info[i].ig_name
         push!(asset_target, Array(Float64,0) )
         ## match up process group definded by info[i] with cap_mkt
         ind_proc = 0
@@ -61,7 +61,7 @@ function Invest(name::String,
             error("Invest: proc $(info[i].proc_name) is not in capital market") 
         end
         
-        if info[i].ig_type=="IGRiskfreeBonds"
+        if info[i].ig_type == :IGRiskfreeBonds
             # n is equal to both max duration and number of assets
             n = maximum( chain(info[i].id_asset,
                                info[i].port_start[:asset_dur]) )
@@ -73,7 +73,7 @@ function Invest(name::String,
             for j = 1:n
                 if j in info[i].id_asset
                     ind_asset = findin(info[i].id_asset, j)[1]
-                     asset_target[i][j] = info[i].asset_target[ind_asset]
+                    asset_target[i][j] = info[i].asset_target[ind_asset]
                     merge!(asset_int, [{i, j} => j ])
                     for mc = 1:cap_mkt.n_mc, t = 1:cap_mkt.tf.n_p
                         yield_market[mc,t] +=
@@ -87,8 +87,8 @@ function Invest(name::String,
             n = length(cap_mkt.proc[ind_proc].labels)
             asset_target[i] = zeros(Float64, n)
             ind_port = zeros(Int, n)
-            for j = 1:n
-                symb_cap_mkt_proc = symbol(cap_mkt.proc[ind_proc].labels[j])
+           for j = 1:n
+                symb_cap_mkt_proc = cap_mkt.proc[ind_proc].labels[j]
                 if symb_cap_mkt_proc in info[i].id_asset
                     ind_asset = findin(info[i].id_asset,[symb_cap_mkt_proc])[1]
                     asset_target[i][j] = info[i].asset_target[ind_asset]
@@ -99,15 +99,14 @@ function Invest(name::String,
                 end
             end
         end
-        if info[i].ig_name == "cash"
+        if info[i].ig_name == :cash
             yield_cash = cap_mkt.proc[ind_proc].yield[:,:,1]
         end
-        asset_target[i] /= max(eps(), sum(asset_target[i]))  
-
-        ig[i] = eval(parse(info[i].ig_type))(info[i].ig_name,
-                                             cap_mkt.proc[ind_proc],
-                                             info[i].port_start[ind_port, :],
-                                             n )
+        asset_target[i] /= max(eps(), sum(asset_target[i]))
+        ig[i] = eval(info[i].ig_type)(info[i].ig_name,
+                                      cap_mkt.proc[ind_proc],
+                                      info[i].port_start[ind_port, :],
+                                      n )
         mv_total_init += ig[i].mv_total_init        
     end
     ig_int = Dict(ig_symb, 1:length(ig_symb)) 
@@ -120,7 +119,7 @@ end
         
 # Constructor from DataFrames
         
-function Invest(name::String,
+function Invest(name::Symbol,
                 cap_mkt::CapMkt,
                 df_inv::DataFrame,
                 df_inv_port_start::DataFrame,
@@ -128,7 +127,7 @@ function Invest(name::String,
     invest_info = Array(InvestInfo, nrow(df_inv))
     ig_target = Array(Float64, nrow(df_inv))
     for i = 1:nrow(df_inv)
-        invest_info[i] = InvestInfo(df_inv[i, :ig_name],
+        invest_info[i] = InvestInfo(symbol(df_inv[i, :ig_name]),
                                     df_inv, df_inv_port_start, df_inv_target)
         ig_target[i] = df_inv[i,:ig_target]
     end

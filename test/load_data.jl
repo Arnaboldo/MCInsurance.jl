@@ -10,7 +10,7 @@ file_general = joinpath(dirname(@__FILE__), "input/General.csv")
 file_proc_1 = joinpath(dirname(@__FILE__), "input/Proc_1.csv")
 file_proc_2 = joinpath(dirname(@__FILE__), "input/Proc_2.csv")
 file_inv = joinpath(dirname(@__FILE__), "input/Inv.csv")
-file_inv_target = joinpath(dirname(@__FILE__), "input/Inv_Target.csv")
+file_inv_asset = joinpath(dirname(@__FILE__), "input/Inv_Asset.csv")
 file_inv_Port_Start = joinpath(dirname(@__FILE__), "input/Inv_Port_Start.csv")
 file_tech_interest = joinpath(dirname(@__FILE__), "input/Tech_Interest.csv")
 file_qx = joinpath(dirname(@__FILE__), "input/QX.csv")
@@ -28,7 +28,7 @@ df_proc_2 = readtable(file_proc_2)
 
 # Investment strategy
 df_inv = readtable(file_inv)
-df_inv_target = readtable(file_inv_target)
+df_inv_asset = readtable(file_inv_asset)
 df_inv_port_start = readtable(file_inv_Port_Start)
 
 # life insurance contracts
@@ -66,7 +66,7 @@ tf = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
 
 n_mc = df_general[1, :n_mc]
 cap_mkt = CapMkt("Capital Market", tf, n_mc, df_proc_1, df_proc_2)
-invest = Invest("iii", cap_mkt, df_inv, df_inv_port_start, df_inv_target)
+invest = Invest("iii", cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
 
 lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)
                

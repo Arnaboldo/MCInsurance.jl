@@ -30,7 +30,7 @@ function CIR (name::String,
         n_mc, dt, n_p )
 end
 
-## Interface to AsseretGroupShortRate
+## Interface to AssetGroupShortRate
 function CIR(name::String,
              labels::Vector{String},
              v_init::Vector{Float64},

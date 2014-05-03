@@ -2,6 +2,7 @@ module MCInsurance
 
 using Distributions
 using DataFrames, DataArrays
+using Iterators
 
 import Base.show, Base.isequal
 import Base.merge!

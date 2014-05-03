@@ -21,7 +21,7 @@ function CapMkt(name::String,
         if stoch[cum_dim+1]
             proc[i] =
                 eval(parse(proc_info[i].type_name))(proc_info[i].name,
-                                                proc_info[i].labels,
+                                                    proc_info[i].labels,
                                                     proc_info[i].v_init,
                                                     proc_info[i].param,
                                                     tf,

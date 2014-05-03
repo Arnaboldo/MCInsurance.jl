@@ -12,10 +12,10 @@ abstract IG
 
 type IGStocks <: IG
     ## constructor
-    name::UTF8String                 ## name of investment group
+    name::UTF8String                  ## name of investment group
     proc::ProcessIndex                ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{UTF8String}       ## identifies assets
+    labels::Vector{UTF8String}        ## identifies assets
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -30,7 +30,7 @@ end
 
 type IGRiskfreeBonds <: IG
     ## constructor
-    name::UTF8String                 ## name of investment group
+    name::UTF8String                  ## name of investment group
     proc::ProcessShortRate            ## stochastic process
     port_start::DataFrame             ## initial portfolio
     labels::Vector{Int}               ## identifies assets
@@ -56,10 +56,10 @@ end
 
 type IGCash <: IG
     ## constructor
-    name::String                 ## name investment group
+    name::String                      ## name investment group
     proc::ProcessShortRate            ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{String}       ## identifies assets
+    labels::Vector{String}            ## identifies assets
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -77,22 +77,28 @@ type InvestInfo
     ig_type::String
     proc_name::String
     port_start::DataFrame
-    target_dict::Dict{Any,Float64}    ## asset allocation within ig
-    mb_dict::Dict{Any,Float64}        ## percentage of market benchmark
+    id_asset::Vector{Any}             ## identifies assets in asset_xxx below
+    asset_target::Vector{Float64}     ## asset allocation within ig
+    asset_mkt_benchmark::Vector{Float64} ## percentage of market benchmark
 end
 
 
 type Invest
-    name::String             ## name of investment scheme
-    cap_mkt::CapMkt               ## capital market
+    name::String                      ## name of investment scheme
+    cap_mkt::CapMkt                   ## capital market
     n::Int
-    ig::Vector{IG}                ## investment group
-    ig_target::Vector{Float64}
-    asset_target::Vector{Any}     ## vector of float64 vectors
+    ig::Vector{IG}                    ## investment groups: IG
+    ig_symb::Vector{Symbol}           ## identifier for IG: Int -> Symbol ~ name
+    ig_int::Dict{Symbol, Int}          ## identifier for IG: name ~ Symbol -> Int
+    ig_target::Vector{Float64}        ## target allocation for IGs
+    asset_target::Vector{Vector{Float64}} ## target allocatopm within IG
+    asset_int::Dict{Vector{Any}, Int} ## identifies component of asset_target
     mv_total_init::Float64
     mv_total_eop::Array{Float64,2}
     yield_total::Array{Float64,2}
-    yield_cash::Array{Float64,2}     # benchmark
-    yield_market::Array{Float64,2}   # benchmark independent of asset allocation
+    yield_cash::Array{Float64,2}      ## benchmark
+    yield_market::Array{Float64,2}    ## benchmark indept. of asset allocation
 end
+
+
 

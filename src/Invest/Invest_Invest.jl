@@ -5,39 +5,23 @@
 function InvestInfo(name::String,
                     df_inv::DataFrame,
                     df_inv_port_start::DataFrame,
-                    df_inv_target::DataFrame
+                    df_inv_asset::DataFrame
                     )
     inv = df_inv[df_inv[:ig_name] .== name,:]
-    target = df_inv_target[df_inv_target[:ig_name] .== name, 2:end]
-    port_start = df_inv_port_start[df_inv_port_start[:ig_name].== name, 2:end]
-    target_dict = Dict{Any,Float64}()
-    mb_dict = Dict{Any,Float64}()
+    inv_asset = df_inv_asset[df_inv_asset[:ig_name] .== name, :]
+    port_start = df_inv_port_start[df_inv_port_start[:ig_name].== name, :]
+    asset_target = convert(Array, inv_asset[:asset_target])
+    asset_mkt_benchmark = convert(Array, inv_asset[:market_benchmark])
     if any(isna(port_start[:asset_dur]))
-        merge!(target_dict, Dict(target[:proc_labels], target[:asset_target]))
-        for j = 1:nrow(target)
-            merge!(mb_dict,
-                   [target[j, :proc_labels] => target[j, :market_benchmark]])
-        end
         port_start = port_start[:, [:proc_labels, :asset_amount]]
-        for j = 1:nrow(port_start)
-            port_start[j, :proc_labels] = ascii( port_start[j, :proc_labels])
-        end
+        id_asset = [symbol(inv_asset[i,:proc_labels]) for i = 1:nrow(inv_asset)]
     else
-        merge!(target_dict, Dict(target[ :asset_dur], target[ :asset_target]) )
-        for j = 1:nrow(target)
-            merge!(mb_dict,
-                   [target[j, :asset_dur] => target[j, :market_benchmark]])
-        end
         port_start = port_start[:,[ :asset_dur, :asset_coupon, :asset_amount]]
-    end
-    
-    
-    for j = 1:nrow(port_start)
-        port_start[j, :asset_amount] = float64( port_start[j,:asset_amount])
+        id_asset = [inv_asset[i,:asset_dur] for i = 1:nrow(inv_asset)]
     end
 
-    InvestInfo(name, (inv[1, :ig_type]), (inv[1, :proc_name]),
-               port_start, target_dict, mb_dict )    
+    InvestInfo(name, inv[1, :ig_type], inv[1, :proc_name],
+               port_start, id_asset, asset_target, asset_mkt_benchmark )    
 end
 
 
@@ -48,83 +32,89 @@ end
 function Invest(name::String,
                 cap_mkt::CapMkt,
                 info::Vector{InvestInfo},
-                target_dict::Dict{String,Float64}
+                ig_target::Vector{Float64} 
                 )
     n_ig =          length(info)
     ig =            Array(IG, n_ig)
-    port_start =    Array(DataFrame,n_ig)
+    ig_symb =       Array(Symbol,n_ig)
+    port_start =    Array(DataFrame, n_ig)
     mv_total_init = 0.0
     mv_total_eop =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
     yield_total =   zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
     yield_market =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
     yield_cash =    Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
-    tmp_dict =      Array(Dict{Any,Float64},n_ig)    
+    tmp_dict =      Array(Dict{Any,Float64},n_ig)
+    asset_target =  Array(Any,0)
+    asset_int =   Dict{Vector{Any}, Int}()
     for i = 1:n_ig
-        tmp_dict[i] = deepcopy(info[i].target_dict) # avoid side effects
+        ig_symb[i] = symbol(info[i].ig_name)
+        push!(asset_target, Array(Float64,0) )
+        ## match up process group definded by info[i] with cap_mkt
+        ind_proc = 0
+        for j = 1:cap_mkt.n
+            if cap_mkt.proc[j].name == info[i].proc_name
+                ind_proc = j
+                break
+            end
+        end
+        if ind_proc == 0
+            error("Invest: proc $(info[i].proc_name) is not in capital market") 
+        end
+        
         if info[i].ig_type=="IGRiskfreeBonds"
-            n = max(maximum(keys(info[i].target_dict)),
-                    maximum(info[i].port_start[:asset_dur]) )
+            # n is equal to both max duration and number of assets
+            n = maximum( chain(info[i].id_asset,
+                               info[i].port_start[:asset_dur]) )
+            ## cap_mkt has only 1 short rateprocess (dur = 1)
+            ## all other durations are calculated using forwardbop
+            ## we assume that port_stat is ordered with increasing duration
+            asset_target[i] = zeros(Float64, n)
+            ind_port = [1:nrow(info[i].port_start)]
             for j = 1:n
-                if !(j in collect(keys(tmp_dict[i])))
-                    merge!(tmp_dict[i],[j=>0.0])
-                end    
-                if j in collect(keys(info[i].mb_dict))
+                if j in info[i].id_asset
+                    ind_asset = findin(info[i].id_asset, j)[1]
+                     asset_target[i][j] = info[i].asset_target[ind_asset]
+                    merge!(asset_int, [{i, j} => j ])
                     for mc = 1:cap_mkt.n_mc, t = 1:cap_mkt.tf.n_p
                         yield_market[mc,t] +=
-                            info[i].mb_dict[j] *
-                            forwardbop(cap_mkt.proc[cap_mkt.
-                                                    dict_proc[info[i].proc_name]],
-                                       mc,t,j)
+                            info[i].asset_mkt_benchmark[ind_asset] *
+                            forwardbop(cap_mkt.proc[ind_proc], mc, t, j)
                     end
                 end
             end
         else
-            n = cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].dim
-            dict_labels =
-                Dict(cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].labels,
-                     [1:length(cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].
-                               labels)])
-            for j in cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].labels
-                if !(j in collect(keys(tmp_dict[i])))  
-                    merge!(tmp_dict[i],[j=>0.0])
+            ## line up up proc in process group defined by info[i] with cap_mkt
+            n = length(cap_mkt.proc[ind_proc].labels)
+            asset_target[i] = zeros(Float64, n)
+            ind_port = zeros(Int, n)
+            for j = 1:n
+                symb_cap_mkt_proc = symbol(cap_mkt.proc[ind_proc].labels[j])
+                if symb_cap_mkt_proc in info[i].id_asset
+                    ind_asset = findin(info[i].id_asset,[symb_cap_mkt_proc])[1]
+                    asset_target[i][j] = info[i].asset_target[ind_asset]
+                    merge!(asset_int, [{i, symb_cap_mkt_proc} => j])
+                    yield_market += info[i].asset_mkt_benchmark[ind_asset] *
+                                    cap_mkt.proc[ind_proc].yield[:,:,j]       
+                    ind_port[j] = ind_asset
                 end
-                if j in collect(keys(info[i].mb_dict))
-                    yield_market +=
-                        info[i].mb_dict[j] .*
-                        cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].
-                        yield[:,:,dict_labels[j]]
-                end                
             end
         end
-        ig[i] = eval(parse(info[i].ig_type))(
-                  info[i].ig_name,
-                  cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]],
-                  info[i].port_start,
-                  n )
+        if info[i].ig_name == "cash"
+            yield_cash = cap_mkt.proc[ind_proc].yield[:,:,1]
+        end
+        asset_target[i] /= max(eps(), sum(asset_target[i]))  
+
+        ig[i] = eval(parse(info[i].ig_type))(info[i].ig_name,
+                                             cap_mkt.proc[ind_proc],
+                                             info[i].port_start[ind_port, :],
+                                             n )
         mv_total_init += ig[i].mv_total_init        
     end
-    ## construct a target vector that lines up with ig numbering
-    ig_target = Float64[target_dict[info[i].ig_name] for i = 1:n_ig]
-    ig_target = ig_target / max(eps(),sum(ig_target))
-    asset_target = Array(Any,n_ig)
-    for i = 1:n_ig
-        asset_target[i] =
-            Float64[tmp_dict[i][ig[i].labels[j]] for j=1:ig[i].n]
-        asset_target[i] =
-            asset_target[i] / max(eps(),sum(asset_target[i]))
-    end
+    ig_int = Dict(ig_symb, 1:length(ig_symb)) 
+    ig_target /= max(eps(), sum(ig_target))
 
-    for i = 1:n_ig
-        if info[i].ig_name == "cash"
-           yield_cash =
-               cap_mkt.proc[cap_mkt.dict_proc[info[i].proc_name]].yield[:,:,1]
-        end
-        for j = 1:ig[i].n
-            
-        end
-    end
-   
-    Invest(name, cap_mkt, n_ig, ig, ig_target, asset_target,
+    Invest(name, cap_mkt, n_ig, ig,
+           ig_symb, ig_int, ig_target, asset_target, asset_int,
            mv_total_init, mv_total_eop, yield_total, yield_cash, yield_market)
 end
         
@@ -136,13 +126,13 @@ function Invest(name::String,
                 df_inv_port_start::DataFrame,
                 df_inv_target::DataFrame)
     invest_info = Array(InvestInfo, nrow(df_inv))
+    ig_target = Array(Float64, nrow(df_inv))
     for i = 1:nrow(df_inv)
         invest_info[i] = InvestInfo(df_inv[i, :ig_name],
                                     df_inv, df_inv_port_start, df_inv_target)
+        ig_target[i] = df_inv[i,:ig_target]
     end
-    Invest(name, cap_mkt, invest_info,
-           Dict(String[(df_inv[j,:ig_name]) for j in 1:nrow(df_inv)],
-                Float64[df_inv[j,:ig_target] for j in 1:nrow(df_inv)] ) )
+    Invest(name, cap_mkt, invest_info, ig_target)
 end
 
         
@@ -170,12 +160,10 @@ function project!(me::Invest,
     ##   | mv_total_alloc        project
     ##   mv_total_bop (pre alloc)
     
-    mv_bop =
-        mv_total_bop * me.ig_target
+    mv_bop = mv_total_bop * me.ig_target
     me.mv_total_eop[mc,t] = 0
     for i = 1:me.n
-        me.ig[i].mv_alloc_bop = 
-            mv_bop[i] * me.asset_target[i]
+        me.ig[i].mv_alloc_bop = mv_bop[i] * me.asset_target[i]
         project!(me.ig[i], mc, t)
         me.mv_total_eop[mc,t] += me.ig[i].mv_total_eop[mc,t]
     end

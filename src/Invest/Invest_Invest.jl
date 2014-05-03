@@ -63,8 +63,8 @@ function Invest(name::Symbol,
         
         if info[i].ig_type == :IGRiskfreeBonds
             # n is equal to both max duration and number of assets
-            n = maximum( chain(info[i].id_asset,
-                               info[i].port_start[:asset_dur]) )
+            n = maximum( [info[i].id_asset,
+                               info[i].port_start[:asset_dur] ] )
             ## cap_mkt has only 1 short rateprocess (dur = 1)
             ## all other durations are calculated using forwardbop
             ## we assume that port_stat is ordered with increasing duration

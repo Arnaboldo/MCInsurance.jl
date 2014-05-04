@@ -1,4 +1,4 @@
-export IGStocks, IGRiskfreeBonds, IGCash, Invest, project!
+export IGStocks, IGRiskfreeBonds, IGCash, Invest, InvestAlloc, project!
 export InvestInfo
 
 ## Investment Groups: IG #########################################
@@ -82,6 +82,11 @@ type InvestInfo
     asset_mkt_benchmark::Vector{Float64} ## percentage of market benchmark
 end
 
+type InvestAlloc
+    ig_target::Vector{Float64}        ## target allocation for IGs
+    asset_target::Vector{Vector{Float64}} ## target allocatopm within IG
+    asset_int::Dict{Vector{Any}, Int} ## identifies component of asset_target
+end
 
 type Invest
     name::Symbol                      ## name of investment scheme
@@ -90,9 +95,7 @@ type Invest
     ig::Vector{IG}                    ## investment groups: IG
     ig_symb::Vector{Symbol}           ## identifier for IG: Int -> Symbol ~ name
     ig_int::Dict{Symbol, Int}          ## identifier for IG: name ~ Symbol -> Int
-    ig_target::Vector{Float64}        ## target allocation for IGs
-    asset_target::Vector{Vector{Float64}} ## target allocatopm within IG
-    asset_int::Dict{Vector{Any}, Int} ## identifies component of asset_target
+    alloc::InvestAlloc
     mv_total_init::Float64
     mv_total_eop::Array{Float64,2}
     yield_total::Array{Float64,2}

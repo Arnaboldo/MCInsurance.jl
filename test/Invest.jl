@@ -26,13 +26,13 @@ for i = 1:nrow(df_inv)
                              df_inv, df_inv_port_start, df_inv_asset)
 end
 
-## Test asset allocation for each investment group: 1 = sum(asset_target[i]) ---
+## Test asset alloc.ation for each investment group: 1 = sum(asset_target[i]) ---
 for j in 1:invest_test.n
-    @test_approx_eq_eps(sum(invest_test.asset_target[j]), 1, tol)
+    @test_approx_eq_eps(sum(invest_test.alloc.asset_target[j]), 1, tol)
 end
 
-## Test asset allocation for all investment groups: 1 = sum(ig_target) ---------
-@test_approx_eq_eps(sum(invest_test.ig_target), 1, tol)
+## Test asset alloc.ation for all investment groups: 1 = sum(ig_target) ---------
+@test_approx_eq_eps(sum(invest_test.alloc.ig_target), 1, tol)
 
 ## Test that for each investment group:
 ##  mv_total_eop[mc,t] = cash_eop[mc,t] +sum(ig.mv_eop[mc,t,:]) ----------------
@@ -60,8 +60,8 @@ end
 ## Test cash mv projection -----------------------------------------------------
 for mc = 1:n_mc, t = 1:tf.n_p
     @test_approx_eq_eps(invest_test.ig[i_cash].mv_total_eop[mc,t],
-                        invest_test.ig_target[i_cash] *
-                        invest_test.asset_target[i_cash][1] *
+                        invest_test.alloc.ig_target[i_cash] *
+                        invest_test.alloc.asset_target[i_cash][1] *
                         mv_bop[t] *
                         exp(tf.dt*invest_test.ig[i_cash].proc.yield[mc,t,1]),
                         tol)  
@@ -71,8 +71,8 @@ end
 test_mv_stocks = zeros(Float64,n_mc, tf.n_p,invest_test.ig[i_stocks].n)
 for  mc = 1:n_mc, t = 1:tf.n_p, j = 1:invest_test.ig[i_stocks].n
     @test_approx_eq_eps(invest_test.ig[i_stocks].mv_eop[mc,t,j],                       
-                        invest_test.ig_target[i_stocks] *
-                        invest_test.asset_target[i_stocks][j] *
+                        invest_test.alloc.ig_target[i_stocks] *
+                        invest_test.alloc.asset_target[i_stocks][j] *
                         mv_bop[t] *
                         exp(tf.dt * invest_test.ig[i_stocks].proc.yield[mc,t,j]),
                         tol)
@@ -107,7 +107,8 @@ tmp_coupon = zeros(Float64, n_mc, tf.n_p, ig_bonds.n)
 for mc in 1:n_mc
     for t in  1:tf.n_p
         ig_bonds.mv_alloc_bop =
-            mv_bop[t]*inv_new.ig_target[i_bonds]*inv_new.asset_target[i_bonds]
+            mv_bop[t] * inv_new.alloc.ig_target[i_bonds] *
+            inv_new.alloc.asset_target[i_bonds]
         if t == 1 MCInsurance.init!(ig_bonds,mc) end
         amount_old = min(ig_bonds.amount_curr,
                           ig_bonds.mv_alloc_bop ./ ig_bonds.mv_normbond_curr)

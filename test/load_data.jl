@@ -80,12 +80,39 @@ function dynprobsx(sx::Vector{Float64}, t::Int, mc::Int, invest::Invest,
  end
 
 ## Dynamic asset allocation
-function dyntarget(invest::Invest, asset_prev::InvestAlloc)
+function dyntarget!(alloc::InvestAlloc, t::Int, mc::Int,
+                    invest::Invest, exp_yield_market::Float64)
+    ## cash allocation is chosen dependent on market performance
+    ## all other investments / assets are adjusted proportionally
+    ## In-place computation for higher efficiency
+
+   ## market performance indicator weighted with expected yield
+   mkt_perf_ind =
+       0.5 * (invest.yield_market[mc,t] + exp_yield_market) /
+       max(0, invest.yield_cash[mc,t])
+    
+   alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
+
+    ## Now we adjust all allocations accordingly
+   total_other = 1 - alloc.ig_target[invest.ig_int[:cash]]
+   fac_other = (1-alloc_cash) / max(eps(), total_other)
+    for i = 1:invest.n
+      if invest.ig_symb[i] == :cash
+          alloc.ig_target[i] = alloc_cash
+      else
+          alloc.ig_target[i] *= fac_other 
+      end
+   end
+end
+
+function dyntarget!(alloc::InvestAlloc, t::Int, mc::Int, invest::Invest)
+    dyntarget!(alloc, t, mc, invest, 0.00)
 end
 
 n_mc = df_general[1, :n_mc]
 cap_mkt = CapMkt(:Capital_Market, tf, n_mc, df_proc_1, df_proc_2)
 invest = Invest(:iii, cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
+curr_alloc = deepcopy(invest.alloc) 
 lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)               
 buckets = Buckets(lc, tf, df_products, df_qx, df_tech_interest)
 dividend = df_general[1, :capital_dividend]
@@ -93,4 +120,4 @@ bonus_factor = df_general[1, :bonus_factor]
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
 fluct = Fluct(tf, n_mc, 1.0)
 cflow = CFlow(buckets, fluct, invest, discount,  df_tech_interest,
-              bonus_factor, dividend, dynprobsx)
+              bonus_factor, dividend, curr_alloc, dynprobsx, dyntarget!)

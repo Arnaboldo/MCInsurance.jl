@@ -25,7 +25,9 @@ function assetsprojecteoc!(cf::CFlow,
                            t::Int,
                            mc::Int,
                            cost_init::Vector{Float64},
-                           yield::Vector{Float64})
+                           yield::Vector{Float64},
+                           alloc::InvestAlloc,
+                           getdyntarget!::Function)
     if t == 1 
         asset_BOP = invest.mv_total_init
     else
@@ -33,8 +35,9 @@ function assetsprojecteoc!(cf::CFlow,
     end
     asset_BOP += cf.v[mc,t,PREM] + cost_init[1]
     yield[1] = 0.0
-    for t_p in ((t-1) * cf.tf.n_dt+1):(t * cf.tf.n_dt)    
-        project!( invest, mc, t_p, asset_BOP )
+    for t_p in ((t-1) * cf.tf.n_dt+1):(t * cf.tf.n_dt)
+        getdyntarget!(alloc, t, mc, invest)
+        project!( invest, mc, t_p, asset_BOP, alloc)
         asset_BOP = invest.mv_total_eop[mc,t_p]
         yield[1] += invest.yield_total[mc, t_p]
     end
@@ -50,7 +53,7 @@ function bucketprojecteoc!(cf::CFlow,
                            t::Int,
                            mc::Int,
                            yield::Vector{Float64},
-                           getdynprobsx)
+                           getdynprobsx::Function)
     prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
     ## bucket.lx (initially) represents the value at BOP
     bonus_rate =
@@ -105,6 +108,10 @@ function defaultdynprobsx(sx::Vector{Float64}, t...)
     return sx
 end
 
+function defaultdyntarget!(alloc::InvestAlloc, t...)
+    return alloc
+end
+
 function CFlow(buckets::Buckets,
                fluct::Fluct,
                invest::Invest,
@@ -112,7 +119,9 @@ function CFlow(buckets::Buckets,
                df_stat_interest::DataFrame,
                bonus_factor::Float64,
                dividend::Float64,
-               getdynprobsx::Function = defaultdynprobsx)
+               alloc::InvestAlloc,
+               getdynprobsx::Function = defaultdynprobsx,
+               getdyntarget!::Function = defaultdyntarget!)
     ## buckets.tf == invest.cap_mkt.tf
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     cost_init = Array(Float64,1) # 1-vector: can be passed as reference
@@ -124,7 +133,14 @@ function CFlow(buckets::Buckets,
             for bucket in buckets.all
                 bucketprojectboc!(cf::CFlow, bucket, fluct, t, mc, cost_init)
             end
-            assetsprojecteoc!(cf,  invest, t, mc, cost_init, yield)
+            assetsprojecteoc!(cf,
+                              invest,
+                              t,
+                              mc,
+                              cost_init,
+                              yield,
+                              alloc,
+                              getdyntarget!)
             for bucket in buckets.all
                 bucketprojecteoc!(cf, bucket, fluct, invest, discount, 
                                   df_stat_interest,  bonus_factor, t, mc, yield,

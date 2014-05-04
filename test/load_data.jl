@@ -112,7 +112,6 @@ end
 n_mc = df_general[1, :n_mc]
 cap_mkt = CapMkt(:Capital_Market, tf, n_mc, df_proc_1, df_proc_2)
 invest = Invest(:iii, cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
-curr_alloc = deepcopy(invest.alloc) 
 lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)               
 buckets = Buckets(lc, tf, df_products, df_qx, df_tech_interest)
 dividend = df_general[1, :capital_dividend]
@@ -120,4 +119,4 @@ bonus_factor = df_general[1, :bonus_factor]
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
 fluct = Fluct(tf, n_mc, 1.0)
 cflow = CFlow(buckets, fluct, invest, discount,  df_tech_interest,
-              bonus_factor, dividend, curr_alloc, dynprobsx, dyntarget!)
+              bonus_factor, dividend, dynprobsx, dyntarget!)

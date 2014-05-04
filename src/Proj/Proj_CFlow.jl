@@ -119,7 +119,6 @@ function CFlow(buckets::Buckets,
                df_stat_interest::DataFrame,
                bonus_factor::Float64,
                dividend::Float64,
-               alloc::InvestAlloc,
                getdynprobsx::Function = defaultdynprobsx,
                getdyntarget!::Function = defaultdyntarget!)
     ## buckets.tf == invest.cap_mkt.tf
@@ -127,6 +126,7 @@ function CFlow(buckets::Buckets,
     cost_init = Array(Float64,1) # 1-vector: can be passed as reference
     yield = Array(Float64,1) # 1-vector: can be passed as reference
     for mc = 1:cf.n_mc
+        alloc = deepcopy(invest.alloc)
         for t = 1:cf.tf.n_c
             cost_init[1] = 0.0
             cf.v[mc,t,CYCLE] = cf.tf.init - 1 + t

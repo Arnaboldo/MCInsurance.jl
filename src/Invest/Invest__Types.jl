@@ -73,10 +73,10 @@ end
 
 
 type InvestInfo
-    ig_name::Symbol
-    ig_type::Symbol
-    proc_name::Symbol
-    port_start::DataFrame
+    ig_name::Symbol                   ## name of investment group
+    ig_type::Symbol                   ## type of investment
+    proc_name::Symbol                 ## name of associated stochastic process
+    port_start::DataFrame             ## initial portfolio
     id_asset::Vector{Any}             ## identifies assets in asset_xxx below
     asset_target::Vector{Float64}     ## asset allocation within ig
     asset_mkt_benchmark::Vector{Float64} ## percentage of market benchmark
@@ -84,7 +84,7 @@ end
 
 type InvestAlloc
     ig_target::Vector{Float64}        ## target allocation for IGs
-    ig_int::Dict{Symbol, Int}          ## identifier for IG: ig.name  -> Int
+    ig_int::Dict{Symbol, Int}         ## identifier for IG: ig.name  -> Int
     asset_target::Vector{Vector{Float64}} ## target allocatopm within IG
     asset_int::Dict{Vector{Any}, Int} ## identifies component of asset_target
 end
@@ -92,15 +92,15 @@ end
 type Invest
     name::Symbol                      ## name of investment scheme
     cap_mkt::CapMkt                   ## capital market
-    n::Int
+    n::Int                            ## # investment groups
     ig::Vector{IG}                    ## investment groups: IG
     ig_symb::Vector{Symbol}           ## identifier for IG: Int -> ig.name
-    alloc::InvestAlloc
-    mv_total_init::Float64
-    mv_total_eop::Array{Float64,2}
-    yield_total::Array{Float64,2}
-    yield_cash::Array{Float64,2}      ## benchmark
-    yield_market::Array{Float64,2}    ## benchmark indept. of asset allocation
+    alloc::InvestAlloc                ## initial target asset allocation
+    mv_total_init::Float64            ## initial market value
+    mv_total_eop::Array{Float64,2}    ## market value at end of period
+    yield_total::Array{Float64,2}     ## investment yield per period
+    yield_cash_c::Array{Float64,2}    ## cash yield per cycle (not per period!)
+    yield_market_c::Array{Float64,2}  ## benchmark y. per cycle (not per period!)
 end
 
 

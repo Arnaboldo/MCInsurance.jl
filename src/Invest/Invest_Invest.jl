@@ -41,9 +41,8 @@ function Invest(name::Symbol,
     mv_total_init = 0.0
     mv_total_eop =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
     yield_total =   zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
-    yield_market =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
-    yield_cash =    Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
-    tmp_dict =      Array(Dict{Any,Float64},n_ig)
+    yield_market_c =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c ) # per cycle!
+    yield_cash_c =    zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c ) # per cycle!
     asset_target =  Array(Any,0)
     asset_int =   Dict{Vector{Any}, Int}()
     for i = 1:n_ig
@@ -75,10 +74,17 @@ function Invest(name::Symbol,
                     ind_asset = findin(info[i].id_asset, j)[1]
                     asset_target[i][j] = info[i].asset_target[ind_asset]
                     merge!(asset_int, [{i, j} => j ])
-                    for mc = 1:cap_mkt.n_mc, t = 1:cap_mkt.tf.n_p
-                        yield_market[mc,t] +=
-                            info[i].asset_mkt_benchmark[ind_asset] *
-                            forwardbop(cap_mkt.proc[ind_proc], mc, t, j)
+                    for mc = 1:cap_mkt.n_mc
+                        for t = 1:cap_mkt.tf.n_c
+                            for delta = 1:cap_mkt.tf.n_dt
+                                yield_market_c[mc,t] +=
+                                    info[i].asset_mkt_benchmark[ind_asset] *
+                                    forwardbop(cap_mkt.proc[ind_proc],
+                                               mc,
+                                               t-1+delta,
+                                               j)
+                            end
+                        end
                     end
                 end
             end
@@ -93,14 +99,30 @@ function Invest(name::Symbol,
                     ind_asset = findin(info[i].id_asset,[symb_cap_mkt_proc])[1]
                     asset_target[i][j] = info[i].asset_target[ind_asset]
                     merge!(asset_int, [{i, symb_cap_mkt_proc} => j])
-                    yield_market += info[i].asset_mkt_benchmark[ind_asset] *
-                                    cap_mkt.proc[ind_proc].yield[:,:,j]       
+                    for mc = 1:cap_mkt.n_mc
+                        for t = 1:cap_mkt.tf.n_c
+                            for delta = 1:cap_mkt.tf.n_dt
+                                yield_market_c[mc,t] +=
+                                    info[i].asset_mkt_benchmark[ind_asset] *
+                                    cap_mkt.proc[ind_proc].yield[mc,
+                                                                 t - 1 + delta,
+                                                                 j]  
+                            end
+                        end
+                    end
                     ind_port[j] = ind_asset
                 end
             end
         end
         if info[i].ig_name == :cash
-            yield_cash = cap_mkt.proc[ind_proc].yield[:,:,1]
+            for mc = 1:cap_mkt.n_mc
+                for t = 1:cap_mkt.tf.n_c
+                    for delta = 1:cap_mkt.tf.n_dt
+                        yield_cash_c[mc,t] +=
+                            cap_mkt.proc[ind_proc].yield[mc, t - 1 + delta, 1]
+                    end
+                end
+            end
         end
         asset_target[i] /= max(eps(), sum(asset_target[i]))
         ig[i] = eval(info[i].ig_type)(info[i].ig_name,
@@ -113,9 +135,9 @@ function Invest(name::Symbol,
     ig_target /= max(eps(), sum(ig_target))
 
     alloc = InvestAlloc(ig_target, ig_int, asset_target, asset_int)
-
     Invest(name, cap_mkt, n_ig, ig, ig_symb, alloc,
-           mv_total_init, mv_total_eop, yield_total, yield_cash, yield_market)
+           mv_total_init, mv_total_eop, yield_total,
+           yield_cash_c, yield_market_c)
 end
         
 # Constructor from DataFrames

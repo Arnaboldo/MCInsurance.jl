@@ -69,13 +69,13 @@ tf = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
 ## Dynamic policy behavior
 function dynprobsx(sx::Vector{Float64}, t::Int, mc::Int, invest::Invest, 
                    bonus_rate::Float64)
-    if invest.yield_market[mc,t] / max(eps(),invest.yield_cash[mc,t]) - 1 < 0.1
+    if invest.yield_market_c[mc,t] / max(eps(),invest.yield_cash_c[mc,t]) < 1.1
         delta = 0.1
     else
         delta = 0.0
     end
-    si = invest.yield_market[mc,t] / max(eps(),
-                                         bonus_rate + invest.yield_cash[mc,t])
+    si = invest.yield_market_c[mc,t] /
+         max(eps(), bonus_rate + invest.yield_cash_c[mc,t])
 
     return  sx .+ (delta + 0.05 * min(6,max(0, si - 1.4)))
  end
@@ -89,8 +89,8 @@ function dynalloc!(alloc::InvestAlloc, t::Int, mc::Int,
 
    ## market performance indicator weighted with expected yield
    mkt_perf_ind =
-       0.5 * (invest.yield_market[mc,t] + exp_yield_market) /
-       max(0, invest.yield_cash[mc,t])
+       0.5 * (invest.yield_market_c[mc,t] + exp_yield_market) /
+       max(0, invest.yield_cash_c[mc,t])
     
    alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
 
@@ -107,16 +107,16 @@ function dynalloc!(alloc::InvestAlloc, t::Int, mc::Int,
 end
 
 function dynalloc!(alloc::InvestAlloc, t::Int, mc::Int, invest::Invest)
-    dynalloc!(alloc, t, mc, invest, 0.00)
+    dynalloc!(alloc, t, mc, invest, 0.03)
 end
 
 ## Dynamic bonus declaration
-function   dynbonusrate(bucket::Bucket, t::Int, mc::Int, yield::Vector{Float64},
-                        interest::Float64,
+function   dynbonusrate(bucket::Bucket, t::Int, mc::Int,
+                        invest::Invest,
+                        stat_interest::Float64,
                         alloc::InvestAlloc, bonus_factor::Float64)
     bonus_factor * (1-alloc.ig_target[alloc.ig_int[:cash]]) *
-    max(0, yield[1] - interest)
-   
+    max(0, invest.yield_market_c[mc,t] - stat_interest)
 end
 
 n_mc = df_general[1, :n_mc]

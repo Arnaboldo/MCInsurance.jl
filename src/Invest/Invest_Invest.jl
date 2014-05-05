@@ -112,10 +112,9 @@ function Invest(name::Symbol,
     ig_int = Dict(ig_symb, 1:length(ig_symb)) 
     ig_target /= max(eps(), sum(ig_target))
 
-    alloc = InvestAlloc(ig_target, asset_target, asset_int)
+    alloc = InvestAlloc(ig_target, ig_int, asset_target, asset_int)
 
-    Invest(name, cap_mkt, n_ig, ig,
-           ig_symb, ig_int, alloc,
+    Invest(name, cap_mkt, n_ig, ig, ig_symb, alloc,
            mv_total_init, mv_total_eop, yield_total, yield_cash, yield_market)
 end
         

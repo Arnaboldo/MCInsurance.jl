@@ -9,6 +9,7 @@ n_cf = 5 # QX, SX, PX, PREM, C_ALL
 
 
 for mc = 1:n_mc
+    alloc = deepcopy(invest.alloc)
     tmp_tp = zeros(Float64, tf.n_c)
     tmp_cf = zeros(Float64, tf.n_c, n_cf) 
     for b = 1:buckets.n
@@ -19,9 +20,16 @@ for mc = 1:n_mc
             for t_p in ((t-1) * tf.n_dt+1):(t * tf.n_dt)    
                 yield += invest.yield_total[mc, t_p] 
             end
+            dynalloc!(alloc, t, mc, invest)
             bonus_rate =
-                bonus_factor *
-                (yield - df_tech_interest[t, buckets.all[b].cat[CAT_INTEREST]])
+                dynbonusrate(buckets.all[b],
+                             t,
+                             mc,
+                             [yield],
+                             df_tech_interest[t,
+                                              buckets.all[b].cat[CAT_INTEREST]],
+                             alloc,
+                             bonus_factor)
             prob_b[t:buckets.all[b].n_c, QX] =
                 fluct.fac[mc, t, QX] *
                 buckets.all[b].prob_be[t:buckets.all[b].n_c, QX]

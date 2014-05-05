@@ -27,7 +27,7 @@ function assetsprojecteoc!(cf::CFlow,
                            cost_init::Vector{Float64},
                            yield::Vector{Float64},
                            alloc::InvestAlloc,
-                           getdyntarget!::Function)
+                           dynalloc!::Function)
     if t == 1 
         asset_BOP = invest.mv_total_init
     else
@@ -36,7 +36,7 @@ function assetsprojecteoc!(cf::CFlow,
     asset_BOP += cf.v[mc,t,PREM] + cost_init[1]
     yield[1] = 0.0
     for t_p in ((t-1) * cf.tf.n_dt+1):(t * cf.tf.n_dt)
-        getdyntarget!(alloc, t, mc, invest)
+        dynalloc!(alloc, t, mc, invest)
         project!( invest, mc, t_p, asset_BOP, alloc)
         asset_BOP = invest.mv_total_eop[mc,t_p]
         yield[1] += invest.yield_total[mc, t_p]
@@ -53,15 +53,22 @@ function bucketprojecteoc!(cf::CFlow,
                            t::Int,
                            mc::Int,
                            yield::Vector{Float64},
-                           getdynprobsx::Function)
+                           alloc::InvestAlloc,
+                           dynbonusrate::Function,
+                           dynprobsx::Function)
     prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
     ## bucket.lx (initially) represents the value at BOP
-    bonus_rate =
-        bonus_factor * (yield[1] - df_interest[t, bucket.cat[CAT_INTEREST]])
-    prob[t:bucket.n_c, QX] =
+    bonus_rate = dynbonusrate(bucket,
+                                 t,
+                                 mc,
+                                 yield,
+                                 df_interest[t, bucket.cat[CAT_INTEREST]],
+                                 alloc,
+                                 bonus_factor)
+     prob[t:bucket.n_c, QX] =
         fluct.fac[mc, t, QX] * bucket.prob_be[t:bucket.n_c, QX]
     prob[t:bucket.n_c, SX] =
-        getdynprobsx(fluct.fac[mc, t, SX] * bucket.prob_be[t:bucket.n_c, SX],
+        dynprobsx(fluct.fac[mc, t, SX] * bucket.prob_be[t:bucket.n_c, SX],
                      t,
                      mc,
                      invest,
@@ -80,7 +87,6 @@ function bucketprojecteoc!(cf::CFlow,
     end
     tp_stat = t == 1 ? bucket.tp_stat_init : bucket.tp_stat[t] 
     cf.v[mc,t,BONUS] += bonus_rate * tp_stat 
-
     ## roll forward lx to the end of period: EOP
     bucket.lx_boc = bucket.lx_boc * prob[t,PX]
 end
@@ -108,7 +114,7 @@ function defaultdynprobsx(sx::Vector{Float64}, t...)
     return sx
 end
 
-function defaultdyntarget!(alloc::InvestAlloc, t...)
+function defaultdynalloc!(alloc::InvestAlloc, t...)
     return alloc
 end
 
@@ -119,8 +125,10 @@ function CFlow(buckets::Buckets,
                df_stat_interest::DataFrame,
                bonus_factor::Float64,
                dividend::Float64,
-               getdynprobsx::Function = defaultdynprobsx,
-               getdyntarget!::Function = defaultdyntarget!)
+               dynbonusrate::Function,
+               dynprobsx::Function = defaultdynprobsx,
+               dynalloc!::Function = defaultdynalloc!
+              )
     ## buckets.tf == invest.cap_mkt.tf
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     cost_init = Array(Float64,1) # 1-vector: can be passed as reference
@@ -140,11 +148,11 @@ function CFlow(buckets::Buckets,
                               cost_init,
                               yield,
                               alloc,
-                              getdyntarget!)
+                              dynalloc!)
             for bucket in buckets.all
                 bucketprojecteoc!(cf, bucket, fluct, invest, discount, 
                                   df_stat_interest,  bonus_factor, t, mc, yield,
-                                  getdynprobsx)
+                                  alloc, dynbonusrate, dynprobsx)
             end
             surplusprojecteoc!(cf, invest, dividend, t, mc, cost_init)
         end

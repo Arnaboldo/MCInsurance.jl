@@ -84,6 +84,7 @@ end
 
 type InvestAlloc
     ig_target::Vector{Float64}        ## target allocation for IGs
+    ig_int::Dict{Symbol, Int}          ## identifier for IG: ig.name  -> Int
     asset_target::Vector{Vector{Float64}} ## target allocatopm within IG
     asset_int::Dict{Vector{Any}, Int} ## identifies component of asset_target
 end
@@ -93,8 +94,7 @@ type Invest
     cap_mkt::CapMkt                   ## capital market
     n::Int
     ig::Vector{IG}                    ## investment groups: IG
-    ig_symb::Vector{Symbol}           ## identifier for IG: Int -> Symbol ~ name
-    ig_int::Dict{Symbol, Int}          ## identifier for IG: name ~ Symbol -> Int
+    ig_symb::Vector{Symbol}           ## identifier for IG: Int -> ig.name
     alloc::InvestAlloc
     mv_total_init::Float64
     mv_total_eop::Array{Float64,2}

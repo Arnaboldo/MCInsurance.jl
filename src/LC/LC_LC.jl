@@ -239,7 +239,7 @@ function lc!(lc::LC,
         [ symbol( lc.all[i, :ph_gender] * "_" *
                 products[prod_id_dict[lc.all[i, :prod_name]], :qx_name])
             for i = 1:lc.n]
-    lc.all[:risk] = ones(Int,lc.n)  ## currently a dummy variable
+    lc.all[:risk] = [1:lc.n] #ones(Int,lc.n)  ## currently a dummy variable
 
     lc.all[:prem] = zeros(Float64, lc.n)
     for i = 1:lc.n

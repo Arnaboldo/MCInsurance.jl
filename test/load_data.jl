@@ -106,6 +106,7 @@ function dynalloc!(invest::Invest, mc::Int, t::Int,
    end
 end
 
+<<<<<<< HEAD
 function dynalloc!(invest::Invest, mc::Int, t::Int)
     dynalloc!(invest, mc, t, 0.03)
 end

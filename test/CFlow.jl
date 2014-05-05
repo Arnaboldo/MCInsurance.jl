@@ -23,6 +23,7 @@ for mc = 1:n_mc
             bonus_rate =
                 dynbonusrate(buckets.all[b],
                              mc,
+<<<<<<< HEAD
                              t,
                              invest,
                            #  [yield],

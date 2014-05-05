@@ -24,6 +24,7 @@ function CFlow(buckets::Buckets,
     cost_init = Array(Float64,1) # 1-vector: can be passed as reference
     for mc = 1:cf.n_mc
         alloc = deepcopy(invest.alloc)
+>>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
         for t = 1:cf.tf.n_c
             cost_init[1] = 0.0
             cf.v[mc,t,CYCLE] = cf.tf.init - 1 + t
@@ -36,12 +37,14 @@ function CFlow(buckets::Buckets,
                               mc,
                               cost_init,
                               alloc,
+>>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                               dynalloc!)
             for bucket in buckets.all
                 bucketprojecteoc!(cf, bucket, fluct, invest, discount, 
                                   df_stat_interest,  bonus_factor, t, mc,
                                   dynbonusrate, dynprobsx)
                                   alloc, dynbonusrate, dynprobsx)
+>>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
             end
             surplusprojecteoc!(cf, invest, dividend, t, mc, cost_init)
         end
@@ -92,6 +95,7 @@ function assetsprojecteoc!(cf::CFlow,
                            mc::Int,
                            cost_init::Vector{Float64},
                            alloc::InvestAlloc,
+>>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                            dynalloc!::Function)
     if t == 1 
         asset_BOP = invest.mv_total_init
@@ -116,6 +120,7 @@ function bucketprojecteoc!(cf::CFlow,
                            t::Int,
                            mc::Int,
                            alloc::InvestAlloc,
+>>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                            dynbonusrate::Function,
                            dynprobsx::Function)
     prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
@@ -125,6 +130,7 @@ function bucketprojecteoc!(cf::CFlow,
                               t,
                               invest,
                               df_interest[t, bucket.cat[CAT_INTEREST]],
+=======
                               t,
                               mc,
                               invest,

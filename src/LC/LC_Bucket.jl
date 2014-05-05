@@ -99,7 +99,7 @@ function add!(me::Buckets,
     if b == 0 
         me.n += 1
         push!(me.all, Bucket(1, n_c, dur, cat, cond, tp_stat, tp_stat_init,
-                             prob_be, cond[:,SX], 1, false))
+                             prob_be, cond[:,SX], 1, 0.0, false))
     else
         merge!(me, b, n_c, cat, cond, tp_stat, tp_stat_init, prob_be) 
     end    

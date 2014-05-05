@@ -67,17 +67,24 @@ tf = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
 
 
 ## Dynamic policy behavior
-function dynprobsx(sx::Vector{Float64}, mc::Int, t::Int, invest::Invest, 
-                   bonus_rate::Float64)
+function dynprobsx(bucket::Bucket,
+                   fluct::Fluct,
+                ##   sx::Vector{Float64},
+                   mc::Int,
+                   t::Int,
+                   invest::Invest, 
+                   #bonus_rate::Float64
+                   )
     if invest.yield_market_c[mc,t] / max(eps(),invest.yield_cash_c[mc,t]) < 1.1
         delta = 0.1
     else
         delta = 0.0
     end
     si = invest.yield_market_c[mc,t] /
-         max(eps(), bonus_rate + invest.yield_cash_c[mc,t])
+         max(eps(), bucket.hook.bonus_rate + invest.yield_cash_c[mc,t])
 
-    return  sx .+ (delta + 0.05 * min(6,max(0, si - 1.4)))
+    return  fluct.fac[mc, t, SX] * bucket.prob_be[t:bucket.n_c, SX] .+
+            (delta + 0.05 * min(6,max(0, si - 1.4)))
  end
 
 ## Dynamic asset allocation
@@ -106,36 +113,45 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
 end
 
 ## Dynamic bonus declaration
-function   dynbonusrate(bucket::Bucket,
+function   dynbonusrate!(bucket::Bucket,
                         mc::Int,
                         t::Int,
                         invest::Invest)
-    invest.hook.bonus_factor *
-    (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
-    max(0, invest.yield_market_c[mc,t] - bucket.hook(bucket,t))
+    bucket.bonus_rate = 
+        invest.hook.bonus_factor *
+        (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
+        max(0, invest.yield_market_c[mc,t] - bucket.hook.statinterest(bucket,t))
 end
 
 n_mc = df_general[1, :n_mc]
 cap_mkt = CapMkt(:Capital_Market, tf, n_mc, df_proc_1, df_proc_2)
 
 invest = Invest(:iii, cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
-type DynInfo
+## Customize Invest:
+type InvestHook
     bonus_factor::Float64
     exp_yield_market::Float64
 end
-invest.hook = DynInfo(df_general[1, :bonus_factor], 0.03)
+invest.hook = InvestHook(df_general[1, :bonus_factor], 0.03)
 
 lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)               
 
 buckets = Buckets(lc, tf, df_products, df_qx, df_tech_interest)
+## customize Bucket:
+type BucketHook
+    statinterest::Function
+    bonus_rate::Float64
+end
 getstatinterest(me::Bucket, t::Int) = df_tech_interest[t, me.cat[CAT_INTEREST]]
 for b = 1:buckets.n
-    buckets.all[b].hook = getstatinterest
+    buckets.all[b].hook = BucketHook(getstatinterest, 0.0)
 end
 
 dividend = df_general[1, :capital_dividend]
-#bonus_factor = df_general[1, :bonus_factor]
+
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
+
 fluct = Fluct(tf, n_mc, 1.0)
+
 cflow = CFlow(buckets, fluct, invest, discount, 
-              dividend, dynbonusrate, dynprobsx, dynalloc!)
+              dividend, dynbonusrate!, dynprobsx, dynalloc!)

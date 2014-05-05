@@ -81,15 +81,14 @@ function dynprobsx(sx::Vector{Float64}, mc::Int, t::Int, invest::Invest,
  end
 
 ## Dynamic asset allocation
-function dynalloc!(invest::Invest, mc::Int, t::Int,
-                   exp_yield_market::Float64)
+function dynalloc!(invest::Invest, mc::Int, t::Int)
     ## cash allocation is chosen dependent on market performance
     ## all other investments / assets are adjusted proportionally
     ## In-place computation for higher efficiency
 
    ## market performance indicator weighted with expected yield
    mkt_perf_ind =
-       0.5 * (invest.yield_market_c[mc,t] + exp_yield_market) /
+       0.5 * (invest.yield_market_c[mc,t] + invest.hook.exp_yield_market) /
        max(0, invest.yield_cash_c[mc,t])
     
    alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
@@ -106,29 +105,33 @@ function dynalloc!(invest::Invest, mc::Int, t::Int,
    end
 end
 
-function dynalloc!(invest::Invest, mc::Int, t::Int)
-    dynalloc!(invest, mc, t, 0.03)
-end
 
 ## Dynamic bonus declaration
 function   dynbonusrate(bucket::Bucket,
                         mc::Int,
                         t::Int,
                         invest::Invest,
-                        stat_interest::Float64,
-                        bonus_factor::Float64)
-    bonus_factor * (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
+                        stat_interest::Float64)
+    invest.hook.bonus_factor *
+    (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
     max(0, invest.yield_market_c[mc,t] - stat_interest)
 end
 
 n_mc = df_general[1, :n_mc]
 cap_mkt = CapMkt(:Capital_Market, tf, n_mc, df_proc_1, df_proc_2)
+
 invest = Invest(:iii, cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
+type DynInfo
+    bonus_factor::Float64
+    exp_yield_market::Float64
+end
+invest.hook = DynInfo(df_general[1, :bonus_factor], 0.03)
+
 lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)               
 buckets = Buckets(lc, tf, df_products, df_qx, df_tech_interest)
 dividend = df_general[1, :capital_dividend]
-bonus_factor = df_general[1, :bonus_factor]
+#bonus_factor = df_general[1, :bonus_factor]
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
 fluct = Fluct(tf, n_mc, 1.0)
 cflow = CFlow(buckets, fluct, invest, discount,  df_tech_interest,
-              bonus_factor, dividend, dynbonusrate, dynprobsx, dynalloc!)
+              dividend, dynbonusrate, dynprobsx, dynalloc!)

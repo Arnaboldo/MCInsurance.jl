@@ -142,7 +142,7 @@ function Invest(name::Symbol,
                         asset_int)
     Invest(name, cap_mkt, n_ig, ig, ig_symb, alloc,
            mv_total_init, mv_total_eop, yield_total,
-           yield_cash_c, yield_market_c)
+           yield_cash_c, yield_market_c, false)
 end
         
 # Constructor from DataFrames

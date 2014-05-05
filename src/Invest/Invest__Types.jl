@@ -103,6 +103,7 @@ type Invest
     yield_total::Array{Float64,2}     ## investment yield per period
     yield_cash_c::Array{Float64,2}    ## cash yield per cycle (not per period!)
     yield_market_c::Array{Float64,2}  ## benchmark y. per cycle (not per period!)
+    hook::Any                         ## hook for attaching custom types 
 end
 
 

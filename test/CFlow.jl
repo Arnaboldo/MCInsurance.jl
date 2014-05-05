@@ -26,8 +26,7 @@ for mc = 1:n_mc
                              t,
                              invest,
                              df_tech_interest[t,
-                                              buckets.all[b].cat[CAT_INTEREST]],
-                             bonus_factor)
+                                              buckets.all[b].cat[CAT_INTEREST]])
             prob_b[t:buckets.all[b].n_c, QX] =
                 fluct.fac[mc, t, QX] *
                 buckets.all[b].prob_be[t:buckets.all[b].n_c, QX]

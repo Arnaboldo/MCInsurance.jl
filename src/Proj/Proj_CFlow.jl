@@ -12,7 +12,6 @@ function CFlow(buckets::Buckets,
                fluct::Fluct,
                invest::Invest,
                discount::Vector{Float64},
-               df_stat_interest::DataFrame,
                dividend::Float64,
                dynbonusrate::Function,
                dynprobsx::Function = defaultdynprobsx,
@@ -36,7 +35,7 @@ function CFlow(buckets::Buckets,
                               dynalloc!)
             for bucket in buckets.all
                 bucketprojecteoc!(cf, bucket, fluct, invest, discount, 
-                                  df_stat_interest, mc, t,
+                                  mc, t,
                                   dynbonusrate, dynprobsx)
             end
             surplusprojecteoc!(cf, invest, dividend, mc, t, cost_init)
@@ -106,7 +105,6 @@ function bucketprojecteoc!(cf::CFlow,
                            fluct::Fluct,
                            invest::Invest,
                            discount::Vector{Float64},
-                           df_interest::DataFrame,
                            mc::Int,
                            t::Int,
                            dynbonusrate::Function,
@@ -116,8 +114,7 @@ function bucketprojecteoc!(cf::CFlow,
     bonus_rate = dynbonusrate(bucket,
                               mc,
                               t,
-                              invest,
-                              df_interest[t, bucket.cat[CAT_INTEREST]])
+                              invest)
     prob[t:bucket.n_c, QX] =
         fluct.fac[mc, t, QX] * bucket.prob_be[t:bucket.n_c, QX]
     prob[t:bucket.n_c, SX] =

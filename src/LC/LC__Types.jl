@@ -43,6 +43,7 @@ type Bucket
     prob_be::Array{Float64,2}   ## best estimate: QX, SX
     sx_weights::Vector{Float64} ## weights for est. average be SX
     lx_boc::Float64             ## current fraction of policy holders in-force
+    hook::Any                   ## hook for attaching custom types 
 end
 
 type Buckets

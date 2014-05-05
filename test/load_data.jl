@@ -105,16 +105,14 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
    end
 end
 
-
 ## Dynamic bonus declaration
 function   dynbonusrate(bucket::Bucket,
                         mc::Int,
                         t::Int,
-                        invest::Invest,
-                        stat_interest::Float64)
+                        invest::Invest)
     invest.hook.bonus_factor *
     (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
-    max(0, invest.yield_market_c[mc,t] - stat_interest)
+    max(0, invest.yield_market_c[mc,t] - bucket.hook(bucket,t))
 end
 
 n_mc = df_general[1, :n_mc]
@@ -128,10 +126,16 @@ end
 invest.hook = DynInfo(df_general[1, :bonus_factor], 0.03)
 
 lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)               
+
 buckets = Buckets(lc, tf, df_products, df_qx, df_tech_interest)
+getstatinterest(me::Bucket, t::Int) = df_tech_interest[t, me.cat[CAT_INTEREST]]
+for b = 1:buckets.n
+    buckets.all[b].hook = getstatinterest
+end
+
 dividend = df_general[1, :capital_dividend]
 #bonus_factor = df_general[1, :bonus_factor]
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
 fluct = Fluct(tf, n_mc, 1.0)
-cflow = CFlow(buckets, fluct, invest, discount,  df_tech_interest,
+cflow = CFlow(buckets, fluct, invest, discount, 
               dividend, dynbonusrate, dynprobsx, dynalloc!)

@@ -25,6 +25,8 @@ for mc = 1:n_mc
                              mc,
 <<<<<<< HEAD
                              t,
+=======
+>>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                              invest,
                            #  [yield],
                              df_tech_interest[t,

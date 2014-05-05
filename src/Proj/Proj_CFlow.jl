@@ -23,6 +23,8 @@ function CFlow(buckets::Buckets,
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     cost_init = Array(Float64,1) # 1-vector: can be passed as reference
     for mc = 1:cf.n_mc
+<<<<<<< HEAD
+=======
         alloc = deepcopy(invest.alloc)
 >>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
         for t = 1:cf.tf.n_c
@@ -36,13 +38,17 @@ function CFlow(buckets::Buckets,
                               t,
                               mc,
                               cost_init,
+<<<<<<< HEAD
+=======
                               alloc,
 >>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                               dynalloc!)
             for bucket in buckets.all
                 bucketprojecteoc!(cf, bucket, fluct, invest, discount, 
                                   df_stat_interest,  bonus_factor, t, mc,
+<<<<<<< HEAD
                                   dynbonusrate, dynprobsx)
+=======
                                   alloc, dynbonusrate, dynprobsx)
 >>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
             end
@@ -94,6 +100,8 @@ function assetsprojecteoc!(cf::CFlow,
                            t::Int,
                            mc::Int,
                            cost_init::Vector{Float64},
+<<<<<<< HEAD
+=======
                            alloc::InvestAlloc,
 >>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                            dynalloc!::Function)
@@ -119,6 +127,8 @@ function bucketprojecteoc!(cf::CFlow,
                            bonus_factor::Float64,
                            t::Int,
                            mc::Int,
+<<<<<<< HEAD
+=======
                            alloc::InvestAlloc,
 >>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                            dynbonusrate::Function,
@@ -126,6 +136,7 @@ function bucketprojecteoc!(cf::CFlow,
     prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
     ## bucket.lx (initially) represents the value at BOP
     bonus_rate = dynbonusrate(bucket,
+<<<<<<< HEAD
                               mc,
                               t,
                               invest,

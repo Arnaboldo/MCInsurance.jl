@@ -23,36 +23,24 @@ function CFlow(buckets::Buckets,
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     cost_init = Array(Float64,1) # 1-vector: can be passed as reference
     for mc = 1:cf.n_mc
-<<<<<<< HEAD
-=======
-        alloc = deepcopy(invest.alloc)
->>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
         for t = 1:cf.tf.n_c
             cost_init[1] = 0.0
             cf.v[mc,t,CYCLE] = cf.tf.init - 1 + t
             for bucket in buckets.all
-                bucketprojectboc!(cf::CFlow, bucket, fluct, t, mc, cost_init)
+                bucketprojectboc!(cf::CFlow, bucket, fluct, mc, t, cost_init)
             end
             assetsprojecteoc!(cf,
                               invest,
-                              t,
                               mc,
+                              t,
                               cost_init,
-<<<<<<< HEAD
-=======
-                              alloc,
->>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                               dynalloc!)
             for bucket in buckets.all
                 bucketprojecteoc!(cf, bucket, fluct, invest, discount, 
-                                  df_stat_interest,  bonus_factor, t, mc,
-<<<<<<< HEAD
+                                  df_stat_interest,  bonus_factor, mc, t,
                                   dynbonusrate, dynprobsx)
-=======
-                                  alloc, dynbonusrate, dynprobsx)
->>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
             end
-            surplusprojecteoc!(cf, invest, dividend, t, mc, cost_init)
+            surplusprojecteoc!(cf, invest, dividend, mc, t, cost_init)
         end
     end
     cf
@@ -86,8 +74,8 @@ end
 function bucketprojectboc!(cf::CFlow,
                            bucket::Bucket,
                            fluct::Fluct,
-                           t::Int,
-                           mc:: Int,
+                           mc::Int,
+                           t:: Int,
                            cost_init::Vector{Float64})
     if t == 1  bucket.lx_boc = 1  end 
     cf.v[mc,t,PREM] +=  bucket.lx_boc * bucket.cond[t,PREM]
@@ -97,13 +85,9 @@ end
 
 function assetsprojecteoc!(cf::CFlow,
                            invest::Invest,
-                           t::Int,
                            mc::Int,
+                           t::Int,
                            cost_init::Vector{Float64},
-<<<<<<< HEAD
-=======
-                           alloc::InvestAlloc,
->>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                            dynalloc!::Function)
     if t == 1 
         asset_BOP = invest.mv_total_init
@@ -125,29 +109,17 @@ function bucketprojecteoc!(cf::CFlow,
                            discount::Vector{Float64},
                            df_interest::DataFrame,
                            bonus_factor::Float64,
-                           t::Int,
                            mc::Int,
-<<<<<<< HEAD
-=======
-                           alloc::InvestAlloc,
->>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
+                           t::Int,
                            dynbonusrate::Function,
                            dynprobsx::Function)
     prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
     ## bucket.lx (initially) represents the value at BOP
     bonus_rate = dynbonusrate(bucket,
-<<<<<<< HEAD
                               mc,
                               t,
                               invest,
                               df_interest[t, bucket.cat[CAT_INTEREST]],
-=======
-                              t,
-                              mc,
-                              invest,
-                              df_interest[t, bucket.cat[CAT_INTEREST]],
-                              alloc,
->>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                               bonus_factor)
     prob[t:bucket.n_c, QX] =
         fluct.fac[mc, t, QX] * bucket.prob_be[t:bucket.n_c, QX]
@@ -180,8 +152,8 @@ end
 function surplusprojecteoc!(cf::CFlow,
                             invest::Invest,
                             dividend::Float64,
-                            t::Int,
                             mc::Int,
+                            t::Int,
                             cost_init::Vector{Float64})
     cf.v[mc,t,ASSET_EOP] =
         (invest.mv_total_eop[mc, t * cf.tf.n_dt] + 

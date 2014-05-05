@@ -106,7 +106,6 @@ function dynalloc!(invest::Invest, mc::Int, t::Int,
    end
 end
 
-<<<<<<< HEAD
 function dynalloc!(invest::Invest, mc::Int, t::Int)
     dynalloc!(invest, mc, t, 0.03)
 end
@@ -119,18 +118,6 @@ function   dynbonusrate(bucket::Bucket,
                         stat_interest::Float64,
                         bonus_factor::Float64)
     bonus_factor * (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
-=======
-function dynalloc!(alloc::InvestAlloc, t::Int, mc::Int, invest::Invest)
-    dynalloc!(alloc, t, mc, invest, 0.03)
-end
-
-## Dynamic bonus declaration
-function   dynbonusrate(bucket::Bucket, t::Int, mc::Int,
-                        invest::Invest,
-                        stat_interest::Float64,
-                        alloc::InvestAlloc, bonus_factor::Float64)
-    bonus_factor * (1-alloc.ig_target[alloc.ig_int[:cash]]) *
->>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
     max(0, invest.yield_market_c[mc,t] - stat_interest)
 end
 

@@ -40,6 +40,7 @@ function CFlow(buckets::Buckets,
             for bucket in buckets.all
                 bucketprojecteoc!(cf, bucket, fluct, invest, discount, 
                                   df_stat_interest,  bonus_factor, t, mc,
+                                  dynbonusrate, dynprobsx)
                                   alloc, dynbonusrate, dynprobsx)
             end
             surplusprojecteoc!(cf, invest, dividend, t, mc, cost_init)
@@ -99,8 +100,8 @@ function assetsprojecteoc!(cf::CFlow,
     end
     asset_BOP += cf.v[mc,t,PREM] + cost_init[1]
     for t_p in ((t-1) * cf.tf.n_dt+1):(t * cf.tf.n_dt)
-        dynalloc!(alloc, t, mc, invest)
-        project!( invest, mc, t_p, asset_BOP, alloc)
+        dynalloc!(invest, mc, t)
+        project!( invest, mc, t_p, asset_BOP)
         asset_BOP = invest.mv_total_eop[mc,t_p]
     end
 end
@@ -120,18 +121,23 @@ function bucketprojecteoc!(cf::CFlow,
     prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
     ## bucket.lx (initially) represents the value at BOP
     bonus_rate = dynbonusrate(bucket,
+                              mc,
+                              t,
+                              invest,
+                              df_interest[t, bucket.cat[CAT_INTEREST]],
                               t,
                               mc,
                               invest,
                               df_interest[t, bucket.cat[CAT_INTEREST]],
                               alloc,
+>>>>>>> 06c08960677a374b7908b03d85cbc0bb76bbae46
                               bonus_factor)
     prob[t:bucket.n_c, QX] =
         fluct.fac[mc, t, QX] * bucket.prob_be[t:bucket.n_c, QX]
     prob[t:bucket.n_c, SX] =
         dynprobsx(fluct.fac[mc, t, SX] * bucket.prob_be[t:bucket.n_c, SX],
-                     t,
                      mc,
+                     t,
                      invest,
                      bonus_rate)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
@@ -171,11 +177,11 @@ function surplusprojecteoc!(cf::CFlow,
     cf.v[mc, t, SURPLUS_EOP] = cf.v[mc, t, ASSET_EOP] + cf.v[mc, t, TP_EOP]
 end
 
-function defaultdynprobsx(sx::Vector{Float64}, t...)
+function defaultdynprobsx(sx::Vector{Float64}, mc...)
     return sx
 end
 
-function defaultdynalloc!(alloc::InvestAlloc, t...)
+function defaultdynalloc!(invest::Invest, mc...)
     return alloc
 end
 

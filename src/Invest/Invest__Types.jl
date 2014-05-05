@@ -84,6 +84,10 @@ end
 
 type InvestAlloc
     ig_target::Vector{Float64}        ## target allocation for IGs
+    ig_target_std::Vector{Float64}    ## standard target allocation for IGs
+    ig_int::Dict{Symbol, Int}         ## identifier for IG: ig.name  -> Int
+    asset_target::Vector{Vector{Float64}}     ## target allocation within IG
+    asset_target_std::Vector{Vector{Float64}} ## standard target alloc within IG
     ig_int::Dict{Symbol, Int}         ## identifier for IG: ig.name  -> Int
     asset_target::Vector{Vector{Float64}} ## target allocatopm within IG
     asset_int::Dict{Vector{Any}, Int} ## identifies component of asset_target

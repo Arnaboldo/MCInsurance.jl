@@ -67,7 +67,7 @@ tf = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
 
 
 ## Dynamic policy behavior
-function dynprobsx(sx::Vector{Float64}, t::Int, mc::Int, invest::Invest, 
+function dynprobsx(sx::Vector{Float64}, mc::Int, t::Int, invest::Invest, 
                    bonus_rate::Float64)
     if invest.yield_market_c[mc,t] / max(eps(),invest.yield_cash_c[mc,t]) < 1.1
         delta = 0.1
@@ -81,8 +81,8 @@ function dynprobsx(sx::Vector{Float64}, t::Int, mc::Int, invest::Invest,
  end
 
 ## Dynamic asset allocation
-function dynalloc!(alloc::InvestAlloc, t::Int, mc::Int,
-                    invest::Invest, exp_yield_market::Float64)
+function dynalloc!(invest::Invest, mc::Int, t::Int,
+                   exp_yield_market::Float64)
     ## cash allocation is chosen dependent on market performance
     ## all other investments / assets are adjusted proportionally
     ## In-place computation for higher efficiency
@@ -95,17 +95,29 @@ function dynalloc!(alloc::InvestAlloc, t::Int, mc::Int,
    alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
 
     ## Now we adjust all allocations accordingly
-   total_other = 1 - alloc.ig_target[alloc.ig_int[:cash]]
+   total_other = 1 - invest.alloc.ig_target_std[invest.alloc.ig_int[:cash]]
    fac_other = (1-alloc_cash) / max(eps(), total_other)
     for i = 1:invest.n
       if invest.ig_symb[i] == :cash
-          alloc.ig_target[i] = alloc_cash
+          invest.alloc.ig_target[i] = alloc_cash
       else
-          alloc.ig_target[i] *= fac_other 
+          invest.alloc.ig_target[i] = fac_other * invest.alloc.ig_target_std[i]
       end
    end
 end
 
+function dynalloc!(invest::Invest, mc::Int, t::Int)
+    dynalloc!(invest, mc, t, 0.03)
+end
+
+## Dynamic bonus declaration
+function   dynbonusrate(bucket::Bucket,
+                        mc::Int,
+                        t::Int,
+                        invest::Invest,
+                        stat_interest::Float64,
+                        bonus_factor::Float64)
+    bonus_factor * (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
 function dynalloc!(alloc::InvestAlloc, t::Int, mc::Int, invest::Invest)
     dynalloc!(alloc, t, mc, invest, 0.03)
 end

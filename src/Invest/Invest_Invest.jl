@@ -134,6 +134,12 @@ function Invest(name::Symbol,
     ig_int = Dict(ig_symb, 1:length(ig_symb)) 
     ig_target /= max(eps(), sum(ig_target))
 
+    alloc = InvestAlloc(ig_target,    ## used by projection
+                        ig_target,    ## standard benchmark for dyn. allocation
+                        ig_int,
+                        asset_target, ## used by projection
+                        asset_target, ## standard benchmark for dyn. allocation
+                        asset_int)
     alloc = InvestAlloc(ig_target, ig_int, asset_target, asset_int)
     Invest(name, cap_mkt, n_ig, ig, ig_symb, alloc,
            mv_total_init, mv_total_eop, yield_total,
@@ -176,28 +182,21 @@ end
 function project!(me::Invest,
                   mc::Int,
                   t::Int,
-                  mv_total_bop::Float64,
-                  alloc::InvestAlloc)
+                  mv_total_bop::Float64)
     ## [-|-|---------------------|-]
     ## t | | ------------------> | t+1
     ##   | mv_total_alloc        project
     ##   mv_total_bop (pre alloc)
     
-    mv_bop = mv_total_bop * alloc.ig_target
+    mv_bop = mv_total_bop * me.alloc.ig_target
     me.mv_total_eop[mc,t] = 0
     for i = 1:me.n
-        me.ig[i].mv_alloc_bop = mv_bop[i] * alloc.asset_target[i]
+        me.ig[i].mv_alloc_bop = mv_bop[i] * me.alloc.asset_target[i]
         project!(me.ig[i], mc, t)
         me.mv_total_eop[mc,t] += me.ig[i].mv_total_eop[mc,t]
     end
     me.yield_total[mc,t] = me.mv_total_eop[mc,t]/max(eps(), mv_total_bop) - 1
 end
 
-function  project!(me::Invest,
-                  mc::Int,
-                  t::Int,
-                  mv_total_bop::Float64)
-    project!(me, mc, t, mv_total_bop, me.alloc)
-end
 
    

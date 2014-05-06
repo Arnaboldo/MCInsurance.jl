@@ -6,67 +6,27 @@ using MCInsurance
 
 tol = 1e-8  # Testing tolerance for floating points
 
-file_general = joinpath(dirname(@__FILE__), "input/General.csv")
-file_proc_1 = joinpath(dirname(@__FILE__), "input/Proc_1.csv")
-file_proc_2 = joinpath(dirname(@__FILE__), "input/Proc_2.csv")
-file_inv = joinpath(dirname(@__FILE__), "input/Inv.csv")
-file_inv_asset = joinpath(dirname(@__FILE__), "input/Inv_Asset.csv")
-file_inv_Port_Start = joinpath(dirname(@__FILE__), "input/Inv_Port_Start.csv")
-file_tech_interest = joinpath(dirname(@__FILE__), "input/Tech_Interest.csv")
-file_qx = joinpath(dirname(@__FILE__), "input/QX.csv")
-file_products = joinpath(dirname(@__FILE__), "input/Prod.csv")
-file_ph = joinpath(dirname(@__FILE__), "input/PH.csv")
-file_lc = joinpath(dirname(@__FILE__), "input/LC.csv")
-file_fluct = joinpath(dirname(@__FILE__), "input/Rnd_Fluct.csv")
-
-# General parameters
-df_general = readtable(file_general)
-
-# Capital market
-df_proc_1 = readtable(file_proc_1)
-df_proc_2 = readtable(file_proc_2)
-
-# Investment strategy
-df_inv = readtable(file_inv)
-df_inv_asset = readtable(file_inv_asset)
-df_inv_port_start = readtable(file_inv_Port_Start)
-
-# life insurance contracts
-df_tech_interest = readtable(file_tech_interest)
-df_qx = readtable(file_qx)
-df_products = readtable(file_products)
-
-df_products[:interest_name] =
-    [symbol(df_products[i,:interest_name]) for i=1:nrow(df_products)]
-    
-df_ph = readtable(file_ph)
-df_ph[:ph_qx_be_name] =
-    [symbol(df_ph[i,:ph_qx_be_name]) for i=1:nrow(df_ph)]
-
-df_lc = readtable(file_lc)
-
-# Projection
-df_fluct = readtable(file_fluct)
-
-# Process inputs: general ------------------------------------------------------
+df_general = readtable(joinpath(dirname(@__FILE__), "input/General.csv"))
+df_capmkt_1 = readtable(joinpath(dirname(@__FILE__), "input/CapMkt_1.csv"))
+df_capmkt_2 = readtable(joinpath(dirname(@__FILE__), "input/CapMkt_2.csv"))
+df_inv_inv = readtable(joinpath(dirname(@__FILE__), "input/Inv_Inv.csv"))
+df_inv_asset = readtable(joinpath(dirname(@__FILE__), "input/Inv_Asset.csv"))
+df_inv_init = readtable(joinpath(dirname(@__FILE__), "input/Inv_Init.csv"))
+df_lc_interest = readtable(joinpath(dirname(@__FILE__), "input/LC_Interest.csv"))
+df_lc_qx = readtable(joinpath(dirname(@__FILE__), "input/LC_QX.csv"))
+df_lc_prod = readtable(joinpath(dirname(@__FILE__), "input/LC_Prod.csv"))
+df_lc_ph = readtable(joinpath(dirname(@__FILE__), "input/LC_PH.csv"))
+df_lc_lc = readtable(joinpath(dirname(@__FILE__), "input/LC_LC.csv"))
+df_proj_fluct = readtable(joinpath(dirname(@__FILE__), "input/Proj_Fluct.csv"))
 
 
-srand(df_general[1, :random_seed])
+df_lc_prod[:interest_name] =
+    [symbol(df_lc_prod[i,:interest_name]) for i=1:nrow(df_lc_prod)]
 
-tf = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
-               df_general[1, :tf_n_dt] *
-               (df_general[1, :tf_y_end]-df_general[1, :tf_y_start]))
+df_lc_ph[:ph_qx_be_name] =
+    [symbol(df_lc_ph[i,:ph_qx_be_name]) for i=1:nrow(df_lc_ph)]
 
-@test tf.init == 2005
-@test tf.final == 2011
-@test tf.n_c == 6
-@test tf.n_p == 12
-@test_approx_eq_eps(tf.dt, 0.5, tol)
-@test tf.n_dt == 2
-
-
-
-## Dynamic policy behavior
+## Dynamic policy behavior -----------------------------------------------------
 function dynprobsx(bucket::Bucket,
                    fluct::Fluct,
                 ##   sx::Vector{Float64},
@@ -87,7 +47,7 @@ function dynprobsx(bucket::Bucket,
             (delta + 0.05 * min(6,max(0, si - 1.4)))
  end
 
-## Dynamic asset allocation
+## Dynamic asset allocation ----------------------------------------------------
 function dynalloc!(invest::Invest, mc::Int, t::Int)
     ## cash allocation is chosen dependent on market performance
     ## all other investments / assets are adjusted proportionally
@@ -112,7 +72,7 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
    end
 end
 
-## Dynamic bonus declaration
+## Dynamic bonus declaration ---------------------------------------------------
 function   dynbonusrate!(bucket::Bucket,
                         mc::Int,
                         t::Int,
@@ -123,35 +83,38 @@ function   dynbonusrate!(bucket::Bucket,
         max(0, invest.yield_market_c[mc,t] - bucket.hook.statinterest(bucket,t))
 end
 
-n_mc = df_general[1, :n_mc]
-cap_mkt = CapMkt(:Capital_Market, tf, n_mc, df_proc_1, df_proc_2)
+##------------------------------------------------------------------------------
+srand(df_general[1, :random_seed])
 
-invest = Invest(:iii, cap_mkt, df_inv, df_inv_port_start, df_inv_asset)
+n_mc     = df_general[1, :n_mc]
+tf       = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
+                     df_general[1, :tf_n_dt] *
+                     (df_general[1, :tf_y_end]-df_general[1, :tf_y_start]))
+cap_mkt  = CapMkt(:Capital_Market, tf, n_mc, df_capmkt_1, df_capmkt_2)
+invest   = Invest(:iii, cap_mkt, df_inv_inv, df_inv_init, df_inv_asset)
 ## Customize Invest:
 type InvestHook
     bonus_factor::Float64
     exp_yield_market::Float64
 end
 invest.hook = InvestHook(df_general[1, :bonus_factor], 0.03)
-
-lc = LC(df_lc, df_products, df_ph, df_qx, df_tech_interest, tf)               
-
-buckets = Buckets(lc, tf, df_products, df_qx, df_tech_interest)
+lc       = LC(df_lc_lc, df_lc_prod, df_lc_ph, df_lc_qx, df_lc_interest, tf)               
+buckets  = Buckets(lc, tf, df_lc_prod, df_lc_qx, df_lc_interest)
 ## customize Bucket:
 type BucketHook
     statinterest::Function
     bonus_rate::Float64
 end
-getstatinterest(me::Bucket, t::Int) = df_tech_interest[t, me.cat[CAT_INTEREST]]
+getstatinterest(me::Bucket, t::Int) = df_lc_interest[t, me.cat[CAT_INTEREST]]
 for b = 1:buckets.n
     buckets.all[b].hook = BucketHook(getstatinterest, 0.0)
 end
-
 dividend = df_general[1, :capital_dividend]
-
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
+fluct    = Fluct(tf, n_mc, 1.0)
+cflow    = CFlow(buckets, fluct, invest, discount, 
+                 dividend, dynbonusrate!, dynprobsx, dynalloc!)
 
-fluct = Fluct(tf, n_mc, 1.0)
+##------------------------------------------------------------------------------
 
-cflow = CFlow(buckets, fluct, invest, discount, 
-              dividend, dynbonusrate!, dynprobsx, dynalloc!)
+

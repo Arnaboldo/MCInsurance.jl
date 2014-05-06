@@ -6,6 +6,14 @@ using Base.Test
 
 using MCInsurance
 
+@test tf.init == 2005
+@test tf.final == 2011
+@test tf.n_c == 6
+@test tf.n_p == 12
+@test_approx_eq_eps(tf.dt, 0.5, tol)
+@test tf.n_dt == 2
+
+
 v20 = float64([1:20])
 v03 = float64([1:3])
 

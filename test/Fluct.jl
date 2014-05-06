@@ -10,7 +10,7 @@ for t= 1:tf.n_c, j = 1:6
 end
 
 fac1 = 3.14
-fluct2[1] = Fluct(tf, n_mc, df_fluct)
+fluct2[1] = Fluct(tf, n_mc, df_proj_fluct)
 fluct2[2] = Fluct(tf, n_mc, fac)
 fluct2[3] = Fluct(tf, n_mc, fac1)
 

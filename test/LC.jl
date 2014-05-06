@@ -6,8 +6,8 @@ using MCInsurance
 
 ## Test that ph data have correctly been joined to lc: -------------------------
 for i = 1:lc.n
-    for col in names(df_ph) 
-        @test lc.all[i,col] == df_ph[lc.all[i, :ph_id],col]
+    for col in names(df_lc_ph) 
+        @test lc.all[i,col] == df_lc_ph[lc.all[i, :ph_id],col]
     end
 end
 
@@ -35,22 +35,22 @@ test_prof = zeros(Float64, lc.n, 4)
 for i in 1:lc.n 
     if sx_dur(i) != 0
         # First sx-value is correct
-        @test_approx_eq_eps(df_products[lc.all[i, :prod_id], :start_SX],
-                            getprobsx(lc,i,df_products)[1],
+        @test_approx_eq_eps(df_lc_prod[lc.all[i, :prod_id], :start_SX],
+                            getprobsx(lc,i,df_lc_prod)[1],
                             tol)
         # Last sx-value is correct
         if sx_dur(i) > 1 # sx_dur = 1: we take first value regardless of last value
-            @test_approx_eq_eps(df_products[lc.all[i, :prod_id], :end_SX],
-                                getprobsx(lc,i,df_products)[sx_dur(i)],
+            @test_approx_eq_eps(df_lc_prod[lc.all[i, :prod_id], :end_SX],
+                                getprobsx(lc,i,df_lc_prod)[sx_dur(i)],
                                 tol)
         end
         # sx-values are linear
         if sx_dur(i) >=3  # we need at least 3 points to check linearity
              for d = 3:sx_dur(i)
-                @test_approx_eq_eps(getprobsx(lc,i,df_products)[2]-
-                                    getprobsx(lc,i,df_products)[1],
-                                    getprobsx(lc,i,df_products)[d]-
-                                    getprobsx(lc,i,df_products)[d-1],
+                @test_approx_eq_eps(getprobsx(lc,i,df_lc_prod)[2]-
+                                    getprobsx(lc,i,df_lc_prod)[1],
+                                    getprobsx(lc,i,df_lc_prod)[d]-
+                                    getprobsx(lc,i,df_lc_prod)[d-1],
                                     tol)
               end  
         end
@@ -63,10 +63,10 @@ for i in 1:lc.n
     dur = lc.all[i, :dur]
     prob_sx = zeros(Float64, dur)
     sx_prof = zeros(Float64, dur)
-    qx = df_qx[:,lc.all[i, :qx_name]] ## according to age cycle
-    tech_int = df_tech_interest[:,df_products[prod_id,:interest_name]]
-    costs = costloadings(lc,i,df_products) 
-    prof = profile(lc, i, df_products, costs)
+    qx = df_lc_qx[:,lc.all[i, :qx_name]] ## according to age cycle
+    tech_int = df_lc_interest[:,df_lc_prod[prod_id,:interest_name]]
+    costs = costloadings(lc,i,df_lc_prod) 
+    prof = profile(lc, i, df_lc_prod, costs)
     for t = 1:dur
         ## check qx and px profile
         if lc.all[i,:prod_name] == "M_CB_CP"
@@ -97,9 +97,9 @@ for i in 1:lc.n
         if sx_dur(i) > 0
             for d = 0:(sx_dur(i)-1)
                 sx_prof[lc.all[i, :c_start_SX]+d] =
-                    df_products[prod_id, :prof_start_SX] +
-                    d * (df_products[prod_id, :prof_end_SX] -
-                         df_products[prod_id, :prof_start_SX] ) /
+                    df_lc_prod[prod_id, :prof_start_SX] +
+                    d * (df_lc_prod[prod_id, :prof_end_SX] -
+                         df_lc_prod[prod_id, :prof_start_SX] ) /
                     max(sx_dur(i)-1, 1)
             end
         end
@@ -122,25 +122,25 @@ for i = 1:lc.n
     ## loadings are so high that a lapse benefit of 90% premium
     ## sum is only sustainable at a very high premium level.
     load =
-        costloadings(lc,i,df_products) +
-        profitloadings(lc,i,df_products)
+        costloadings(lc,i,df_lc_prod) +
+        profitloadings(lc,i,df_lc_prod)
     age_range = [lc.all[i,:ph_age_start]:(lc.all[i,:ph_age_start]
                                           + lc.all[i,:dur] - 1)]
-    qx = df_qx[age_range .+ 1, lc.all[i, :qx_name]]
-    prob_sx = getprobsx(lc, i, df_products)
+    qx = df_lc_qx[age_range .+ 1, lc.all[i, :qx_name]]
+    prob_sx = getprobsx(lc, i, df_lc_prod)
     px = 1 .- qx - prob_sx
     interest = convert(Array,
-                       df_tech_interest[1:length(age_range),
-                                        df_products[lc.all[i, :prod_id],
+                       df_lc_interest[1:length(age_range),
+                                        df_lc_prod[lc.all[i, :prod_id],
                                                     :interest_name] ] ) 
     v = cumprod(exp(-interest))
-    prof = profile(lc, i, df_products, load)
-    prob = getprob(lc, i, df_products,  df_qx )
+    prof = profile(lc, i, df_lc_prod, load)
+    prob = getprob(lc, i, df_lc_prod,  df_lc_qx )
     interest = convert(Array,
-                       df_tech_interest[1:lc.all[i,:dur],
-                                        df_products[lc.all[i,:prod_id],
-                                                    :interest_name] ])
-    P = price(lc.all[i,:is], df_products, prof, prob, interest)
+                       df_lc_interest[1:lc.all[i,:dur],
+                                      df_lc_prod[lc.all[i,:prod_id],
+                                                 :interest_name] ])
+    P = price(lc.all[i,:is], df_lc_prod, prof, prob, interest)
     cum_px = 1
     tmp_equiv = -load[L_INIT_ABS]-load[L_INIT_IS] * lc.all[i,:is]
     for t = 1:length(age_range)
@@ -173,12 +173,12 @@ for i = 1:lc.n
 
     age_range = [lc.all[i,:ph_age_start]:(lc.all[i,:ph_age_start]
                                           + lc.all[i,:dur] - 1)]
-    prob[:,QX] = df_qx[age_range .+ 1, lc.all[i, :qx_name]]
-    prob[:,SX] = getprobsx(lc, i, df_products)
+    prob[:,QX] = df_lc_qx[age_range .+ 1, lc.all[i, :qx_name]]
+    prob[:,SX] = getprobsx(lc, i, df_lc_prod)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
-    load =  costloadings(lc,i,df_products)
-    prof = profile(lc, i, df_products, load)
-    cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_products, prof)
+    load =  costloadings(lc,i,df_lc_prod)
+    prof = profile(lc, i, df_lc_prod, load)
+    cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
 
     for tau = 1:lc.all[i,:dur]
         ## Technical provisions are counted negative.

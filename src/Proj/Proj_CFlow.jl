@@ -127,7 +127,7 @@ function bucketprojecteoc!(cf::CFlow,
         cf.v[mc,t,C_ALL] +=
             bucket.lx_boc * fluct.fac[mc,t,fluct.d[C]] * bucket.cond[t,C]
     end
-    tp_stat = t == 1 ? bucket.tp_stat_init : bucket.tp_stat[t] 
+    tp_stat = t == 1 ? bucket.tp_stat_init : bucket.tp_stat[t-1] 
     cf.v[mc,t,BONUS] += bucket.bonus_rate * tp_stat 
     ## roll forward lx to the end of period: EOP
     bucket.lx_boc = bucket.lx_boc * prob[t,PX]

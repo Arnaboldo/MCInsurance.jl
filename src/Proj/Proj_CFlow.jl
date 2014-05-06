@@ -11,7 +11,6 @@ end
 function CFlow(buckets::Buckets,
                fluct::Fluct,
                invest::Invest,
-               discount::Vector{Float64},
                dividend::Float64,
                dynbonusrate!::Function = defaultdynbonusrate!,
                dynprobsx::Function = defaultdynprobsx,
@@ -20,6 +19,8 @@ function CFlow(buckets::Buckets,
     ## buckets.tf == invest.cap_mkt.tf
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     cost_init = Array(Float64,1) # 1-vector: can be passed as reference
+    
+    
     for mc = 1:cf.n_mc
         for t = 1:cf.tf.n_c
             cost_init[1] = 0.0
@@ -33,9 +34,18 @@ function CFlow(buckets::Buckets,
                               t,
                               cost_init,
                               dynalloc!)
+            ## fix_me:  We should really use the expected value
+            ##          (given the current invest.yield_cash_c[mc,t])
+            ##          Hence we cannot simply use mean but need a nested
+            ##          monte carlo simulation (issue #9)
+            discount = Array(Float64, buckets.n_c)
+            discount[1:buckets.tf.n_c] = exp(-invest.yield_cash_c[mc,:])
+            if buckets.tf.n_c < buckets.n_c
+                discount[(buckets.tf.n_c+1):buckets.n_c] =
+                    discount[buckets.tf.n_c]                
+            end
             for bucket in buckets.all
-                bucketprojecteoc!(cf, bucket, fluct, invest, discount, 
-                                  mc, t,
+                bucketprojecteoc!(cf, bucket, fluct, invest, discount, mc, t,
                                   dynbonusrate!, dynprobsx)
             end
             surplusprojecteoc!(cf, invest, dividend, mc, t, cost_init)

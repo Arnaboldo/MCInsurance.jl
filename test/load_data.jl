@@ -112,8 +112,8 @@ end
 dividend = df_general[1, :capital_dividend]
 discount = exp(-0.01) * ones(Float64, buckets.n_c)  
 fluct    = Fluct(tf, n_mc, 1.0)
-cflow    = CFlow(buckets, fluct, invest, discount, 
-                 dividend, dynbonusrate!, dynprobsx, dynalloc!)
+cflow    = CFlow(buckets, fluct, invest, dividend,
+                 dynbonusrate!, dynprobsx, dynalloc!)
 
 ##------------------------------------------------------------------------------
 

@@ -7,10 +7,16 @@ using MCInsurance
 n_cf = 5 # QX, SX, PX, PREM, C_ALL
 
 
+discount = Array(Float64, buckets.n_c)
 
 for mc = 1:n_mc
     tmp_tp = zeros(Float64, tf.n_c)
     tmp_cf = zeros(Float64, tf.n_c, n_cf) 
+    discount[1:buckets.tf.n_c] = exp(-invest.yield_cash_c[mc,:])
+    if buckets.tf.n_c < buckets.n_c
+        discount[(buckets.tf.n_c+1):buckets.n_c] =
+            discount[buckets.tf.n_c]                
+    end
     for b = 1:buckets.n
         prob_b = Array(Float64, buckets.all[b].n_c, 3 )
         lx_boc = 1
@@ -28,6 +34,7 @@ for mc = 1:n_mc
                 dynprobsx(buckets.all[b],  fluct, mc, t,  invest)
             prob_b[:,PX] = 1 .- prob_b[:,QX] - prob_b[:,SX]
             # accumulate technical provisions
+
             tmp_tp[t] +=  lx_boc * prob_b[t,PX] *
                           tpeop(prob_b[t:buckets.all[b].n_c,:],
                                 discount[t:buckets.all[b].n_c],
@@ -52,6 +59,7 @@ for mc = 1:n_mc
             @test_approx_eq_eps(tmp_cf[t,j], cflow.v[mc,t,j], tol)
         end
     end
+    
 end
 
 ## Test that surplus is the sum of assets and (negative) technical provisions

@@ -36,7 +36,8 @@ end
 function profile(lc::LC,
                  i::Int,
                  products::DataFrame ,
-                 costs::Vector{Float64})
+                 costs::Vector{Float64},
+                 delta_t_infl::Int = 0)  ## adj reference time for inflation
     prof = zeros( Float64, lc.all[i, :dur], N_PROF )
     
     ind = [[:c_start_QX   :c_end_QX   :prof_start_QX   :prof_end_QX],
@@ -55,10 +56,10 @@ function profile(lc::LC,
 
     prof[1, C_INIT_ABS]  = costs[L_INIT_ABS]
     prof[1, C_INIT_IS] = costs[L_INIT_IS]
-    prof[:, C_ABS] = costs[L_ABS] * exp([1:(lc.all[i,:dur])] * costs[L_INFL])
-    prof[:, C_IS] = costs[L_IS] * exp([1:(lc.all[i,:dur])] * costs[L_INFL])
-    prof[:, C_PREM] =
-        costs[L_PREM] * prof[:,PREM] .* exp([1:(lc.all[i,:dur])] * costs[L_INFL])
+    cum_infl = exp(([1:lc.all[i,:dur]] .- delta_t_infl) * costs[L_INFL] )
+    prof[:, C_ABS] = costs[L_ABS] * cum_infl
+    prof[:, C_IS] = costs[L_IS] * cum_infl
+    prof[:, C_PREM] = costs[L_PREM] * prof[:,PREM] .* cum_infl
 
     return prof
 end

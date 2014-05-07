@@ -71,15 +71,19 @@ function add!(me::Buckets,
     n_c = max(dur, me.tf.n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
     cond = zeros(Float64, n_c, N_COND)
+    ## Make sure that inflation is calculated with respect to me.tf.init 
+    delta_t_infl =  me.tf.init - lc.all[i, :y_start]
     prof = profile(lc,
                    i,
                    df_prod,
-                   loadings(df_load, df_prod[lc.all[i, :prod_id],:cost_be_name]))
+                   loadings(df_load, df_prod[lc.all[i, :prod_id],:cost_be_name]),
+                   delta_t_infl)
     cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_prod, prof)
+
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
-    tp_stat_calc =
+    tp_stat_calc = 
         tpveceop(getprob(lc, i, df_prod, df_qx),
                          exp(-convert(Array, interest[1:lc.all[i,:dur],
                                                       df_prod[lc.all[i,:prod_id],

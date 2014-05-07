@@ -65,24 +65,24 @@ for i in 1:lc.n
     sx_prof = zeros(Float64, dur)
     qx = df_lc_qx[:,lc.all[i, :qx_name]] ## according to age cycle
     tech_int = df_lc_interest[:,df_lc_prod[prod_id,:interest_name]]
-    costs = costloadings(lc,i,df_lc_prod) 
+    costs = loadings(df_lc_load, df_lc_prod[lc.all[i, :prod_id],:cost_be_name])
     prof = profile(lc, i, df_lc_prod, costs)
     for t = 1:dur
         ## check qx and px profile
-        if lc.all[i,:prod_name] == "M_CB_CP"
+        if lc.all[i,:prod_name] == :M_CB_CP
             @test_approx_eq_eps(prof[t,QX], 1, tol)
             if (t == dur)
                 @test_approx_eq_eps(prof[t,PX], 1, tol)
             elseif (t < dur) 
                 @test_approx_eq_eps(prof[t,PX], 0, tol)
             end
-        elseif lc.all[i,:prod_name] == "T_CB_CP"
+        elseif lc.all[i,:prod_name] == :T_CB_CP
             @test_approx_eq_eps(prof[t,QX], 1, tol)
             @test_approx_eq_eps(prof[t,PX], 0, tol)
-        elseif lc.all[i,:prod_name] == "T_DB_CP"
+        elseif lc.all[i,:prod_name] == :T_DB_CP
             @test_approx_eq_eps(prof[t,QX], 1-(t-1)/(dur-1) , tol)
             @test_approx_eq_eps(prof[t,PX], 0, tol)
-        elseif lc.all[i,:prod_name] == "A_CB_CP"
+        elseif lc.all[i,:prod_name] == :A_CB_CP
             @test_approx_eq_eps(prof[t,QX], 0, tol)
             if (t < lc.all[i, :c_start_PX]) 
                 @test_approx_eq_eps(prof[t,PX], 0, tol)
@@ -90,7 +90,7 @@ for i in 1:lc.n
                 @test_approx_eq_eps(prof[t,PX], 1, tol)
             end            
         else
-            print("lc.all: $i, There is not test for " *
+            print("lc.all: $i, There is no test for " *
                   " Contract type $(lc.all[i,:prod_name])" )
         end
         ## check sx profile
@@ -121,9 +121,7 @@ for i = 1:lc.n
     ## high. This is due to the fact that absolute cost/profit
     ## loadings are so high that a lapse benefit of 90% premium
     ## sum is only sustainable at a very high premium level.
-    load =
-        costloadings(lc,i,df_lc_prod) +
-        profitloadings(lc,i,df_lc_prod)
+    load = loadings(df_lc_load, df_lc_prod[lc.all[i, :prod_id],:cost_name])
     age_range = [lc.all[i,:ph_age_start]:(lc.all[i,:ph_age_start]
                                           + lc.all[i,:dur] - 1)]
     qx = df_lc_qx[age_range .+ 1, lc.all[i, :qx_name]]
@@ -176,7 +174,7 @@ for i = 1:lc.n
     prob[:,QX] = df_lc_qx[age_range .+ 1, lc.all[i, :qx_name]]
     prob[:,SX] = getprobsx(lc, i, df_lc_prod)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
-    load =  costloadings(lc,i,df_lc_prod)
+    load =  loadings(df_lc_load, df_lc_prod[lc.all[i, :prod_id],:cost_be_name])
     prof = profile(lc, i, df_lc_prod, load)
     cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
 

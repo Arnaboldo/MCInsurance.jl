@@ -10,12 +10,13 @@ end
 # Buckets: Standard constructor
 function Buckets(lc::LC,
                  tf::TimeFrame,
-                 df_products::DataFrame,
+                 df_prod::DataFrame,
+                 df_load::DataFrame,
                  df_qx::DataFrame,
                  df_interest::DataFrame)
     buckets = Buckets(tf)
     for i = 1:lc.n
-        add!(buckets,1, lc, i, df_products, df_qx, df_interest, true)     
+        add!(buckets,1, lc, i, df_prod, df_load, df_qx, df_interest, true)     
     end
     for b = 1:buckets.n
         buckets.n_c = max(buckets.n_c, buckets.all[b].n_c)
@@ -45,8 +46,9 @@ function add!(me::Buckets,
               c_curr::Int,           # current projection cycle
               lc::LC,                # portfolio of contracts
               i::Int,                # contract to be added
-              products::DataFrame,   # product information
-              qx_df::DataFrame,      # mortality tables
+              df_prod::DataFrame,    # product information
+              df_load::DataFrame,    # cost information
+              df_qx::DataFrame,      # mortality tables
               interest::DataFrame,   # technical interest rates
               existing::Bool = true) # default: add existing contract
 
@@ -55,7 +57,7 @@ function add!(me::Buckets,
         (!existing & (c_curr > c_start))   )   # add existing contr.?
         return
     end    
-    cat = getcat(lc, i, me.tf, products)
+    cat = getcat(lc, i, me.tf, df_prod, df_load)
 
     ## find bucket
     b = getind(me, cat)    
@@ -69,15 +71,18 @@ function add!(me::Buckets,
     n_c = max(dur, me.tf.n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
     cond = zeros(Float64, n_c, N_COND)
-    prof = profile(lc, i, products, costloadings(lc,i,products))
-    cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], products, prof)
+    prof = profile(lc,
+                   i,
+                   df_prod,
+                   loadings(df_load, df_prod[lc.all[i, :prod_id],:cost_be_name]))
+    cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_prod, prof)
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
     tp_stat_calc =
-        tpveceop(getprob(lc, i, products, qx_df),
+        tpveceop(getprob(lc, i, df_prod, df_qx),
                          exp(-convert(Array, interest[1:lc.all[i,:dur],
-                                                      products[lc.all[i,:prod_id],
+                                                      df_prod[lc.all[i,:prod_id],
                                                                :interest_name]])),
                          cond_cf)
     tp_stat = insertc(tf_cond, lc.all[i, :y_start], tp_stat_calc, true)
@@ -87,12 +92,12 @@ function add!(me::Buckets,
         tp_stat_init = 0.0
     end
     prob_be = zeros( Float64, n_c, 2)
-    prob_be[:,QX] = qx_df[ cat[CAT_AGE] .+ [1:n_c], cat[CAT_QXBE] ]
+    prob_be[:,QX] = df_qx[ cat[CAT_AGE] .+ [1:n_c], cat[CAT_QXBE] ]
     # we insure that sx-prob = 0 if there is no sx-benefit,
     # even if lc-data record sx-prob != 0
     prob_be[:,SX] =
         lc.all[i, :be_sx_fac] *
-        insertc(tf_cond, lc.all[i, :y_start], getprobsx(lc,i,products), true) .*
+        insertc(tf_cond, lc.all[i, :y_start], getprobsx(lc,i,df_prod), true) .*
         cond[:,SX ] ./ min(-eps(), cond[:,SX ])
 
     # create new bucket or merge into existing bucket 
@@ -107,12 +112,15 @@ end
 
 ## for each bucket in Buckets get an array with the corresponding
 ## contract indices
-function listcontracts(me::Buckets,lc::LC, df_products::DataFrame)
+function listcontracts(me::Buckets,
+                       lc::LC,
+                       df_prod::DataFrame,
+                       df_load::DataFrame)
     contracts_per_bucket = Array(Any,me.n)
     for b = 1:me.n
         contracts_per_bucket[b] = Array(Int,0)
         for i = 1:lc.n
-            if getcat(lc,i,me.tf, df_products) == me.all[b].cat
+            if getcat(lc,i,me.tf, df_prod, df_load) == me.all[b].cat
                 push!(contracts_per_bucket[b],i)
             end
         end
@@ -202,11 +210,18 @@ function getind(me::Buckets,  cat::Vector{Any})
     return ind
 end
 
-function getcat(lc::LC, i::Int, tf::TimeFrame, df_products::DataFrame)
-    [tf.init-lc.all[i, :ph_y_birth],               # current age
-     if lc.all[i, :ph_gender] == "M" 1 else 2 end, # gender
-     lc.all[i, :ph_qx_be_name],            # qx_be table
-     df_products[lc.all[i,:prod_id],:interest_name],
-     lc.all[i, :risk] ]                            # risk class
+function getcat(lc::LC,
+                i::Int,
+                tf::TimeFrame,
+                df_prod::DataFrame,
+                df_load::DataFrame)
+
+    load_name = df_prod[lc.all[i, :prod_id],:cost_be_name]
+    [tf.init-lc.all[i, :ph_y_birth],                    # current age
+     if lc.all[i, :ph_gender] == "M" 1 else 2 end,      # gender
+     lc.all[i, :ph_qx_be_name],                         # qx_be table
+     df_prod[lc.all[i,:prod_id],:interest_name],        # interest for pricing
+     df_load[df_load[:name] .== load_name, :infl][1,1], # be cost inflation
+     lc.all[i, :risk]]                                  # risk class  
 end
 

@@ -8,44 +8,29 @@ function LC(lc_all::DataFrame)
 end
 
 function LC(df_lc::DataFrame,
-            df_products::DataFrame,
             df_ph::DataFrame,
+            df_products::DataFrame,
+            df_load::DataFrame,
             df_qx::DataFrame,
             df_tech_interest::DataFrame,
             tf::TimeFrame)              
     lc = LC(df_lc)
-    lc!(lc, df_products, df_ph, tf, df_qx, df_tech_interest)
+    lc!(lc, df_ph, df_products, df_load, tf, df_qx, df_tech_interest)
     return lc
 end
 
 ## Interface functions for LC types --------------------------------------------
 
 
-## get parameters for  loadings type: "cost"  or "profit"
-function loadings(lc::LC,
-                  i::Int,
-                  products::DataFrame,
-                  ind::Vector{Symbol})
-    load = Array(Float64, 6)
-    for L in (L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL)
-        load[L] =  products[lc.all[i, :prod_id], ind[L]]
+## get parameters for  loadings 
+function loadings(df_load::DataFrame, load_name::Symbol)
+    load_col = [:init_abs, :init_is, :abs, :is, :prem, :infl]
+    load = Array(Float64, length(load_col))
+    for j = 1:length(load_col)
+        load[j] =  df_load[df_load[:name] .== load_name, load_col[j]][1,1]
     end
     return load
 end
-
-function costloadings(lc::LC, i::Int, products::DataFrame)
-    return loadings(lc, i, products,
-                    [:cost_INIT_ABS, :cost_INIT_IS,
-                     :cost_ABS, :cost_IS, :cost_PREM,
-                     :cost_INFL])
-end    
-
-function profitloadings(lc::LC, i::Int, products::DataFrame)
-    return loadings(lc, i, products,
-                    [:profit_INIT_ABS, :profit_INIT_IS,
-                     :profit_ABS, :profit_IS, :profit_PREM,
-                     :profit_INFL])
-end    
 
 
 function profile(lc::LC,
@@ -199,16 +184,18 @@ end
 
 ## combine all pertinent information into lc.all
 function lc!(lc::LC,
-             products::DataFrame,
-             ph::DataFrame,
+             df_ph::DataFrame,
+             df_prod::DataFrame,
+             df_load::DataFrame,
              tf::TimeFrame,   ## not used
              qx_df::DataFrame,
              tech_interest::DataFrame)
-    prod_id_dict = Dict(products[:name],[1:size(products,1)])
+    
+    prod_id_dict = Dict(df_prod[:name],[1:size(df_prod,1)])
     lc.age_min =  1 
     lc.age_max =  nrow(qx_df) - 1
 
-    lc.all = join(ph, lc.all, on = :ph_id, kind = :inner)
+    lc.all = join(df_ph, lc.all, on = :ph_id, kind = :inner)
     lc.n = size(lc.all,1)
     
     lc.all[:ph_age_start] =  lc.all[:y_start] - lc.all[:ph_y_birth]
@@ -236,21 +223,24 @@ function lc!(lc::LC,
     
     lc.all[:prod_id] = [prod_id_dict[lc.all[i, :prod_name]] for i = 1:lc.n]
     lc.all[:qx_name] =
-        [ symbol( lc.all[i, :ph_gender] * "_" *
-                products[prod_id_dict[lc.all[i, :prod_name]], :qx_name])
-            for i = 1:lc.n]
+        [symbol( string(lc.all[i, :ph_gender]) * "_" *
+                 string(df_prod[lc.all[i, :prod_id], :qx_name]))
+         for i = 1:lc.n]
     lc.all[:risk] = [1:lc.n] #ones(Int,lc.n)  ## currently a dummy variable
 
     lc.all[:prem] = zeros(Float64, lc.n)
     for i = 1:lc.n
-        prof = profile(lc, i, products,
-                       costloadings(lc,i,products)+profitloadings(lc,i,products))
-        prob = getprob(lc, i, products,  qx_df )
+        prof = profile(lc,
+                       i,
+                       df_prod,
+                       loadings(df_load,
+                                df_prod[lc.all[i, :prod_id],:cost_name]))
+        prob = getprob(lc, i, df_prod,  qx_df )
         interest = convert(Array,
                            tech_interest[1:lc.all[i,:dur],
-                                         products[lc.all[i,:prod_id],
+                                         df_prod[lc.all[i,:prod_id],
                                                   :interest_name] ] )
-        lc.all[i, :prem] =  price(lc.all[i,:is], products, prof, prob, interest)
+        lc.all[i, :prem] =  price(lc.all[i,:is], df_prod, prof, prob, interest)
     end
     return lc
 end

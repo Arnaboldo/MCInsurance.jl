@@ -13,7 +13,7 @@ get_lc_cat = function(i::Int)
       lc.all[i,:risk] ]                            # risk class
 end
 
-lc_bucket = listcontracts(buckets, lc, df_lc_prod)
+lc_bucket = listcontracts(buckets, lc, df_lc_prod, df_lc_load)
 
 ## Test accumulation conditional cashflows and probabilities per bucket
 tmp_cond = zeros(Float64,tf.n_c+1,N_COND, buckets.n)
@@ -39,8 +39,12 @@ for b = 1:buckets.n
         cond_end[C_IS] =     lc.all[i, :dur]
         cond_end[C_PREM] =   lc.all[i, :c_end_PREM]
 
-        prof = profile(lc, i, df_lc_prod, costloadings(lc,i,df_lc_prod)) 
-        cond_cf_b = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
+        prof = profile(lc,
+                       i,
+                       df_lc_prod,
+                       loadings(df_lc_load,
+                                df_lc_prod[lc.all[i, :prod_id],:cost_be_name]))
+       cond_cf_b = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
         lc_start = lc.all[i, :y_start]
         for yr = tf.init:(tf.final-1)
             for j = 1:N_COND
@@ -127,7 +131,11 @@ for b = 1:buckets.n
     for i in lc_bucket[b]
         delta[i] = lc.all[i, :y_start] - y_first
         
-        prof = profile(lc, i, df_lc_prod, costloadings(lc,i,df_lc_prod))
+        prof = profile(lc,
+                       i,
+                       df_lc_prod,
+                       loadings(df_lc_load,
+                                df_lc_prod[lc.all[i, :prod_id],:cost_be_name]))
         cond_cf[i] = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
         ssx[i] =  getprobsx(lc, i, df_lc_prod) * lc.all[i, :be_sx_fac]
     end
@@ -181,17 +189,18 @@ end
 ## Test that future contracts are not processed --------------------------------
 nf_lc_all = lc.all[lc.all[ :y_start] .<= tf.init,:]
 nf_lc = LC(nrow(nf_lc_all), lc.age_min, lc.age_max, nf_lc_all)
-nf_buckets = Buckets(nf_lc, tf, df_lc_prod, df_lc_qx, df_lc_interest)
+nf_buckets = Buckets(nf_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
 @test nf_buckets == buckets
 
 
 ## Test whether adding new contracts only works --------------------------------
 new_lc_all = lc.all[lc.all[ :y_start] .== tf.init,:]
 new_lc = LC(nrow(new_lc_all), lc.age_min, lc.age_max, new_lc_all)
-new_buckets_direct = Buckets(new_lc, tf, df_lc_prod, df_lc_qx, df_lc_interest)
+new_buckets_direct =
+    Buckets(new_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
 new_buckets = Buckets(tf)
 for i in 1:lc.n
-    add!(new_buckets, 1, lc, i,df_lc_prod,
+    add!(new_buckets, 1, lc, i,df_lc_prod, df_lc_load,
          df_lc_qx, df_lc_interest, false)
 end
 @test new_buckets_direct == new_buckets

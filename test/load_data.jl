@@ -14,17 +14,21 @@ df_inv_asset = readtable(joinpath(dirname(@__FILE__), "input/Inv_Asset.csv"))
 df_inv_init = readtable(joinpath(dirname(@__FILE__), "input/Inv_Init.csv"))
 df_lc_interest = readtable(joinpath(dirname(@__FILE__), "input/LC_Interest.csv"))
 df_lc_qx = readtable(joinpath(dirname(@__FILE__), "input/LC_QX.csv"))
+df_lc_load = readtable(joinpath(dirname(@__FILE__), "input/LC_Load.csv"))
 df_lc_prod = readtable(joinpath(dirname(@__FILE__), "input/LC_Prod.csv"))
 df_lc_ph = readtable(joinpath(dirname(@__FILE__), "input/LC_PH.csv"))
 df_lc_lc = readtable(joinpath(dirname(@__FILE__), "input/LC_LC.csv"))
 df_proj_fluct = readtable(joinpath(dirname(@__FILE__), "input/Proj_Fluct.csv"))
 
+df_lc_lc[:prod_name] = convert(DataArray{Symbol,1}, df_lc_lc[:prod_name])
+df_lc_load[:name] = convert(DataArray{Symbol,1}, df_lc_load[:name])
+for col in (:name, :cost_name, :cost_be_name, :qx_name, :interest_name) 
+    df_lc_prod[col] = convert(DataArray{Symbol,1}, df_lc_prod[col])
+end
+for col in (:ph_gender, :ph_qx_be_name)
+    df_lc_ph[col] = convert(DataArray{Symbol,1}, df_lc_ph[col])
+end
 
-df_lc_prod[:interest_name] =
-    [symbol(df_lc_prod[i,:interest_name]) for i=1:nrow(df_lc_prod)]
-
-df_lc_ph[:ph_qx_be_name] =
-    [symbol(df_lc_ph[i,:ph_qx_be_name]) for i=1:nrow(df_lc_ph)]
 
 ## Dynamic policy behavior -----------------------------------------------------
 function dynprobsx(bucket::Bucket,
@@ -98,8 +102,9 @@ type InvestHook
     exp_yield_market::Float64
 end
 invest.hook = InvestHook(df_general[1, :bonus_factor], 0.03)
-lc       = LC(df_lc_lc, df_lc_prod, df_lc_ph, df_lc_qx, df_lc_interest, tf)               
-buckets  = Buckets(lc, tf, df_lc_prod, df_lc_qx, df_lc_interest)
+lc       = LC(df_lc_lc, df_lc_ph, df_lc_prod, df_lc_load,
+              df_lc_qx, df_lc_interest, tf)               
+buckets  = Buckets(lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
 ## customize Bucket:
 type BucketHook
     statinterest::Function

@@ -41,6 +41,7 @@ function profile(lc::LC,
 
     prof = zeros( Float64, lc.all[i, :dur], N_PROF )
     cum_infl = exp(([1:lc.all[i,:dur]] .- delta_t_infl) * costs[L_INFL] )
+    init_infl =  exp( -delta_t_infl * costs[L_INFL])
 
     ind = [[:c_start_QX   :c_end_QX   :prof_start_QX   :prof_end_QX],
            [:c_start_SX   :c_end_SX   :prof_start_SX   :prof_end_SX],
@@ -55,8 +56,8 @@ function profile(lc::LC,
                                lc.all[i,ind[WX, 2]] - lc.all[i,ind[WX, 1]] + 1)
         end
     end
-    prof[1, C_INIT_ABS]  = costs[L_INIT_ABS]
-    prof[1, C_INIT_IS] = costs[L_INIT_IS] * exp( -delta_t_infl * costs[L_INFL])
+    prof[1, C_INIT_ABS]  = costs[L_INIT_ABS] * init_infl
+    prof[1, C_INIT_IS] = costs[L_INIT_IS] * init_infl
     prof[:, C_ABS] = costs[L_ABS] * cum_infl
     prof[:, C_IS] = costs[L_IS] * cum_infl
     prof[:, C_PREM] = costs[L_PREM] * prof[:,PREM] .* cum_infl
@@ -74,15 +75,12 @@ function condcf(is::Float64,
     dur = size(prof,1)
     cf = Array(Float64, dur, N_COND)
 
-    cf[:,QX]     = - prof[:,QX] * is
-    cf[:,SX]     = - prof[:,SX] .* [1:dur] * prem
-    cf[:,PX]     = - prof[:,PX] * is
-    cf[:,PREM]   =   prof[:,PREM] * prem
-    cf[:,C_INIT] = - prof[:,C_INIT_ABS] - prof[:, C_INIT_IS] * is
-    cf[:,C_ABS]  = - prof[:,C_ABS] 
-    cf[:,C_IS]   = - prof[:,C_IS] * is
-    cf[:,C_PREM] = - prof[:,C_PREM] * prem
-
+    cf[:,QX]    = - prof[:,QX] * is
+    cf[:,SX]    = - prof[:,SX] .* [1:dur] * prem
+    cf[:,PX]    = - prof[:,PX] * is
+    cf[:,PREM]  =   prof[:,PREM] * prem
+    cf[:,C_BOC] = - prof[:,C_INIT_ABS] - prof[:, C_INIT_IS] * is
+    cf[:,C_EOC] = - prof[:,C_ABS] - prof[:,C_IS] * is - prof[:,C_PREM] * prem
     return cf
 end
 
@@ -175,10 +173,9 @@ function tpprev(tp::Float64,
                 prob::Vector{Float64},
                 tech_discount::Float64,
                 cond_cf::Vector{Float64})
-    cond_cf[PREM] + cond_cf[C_INIT] +
-    (cond_cf[C_ABS] + cond_cf[C_IS] + cond_cf[C_PREM] +
-     prob[QX]*cond_cf[QX] + prob[SX]*cond_cf[SX] + prob[PX]*(cond_cf[PX] + tp)) *
-    tech_discount
+    cond_cf[PREM] + cond_cf[C_BOC] +
+    tech_discount * (cond_cf[C_EOC] +  prob[QX] * cond_cf[QX]
+                     + prob[SX] * cond_cf[SX] + prob[PX] * (cond_cf[PX] + tp)) 
 end
 
 

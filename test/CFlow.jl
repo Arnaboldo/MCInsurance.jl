@@ -4,7 +4,7 @@ using Base.Test
 
 using MCInsurance
 
-n_cf = 5 # QX, SX, PX, PREM, C_ALL
+n_cf = 6 # QX, SX, PX, PREM, C_BOC, C_EOC
 
 
 discount = Array(Float64, buckets.n_c)
@@ -44,10 +44,8 @@ for mc = 1:n_mc
             tmp_cf[t,SX] += lx_boc * prob_b[t,SX] * buckets.all[b].cond[t,SX]
             tmp_cf[t,PX] += lx_boc * prob_b[t,PX] * buckets.all[b].cond[t,PX]
             tmp_cf[t,PREM] += lx_boc * buckets.all[b].cond[t,PREM]
-            tmp_cf[t,C_ALL] += lx_boc * (buckets.all[b].cond[t,C_INIT] +
-                                         buckets.all[b].cond[t,C_ABS] +
-                                         buckets.all[b].cond[t,C_IS] +
-                                         buckets.all[b].cond[t,C_PREM])  
+            tmp_cf[t,C_BOC] += lx_boc * buckets.all[b].cond[t,C_BOC] 
+            tmp_cf[t,C_EOC] += lx_boc * buckets.all[b].cond[t,C_EOC]  
             lx_boc = lx_boc * prob_b[t,PX]
         end
     end
@@ -56,6 +54,7 @@ for mc = 1:n_mc
         @test_approx_eq_eps(tmp_tp[t], cflow.v[mc,t,TP_EOC], tol)
         ## Test that conditional cashflows are condensed correctluy ------------
         for j = 1:n_cf
+            #print("j:  $j,   $(cflow.labels[j]) ")
             @test_approx_eq_eps(tmp_cf[t,j], cflow.v[mc,t,j], tol)
         end
     end

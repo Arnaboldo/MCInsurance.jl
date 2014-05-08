@@ -1,7 +1,7 @@
 ## Constructors --------------------------------------------------
 
 function Fluct(tf::TimeFrame, n_mc::Int, kind::Symbol)
-    labels = ["QX", "SX", "C_INIT", "C_ABS", "C_IS", "C_PREM"]
+    labels = ["QX", "SX", "C_BOC", "C_EOC"]
     n = length(labels)
     d = Dict( int64([eval(parse(labels[i])) for i in 1:n]), [1:n] )
     fac = Array(Float64, n_mc, tf.n_c, n)

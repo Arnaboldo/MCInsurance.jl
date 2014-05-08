@@ -180,14 +180,13 @@ for i = 1:lc.n
 
     for tau = 1:lc.all[i,:dur]
         ## Technical provisions are counted negative.
+        ## Initial costs are not relevant for this calculation
         cum_px = 1
         for t = (tau+1):lc.all[i,:dur]
             tmp_tp[tau] +=
                cum_px * exp(r[t]) * v[t] / v[tau] * cond_cf[t,PREM]
             tmp_tp[tau] +=
-                cum_px * v[t] / v[tau] * (cond_cf[t,C_ABS] +
-                                          cond_cf[t,C_IS] +
-                                          cond_cf[t,C_PREM])
+                cum_px * v[t] / v[tau] * (cond_cf[t,C_EOC])
             tmp_tp[tau] +=
                cum_px * v[t] / v[tau] *  prob[t,QX]*cond_cf[t,QX]
             tmp_tp[tau] +=

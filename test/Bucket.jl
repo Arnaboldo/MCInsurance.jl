@@ -26,18 +26,14 @@ for b = 1:buckets.n
         cond_start[SX] =     lc.all[i, :c_start_SX]
         cond_start[PX] =     lc.all[i, :c_start_PX]
         cond_start[PREM] =   1
-        cond_start[C_INIT]=  1
-        cond_start[C_ABS]=   1
-        cond_start[C_IS]=    1
-        cond_start[C_PREM]=  1
+        cond_start[C_BOC] =  1
+        cond_start[C_EOC] =  1
         cond_end[QX] =       lc.all[i, :c_end_QX]
         cond_end[SX] =       lc.all[i, :c_end_SX]
         cond_end[PX] =       min(1000,lc.all[i, :c_end_PX])
         cond_end[PREM] =     lc.all[i, :c_end_PREM]
-        cond_end[C_INIT] =   lc.all[i, :dur]
-        cond_end[C_ABS] =    lc.all[i, :dur]
-        cond_end[C_IS] =     lc.all[i, :dur]
-        cond_end[C_PREM] =   lc.all[i, :c_end_PREM]
+        cond_end[C_BOC] =    lc.all[i, :dur]
+        cond_end[C_EOC] =    lc.all[i, :dur]
 
         prof = profile(lc,
                        i,

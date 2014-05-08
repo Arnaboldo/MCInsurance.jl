@@ -4,8 +4,8 @@ using MCInsurance
 
 
 fluct2 = Array(Fluct,3)
-fac = Array(Float64, tf.n_c, 6)
-for t= 1:tf.n_c, j = 1:6
+fac = Array(Float64, tf.n_c, 4)
+for t= 1:tf.n_c, j = 1:4
     fac[t,j] = 10 * t + j
 end
 

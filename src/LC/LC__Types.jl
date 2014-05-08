@@ -4,7 +4,7 @@ export N_COND, QX, SX, PX, PREM, C_INIT, C_ABS, C_IS, C_PREM,
        L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL
         
 export LC,  lc!, loadings, getprobsx, getprob,
-       profile, condcf, price, tpeop
+       profile, condcf, price, tpeoc
 export Bucket, Buckets, getcat, getind, add!, listcontracts
 
 ## Indices ---------------------------------------------------------------------

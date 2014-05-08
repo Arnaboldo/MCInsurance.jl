@@ -1,9 +1,9 @@
 ## column names for CFlow.v.  QX, SX, PX, PREM: 1:4 
-export C_ALL, ASSET_EOP, TP_EOP, DIV_EOP, SURPLUS_EOP, BONUS, CYCLE
+export C_ALL, ASSET_EOC, TP_EOC, DIV_EOC, SURPLUS_EOC, BONUS, CYCLE
 export Fluct
 export CFlow, df, dynprobsx
 
-const C_ALL, ASSET_EOP, TP_EOP, DIV_EOP, SURPLUS_EOP, BONUS, CYCLE = 5:11
+const C_ALL, ASSET_EOC, TP_EOC, DIV_EOC, SURPLUS_EOC, BONUS, CYCLE = 5:11
 
 
 type Fluct

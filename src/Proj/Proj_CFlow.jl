@@ -1,8 +1,8 @@
 ## Constructors --------------------------------------------------
 
 function CFlow(tf::TimeFrame, n_mc::Int)
-    labels = ["QX","SX", "PX", "PREM", "C_ALL", "ASSET_EOP", "TP_EOP",
-              "DIV_EOP", "SURPLUS_EOP", "BONUS", "CYCLE"]
+    labels = ["QX","SX", "PX", "PREM", "C_ALL", "ASSET_EOC", "TP_EOC",
+              "DIV_EOC", "SURPLUS_EOC", "BONUS", "CYCLE"]
     n = length(labels)
     v = zeros(Float64, (n_mc, tf.n_c, n ))
     CFlow(n, n_mc, tf, v, labels)
@@ -98,15 +98,15 @@ function assetsprojecteoc!(cf::CFlow,
                            cost_init::Vector{Float64},
                            dynalloc!::Function)
     if t == 1 
-        asset_BOP = invest.mv_total_init
+        asset_BOC = invest.mv_total_init
     else
-        asset_BOP = cf.v[mc,t-1,ASSET_EOP] 
+        asset_BOC = cf.v[mc,t-1,ASSET_EOC] 
     end
-    asset_BOP += cf.v[mc,t,PREM] + cost_init[1]
+    asset_BOC += cf.v[mc,t,PREM] + cost_init[1]
     for t_p in ((t-1) * cf.tf.n_dt+1):(t * cf.tf.n_dt)
         dynalloc!(invest, mc, t)
-        project!( invest, mc, t_p, asset_BOP)
-        asset_BOP = invest.mv_total_eop[mc,t_p]
+        project!( invest, mc, t_p, asset_BOC)
+        asset_BOC = invest.mv_total_eop[mc,t_p]
     end
 end
 
@@ -129,8 +129,8 @@ function bucketprojecteoc!(cf::CFlow,
     for X = (QX, SX, PX)
         cf.v[mc,t,X] += bucket.lx_boc * prob[t,X] * bucket.cond[t,X]
     end
-    cf.v[mc,t,TP_EOP] +=
-        bucket.lx_boc * prob[t,PX] * tpeop(prob[ t:bucket.n_c, :],
+    cf.v[mc,t,TP_EOC] +=
+        bucket.lx_boc * prob[t,PX] * tpeoc(prob[ t:bucket.n_c, :],
                                            discount[t:bucket.n_c],
                                            bucket.cond[ t:bucket.n_c, :])
     for C in (C_INIT, C_ABS, C_IS, C_PREM)
@@ -139,7 +139,7 @@ function bucketprojecteoc!(cf::CFlow,
     end
     tp_stat = t == 1 ? bucket.tp_stat_init : bucket.tp_stat[t-1] 
     cf.v[mc,t,BONUS] += bucket.bonus_rate * tp_stat 
-    ## roll forward lx to the end of period: EOP
+    ## roll forward lx to the end of period: EOC
     bucket.lx_boc = bucket.lx_boc * prob[t,PX]
 end
                
@@ -151,15 +151,15 @@ function surplusprojecteoc!(cf::CFlow,
                             mc::Int,
                             t::Int,
                             cost_init::Vector{Float64})
-    cf.v[mc,t,ASSET_EOP] =
+    cf.v[mc,t,ASSET_EOC] =
         (invest.mv_total_eop[mc, t * cf.tf.n_dt] + 
          cf.v[mc, t, QX] + cf.v[mc, t, SX] + cf.v[mc, t, PX] +
          cf.v[mc, t, C_ALL] - cost_init[1] +
          cf.v[mc, t, BONUS])
-    cf.v[mc, t, DIV_EOP] =
-        - dividend * max(0, cf.v[mc, t, ASSET_EOP] + cf.v[mc, t, TP_EOP])
-    cf.v[mc, t, ASSET_EOP] += cf.v[mc, t, DIV_EOP]               
-    cf.v[mc, t, SURPLUS_EOP] = cf.v[mc, t, ASSET_EOP] + cf.v[mc, t, TP_EOP]
+    cf.v[mc, t, DIV_EOC] =
+        - dividend * max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
+    cf.v[mc, t, ASSET_EOC] += cf.v[mc, t, DIV_EOC]               
+    cf.v[mc, t, SURPLUS_EOC] = cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC]
 end
 
 function defaultdynbonusrate!(bucket::Bucket, mc::Int, t::Int, invest::Invest)

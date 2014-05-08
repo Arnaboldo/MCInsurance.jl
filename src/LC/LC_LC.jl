@@ -38,8 +38,10 @@ function profile(lc::LC,
                  products::DataFrame ,
                  costs::Vector{Float64},
                  delta_t_infl::Int = 0)  ## adj reference time for inflation
+
     prof = zeros( Float64, lc.all[i, :dur], N_PROF )
-    
+    cum_infl = exp(([1:lc.all[i,:dur]] .- delta_t_infl) * costs[L_INFL] )
+
     ind = [[:c_start_QX   :c_end_QX   :prof_start_QX   :prof_end_QX],
            [:c_start_SX   :c_end_SX   :prof_start_SX   :prof_end_SX],
            [:c_start_PX   :c_end_PX   :prof_start_PX   :prof_end_PX],
@@ -53,10 +55,8 @@ function profile(lc::LC,
                                lc.all[i,ind[WX, 2]] - lc.all[i,ind[WX, 1]] + 1)
         end
     end
-
     prof[1, C_INIT_ABS]  = costs[L_INIT_ABS]
-    prof[1, C_INIT_IS] = costs[L_INIT_IS]
-    cum_infl = exp(([1:lc.all[i,:dur]] .- delta_t_infl) * costs[L_INFL] )
+    prof[1, C_INIT_IS] = costs[L_INIT_IS] * exp( -delta_t_infl * costs[L_INFL])
     prof[:, C_ABS] = costs[L_ABS] * cum_infl
     prof[:, C_IS] = costs[L_IS] * cum_infl
     prof[:, C_PREM] = costs[L_PREM] * prof[:,PREM] .* cum_infl
@@ -120,27 +120,27 @@ function price(is::Float64,
                prob::Array{Float64,2},
                tech_interest::Vector{Float64}
                )
-    lx_bop = cumprod(prob[:,PX])
-    unshift!(lx_bop,1)
-    pop!(lx_bop)
+    lx_boc = cumprod(prob[:,PX])
+    unshift!(lx_boc,1)
+    pop!(lx_boc)
     v = cumprod(exp(-tech_interest))
-    v_bop = deepcopy(v)
-    unshift!(v_bop,1)
-    pop!(v_bop)
+    v_boc = deepcopy(v)
+    unshift!(v_boc,1)
+    pop!(v_boc)
 
     num =
         prof[1, C_INIT_ABS] + prof[1, C_INIT_IS] * is +
-        sum(lx_bop .* v .* (prof[:, C_ABS] + is * (prof[:,C_IS] +
+        sum(lx_boc .* v .* (prof[:, C_ABS] + is * (prof[:,C_IS] +
                                                    prob[:,PX] .* prof[:,PX] +
                                                    prob[:,QX] .* prof[:,QX]) ))
-    denom =  sum(lx_bop .*
-                 (prof[:,PREM] .* (v_bop - v .* prof[:, C_PREM]) -
+    denom =  sum(lx_boc .*
+                 (prof[:,PREM] .* (v_boc - v .* prof[:, C_PREM]) -
                   v .* prob[:,SX] .* prof[:,SX] .* cumsum(prof[:,PREM]) ) )
     return num/denom
 end
 
 ## Technical provisions
-function tpeop (prob::Array{Float64,2},
+function tpeoc (prob::Array{Float64,2},
                 tech_discount::Vector{Float64},
                 cond_cf::Array{Float64,2} )
     dur = size(cond_cf,1)
@@ -156,7 +156,7 @@ function tpeop (prob::Array{Float64,2},
     return tp
 end
 
-function tpveceop (prob::Array{Float64,2},
+function tpveceoc (prob::Array{Float64,2},
                    tech_discount::Vector{Float64},
                    cond_cf::Array{Float64,2} )
     dur = size(cond_cf,1)

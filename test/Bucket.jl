@@ -102,7 +102,7 @@ for b = 1:buckets.n
             prob_b[ t:b_n_c, X] = buckets.all[b].prob_be[t:b_n_c, X]
         end
         prob_b[:,PX] = 1 .- prob_b[:,QX] - prob_b[:,SX]
-        tp[t,b] = tpeop(prob_b[t:b_n_c,:],
+        tp[t,b] = tpeoc(prob_b[t:b_n_c,:],
                         disc[t:b_n_c],
                         buckets.all[b].cond[t:b_n_c,:])
     end
@@ -163,7 +163,7 @@ for b = 1:buckets.n
         prob_lc[:,PX] = 1 .- prob_lc[:,QX] - prob_lc[:,SX]
     if i==4 (x=prob_lc) end
          for tau = 1:lc.all[i, :dur]           
-              tp_lc[tau,i] = tpeop(prob_lc[tau:lc.all[i, :dur],:],
+              tp_lc[tau,i] = tpeoc(prob_lc[tau:lc.all[i, :dur],:],
                                    disc[tau:lc.all[i,:dur]],
                                    cond_cf[i][tau:lc.all[i, :dur],:])
         end

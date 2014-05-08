@@ -84,7 +84,7 @@ function add!(me::Buckets,
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
     tp_stat_calc = 
-        tpveceop(getprob(lc, i, df_prod, df_qx),
+        tpveceoc(getprob(lc, i, df_prod, df_qx),
                          exp(-convert(Array, interest[1:lc.all[i,:dur],
                                                       df_prod[lc.all[i,:prod_id],
                                                                :interest_name]])),

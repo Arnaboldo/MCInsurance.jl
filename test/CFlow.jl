@@ -36,7 +36,7 @@ for mc = 1:n_mc
             # accumulate technical provisions
 
             tmp_tp[t] +=  lx_boc * prob_b[t,PX] *
-                          tpeop(prob_b[t:buckets.all[b].n_c,:],
+                          tpeoc(prob_b[t:buckets.all[b].n_c,:],
                                 discount[t:buckets.all[b].n_c],
                                 buckets.all[b].cond[t:buckets.all[b].n_c,:])
             # accumulate cashflows
@@ -53,7 +53,7 @@ for mc = 1:n_mc
     end
     for t = 1:tf.n_c
         ## Test that technical provisions are correct --------------------------
-        @test_approx_eq_eps(tmp_tp[t], cflow.v[mc,t,TP_EOP], tol)
+        @test_approx_eq_eps(tmp_tp[t], cflow.v[mc,t,TP_EOC], tol)
         ## Test that conditional cashflows are condensed correctluy ------------
         for j = 1:n_cf
             @test_approx_eq_eps(tmp_cf[t,j], cflow.v[mc,t,j], tol)
@@ -68,8 +68,8 @@ test_cflow_surplus = 0
 for mc = 1:n_mc
     for b = 1:buckets.n
         for t = 1:tf.n_c
-            @test_approx_eq_eps(cflow.v[mc,t,SURPLUS_EOP],
-                                cflow.v[mc,t,ASSET_EOP] + cflow.v[mc,t,TP_EOP],
+            @test_approx_eq_eps(cflow.v[mc,t,SURPLUS_EOC],
+                                cflow.v[mc,t,ASSET_EOC] + cflow.v[mc,t,TP_EOC],
                                 tol)
         end
     end

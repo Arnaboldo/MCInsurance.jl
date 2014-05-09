@@ -1,5 +1,6 @@
 export IGStocks, IGRiskfreeBonds, IGCash, Invest, InvestAlloc, project!
 export InvestInfo
+export meancumdiscountc, uncumul
 
 ## Investment Groups: IG #########################################
 ## Investment groups may differ from asset groups as one
@@ -103,6 +104,8 @@ type Invest
     yield_total::Array{Float64,2}     ## investment yield per period
     yield_cash_c::Array{Float64,2}    ## cash yield per cycle (not per period!)
     yield_market_c::Array{Float64,2}  ## benchmark y. per cycle (not per period!)
+    yield_init_grid::Vector{Float64}
+    mean_cum_discount_c::Array{Float64,2}
     hook::Any                         ## hook for attaching custom types 
 end
 

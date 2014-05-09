@@ -12,17 +12,20 @@ function CIR (name::Symbol,
     n_mc = size(noise,1)
     dt = tf.dt
     n_p = tf.n_p
-    v_bop = zeros(Float64, (n_mc, n_p+1, dim))
-    for mc = 1:n_mc, t = 0:n_p, d =1:dim
-        if t==0
-            v_bop[mc, t+1,1] = v_init
-        else
-            v_bop[mc, t+1,1] =
-                v_bop[mc, t,1] +
-            a * ( v_infty - v_bop[mc,t,1] ) * dt +
-            sqrt( abs(v_bop[mc, t,1]) * dt ) * noise[mc,t]
-        end
-    end
+    v_bop = Array(Float64, (n_mc, n_p+1, dim))
+    for mc = 1:n_mc
+        v_bop[mc,:,1] = vbop(mc, v_init, a, v_infty, tf, noise) 
+    end 
+    ## for mc = 1:n_mc, t = 0:n_p, d =1:dim
+    ##     if t==0
+    ##         v_bop[mc, t+1,1] = v_init
+    ##     else
+    ##         v_bop[mc, t+1,1] =
+    ##             v_bop[mc, t,1] +
+    ##         a * ( v_infty - v_bop[mc,t,1] ) * dt +
+    ##         sqrt( abs(v_bop[mc, t,1]) * dt ) * noise[mc,t]
+    ##     end
+    ## end
     yield = Array(Float64, (n_mc, n_p, dim))
     yield = v_bop[:,1:n_p,:]
     CIR( name, labels, v_init, a, v_infty,
@@ -51,9 +54,7 @@ function CIR(name::Symbol,
              tf::TimeFrame,
              cov::Float64,
              n_mc::Int )
-    noise =  reshape(rand( Normal(0,sqrt(cov)), n_mc*tf.n_p ),
-                     n_mc,
-                     tf.n_p )
+    noise =  reshape(rand( Normal(0,sqrt(cov)), n_mc*tf.n_p ), n_mc, tf.n_p )
     CIR( name, labels, v_init, a, v_infty, tf, cov, noise )
 end
 
@@ -69,6 +70,40 @@ function show(io::IO, me::CIR)
     print(io,"(n_mc n_p): "); print(io, size(me.noise))
 end
 
+function vbop(mc::Int,
+              v_init::Float64,
+              a::Float64,
+              v_infty::Float64,
+              tf::TimeFrame,
+              noise::Array{Float64,2}) 
+    v_bop = Array(Float64, tf.n_p+1)
+    for t = 0:tf.n_p
+        if t==0
+            v_bop[t+1] = v_init
+        else
+            v_bop[t+1] = v_bop[t] + a * ( v_infty - v_bop[t] ) * tf.dt +
+                         sqrt( abs(v_bop[t]) * tf.dt ) * noise[mc,t]
+        end
+    end
+    return v_bop
+end
+
+function yieldc(me::CIR, n_mc::Int, tf::TimeFrame, v_init)
+    yield_mc = Array(Float64, 1, tf.n_p, 1)
+    yield_c = zeros(Float64, n_mc, tf.n_c, 1)
+    noise = reshape(rand(Normal(0,sqrt(me.cov)), n_mc * tf.n_p ), n_mc, tf.n_p)
+    for mc = 1:n_mc
+        yield_mc[1, :, 1] =
+            vbop(mc, v_init, me.a, me.v_infty, tf, noise)[1:tf.n_p] 
+        for t = 1:tf.n_c
+            for delta = 1:tf.n_dt
+                yield_c[mc,t] += yield_mc[1, t - 1 + delta, 1]
+            end
+        end
+    end
+    return yield_c
+end
+    
 ## deterministic yields for noise=0, relative to beginning of pd.
 determbop(me::CIR) =
     [me.v_infty + (1-me.a*me.dt)^t * (me.v_init-me.v_infty)

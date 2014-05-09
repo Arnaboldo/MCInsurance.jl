@@ -102,9 +102,17 @@ type InvestHook
     exp_yield_market::Float64
 end
 invest.hook = InvestHook(df_general[1, :bonus_factor], 0.03)
+discount_be = uncumul(meancumdiscountc(invest,
+                                       invest.yield_cash_c[1,1]),
+                      125)
+
+
 lc       = LC(df_lc_lc, df_lc_ph, df_lc_prod, df_lc_load,
-              df_lc_qx, df_lc_interest, tf)               
-buckets  = Buckets(lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
+              df_lc_qx, df_lc_interest, tf)
+
+buckets  = Buckets(lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest,
+                   discount_be)
+
 ## customize Bucket:
 type BucketHook
     statinterest::Function
@@ -115,7 +123,7 @@ for b = 1:buckets.n
     buckets.all[b].hook = BucketHook(getstatinterest, 0.0)
 end
 dividend = df_general[1, :capital_dividend]
-discount = exp(-0.01) * ones(Float64, buckets.n_c)  
+
 fluct    = Fluct(tf, n_mc, 1.0)
 cflow    = CFlow(buckets, fluct, invest, dividend,
                  dynbonusrate!, dynprobsx, dynalloc!)

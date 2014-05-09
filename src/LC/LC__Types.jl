@@ -4,7 +4,7 @@ export N_COND, QX, SX, PX, PREM, C_BOC, C_EOC,
        L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL
         
 export LC,  lc!, loadings, getprobsx, getprob,
-       profile, condcf, price, tpeoc
+       profile, condcf, price, tpeoc, tpveceoc, tpprev
 export Bucket, Buckets, getcat, getind, add!, listcontracts
 
 ## Indices ---------------------------------------------------------------------
@@ -40,6 +40,7 @@ type Bucket
     cond::Array{Float64,2}      ## conditional cash-flows
     tp_stat::Vector{Float64}    ## statutory technical provisions
     tp_stat_init::Float64       ## initial statutory technical provisions
+    tp_be_init::Float64         ## initial best estimate technical provisions
     prob_be::Array{Float64,2}   ## best estimate: QX, SX
     sx_weights::Vector{Float64} ## weights for est. average be SX
     lx_boc::Float64             ## current fraction of policy holders in-force

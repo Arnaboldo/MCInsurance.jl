@@ -35,12 +35,14 @@ for b = 1:buckets.n
         cond_end[C_BOC] =    lc.all[i, :dur]
         cond_end[C_EOC] =    lc.all[i, :dur]
 
+        delta_t_infl =  tf.init - lc.all[i, :y_start]
         prof = profile(lc,
                        i,
                        df_lc_prod,
                        loadings(df_lc_load,
-                                df_lc_prod[lc.all[i, :prod_id],:cost_be_name]))
-       cond_cf_b = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
+                                df_lc_prod[lc.all[i, :prod_id],:cost_be_name]),
+                      delta_t_infl)
+        cond_cf_b = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
         lc_start = lc.all[i, :y_start]
         for yr = tf.init:(tf.final-1)
             for j = 1:N_COND
@@ -127,11 +129,13 @@ for b = 1:buckets.n
     for i in lc_bucket[b]
         delta[i] = lc.all[i, :y_start] - y_first
         
+        delta_t_infl =  tf.init - lc.all[i, :y_start]
         prof = profile(lc,
                        i,
                        df_lc_prod,
                        loadings(df_lc_load,
-                                df_lc_prod[lc.all[i, :prod_id],:cost_be_name]))
+                                df_lc_prod[lc.all[i, :prod_id],:cost_be_name]),
+                       delta_t_infl)
         cond_cf[i] = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
         ssx[i] =  getprobsx(lc, i, df_lc_prod) * lc.all[i, :be_sx_fac]
     end
@@ -185,7 +189,8 @@ end
 ## Test that future contracts are not processed --------------------------------
 nf_lc_all = lc.all[lc.all[ :y_start] .<= tf.init,:]
 nf_lc = LC(nrow(nf_lc_all), lc.age_min, lc.age_max, nf_lc_all)
-nf_buckets = Buckets(nf_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
+nf_buckets = Buckets(nf_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest,
+                     discount_be)
 @test nf_buckets == buckets
 
 
@@ -193,10 +198,11 @@ nf_buckets = Buckets(nf_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest
 new_lc_all = lc.all[lc.all[ :y_start] .== tf.init,:]
 new_lc = LC(nrow(new_lc_all), lc.age_min, lc.age_max, new_lc_all)
 new_buckets_direct =
-    Buckets(new_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
+    Buckets(new_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest,
+                     discount_be)
 new_buckets = Buckets(tf)
 for i in 1:lc.n
     add!(new_buckets, 1, lc, i,df_lc_prod, df_lc_load,
-         df_lc_qx, df_lc_interest, false)
+         df_lc_qx, df_lc_interest, discount_be, false)
 end
 @test new_buckets_direct == new_buckets

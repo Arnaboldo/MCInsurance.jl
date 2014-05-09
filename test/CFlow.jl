@@ -12,15 +12,14 @@ discount = Array(Float64, buckets.n_c)
 for mc = 1:n_mc
     tmp_tp = zeros(Float64, tf.n_c)
     tmp_cf = zeros(Float64, tf.n_c, n_cf) 
-    discount[1:buckets.tf.n_c] = exp(-invest.yield_cash_c[mc,:])
-    if buckets.tf.n_c < buckets.n_c
-        discount[(buckets.tf.n_c+1):buckets.n_c] =
-            discount[buckets.tf.n_c]                
-    end
     for b = 1:buckets.n
         prob_b = Array(Float64, buckets.all[b].n_c, 3 )
         lx_boc = 1
         for t = 1:tf.n_c
+            discount = uncumul(meancumdiscountc(invest,
+                                                invest.yield_cash_c[mc,t]), 
+                               buckets.n_c)
+
             yield = 0.0
             for t_p in ((t-1) * tf.n_dt+1):(t * tf.n_dt)    
                 yield += invest.yield_total[mc, t_p] 

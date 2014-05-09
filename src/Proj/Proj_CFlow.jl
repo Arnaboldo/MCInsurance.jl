@@ -1,8 +1,8 @@
 ## Constructors --------------------------------------------------
 
 function CFlow(tf::TimeFrame, n_mc::Int)
-    labels = ["QX","SX", "PX", "PREM", "C_BOC", "C_EOC", "BONUS", "DIVID",
-              "TP_EOC", "ASSET_EOC", "SURPLUS_EOC", "CYCLE"]
+    labels = ["QX","SX", "PX", "PREM", "C_BOC", "C_EOC", "DELTA_TP", "BONUS",
+              "DIVID", "TP_EOC", "ASSET_EOC", "SURPLUS_EOC", "CYCLE"]
     n = length(labels)
     v = zeros(Float64, (n_mc, tf.n_c, n ))
     CFlow(n, n_mc, tf, v, labels)
@@ -20,8 +20,12 @@ function CFlow(buckets::Buckets,
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)    
     for mc = 1:cf.n_mc
         for t = 1:cf.tf.n_c
+            discount = uncumul(meancumdiscountc(invest,
+                                                invest.yield_cash_c[mc,t]), 
+                               buckets.n_c)
+                                       
             projectcycle(cf, mc, t,
-                         buckets, fluct, invest, dividend,
+                         buckets, fluct, invest, discount, dividend,
                          dynbonusrate!, dynprobsx, dynalloc!)
         end
     end
@@ -58,25 +62,16 @@ function projectcycle(cf::CFlow,
                       buckets::Buckets,
                       fluct::Fluct,
                       invest::Invest,
+                      discount::Vector{Float64},
                       dividend::Float64,
                       dynbonusrate!::Function,
                       dynprobsx::Function,
                       dynalloc!::Function)
-                      
     cf.v[mc,t,CYCLE] = cf.tf.init - 1 + t
     for bucket in buckets.all
         bucketprojectboc!(cf::CFlow, bucket, fluct, mc, t)
     end
     assetsprojecteoc!(cf, invest, mc, t, dynalloc!)
-    ## fix_me:  We should really use the expected value
-    ##          (given the current invest.yield_cash_c[mc,t])
-    ##          Hence we cannot simply use mean but need a nested
-    ##          monte carlo simulation (issue #9)
-    discount = Array(Float64, buckets.n_c)
-    discount[1:buckets.tf.n_c] = exp(-invest.yield_cash_c[mc,:])
-    if buckets.tf.n_c < buckets.n_c
-        discount[(buckets.tf.n_c+1):buckets.n_c] =  discount[buckets.tf.n_c]
-    end
     for bucket in buckets.all
         bucketprojecteoc!(cf, bucket, fluct, invest, discount, mc, t,
                           dynbonusrate!, dynprobsx)
@@ -138,6 +133,20 @@ function bucketprojecteoc!(cf::CFlow,
         bucket.lx_boc * prob[t,PX] * tpeoc(prob[ t:bucket.n_c, :],
                                            discount[t:bucket.n_c],
                                            bucket.cond[ t:bucket.n_c, :])
+    ## print("mc: $mc, t: $t, discount: $(round(discount[t],3)), ")
+    ## tptemp = tpprev(cf.v[mc,t,TP_EOC],
+    ##                 reshape(prob[t,:], 3),
+    ##                 discount[t],
+    ##                 reshape(bucket.cond[t,:], N_COND))
+    ## println("TPEOC: $(round(cf.v[mc,t,TP_EOC],1)), TPBOC: $(round(tptemp,1))")
+    ## println(round(reshape(prob[t,:], 3),4))
+    ## println(round(reshape(bucket.cond[t,:], N_COND),4))
+#    if (tf.cf.init +t-1 )
+    cf.v[mc,t, DELTA_TP] +=
+        cf.v[mc,t,TP_EOC] - prob[t,PX] * tpprev(cf.v[mc,t,TP_EOC],
+                                                reshape(prob[t,:], 3),
+                                                discount[t],
+                                                reshape(bucket.cond[t,:], N_COND))
     tp_stat = t == 1 ? bucket.tp_stat_init : bucket.tp_stat[t-1] 
     cf.v[mc,t,BONUS] += bucket.bonus_rate * tp_stat 
     ## roll forward lx to the end of period: EOC

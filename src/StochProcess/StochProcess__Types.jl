@@ -1,7 +1,7 @@
 export StochProcessInfo,
        Brownian, CIR, GeomBrownian, DetermShortRate, ManualShortRate, Vasicek,
        ProcessIndex, ProcessShortRate, Process,
-       determbop, forwardbop      
+       determbop, forwardbop, yieldc      
 
 type StochProcessInfo
     # Interface necessary because different asset groups

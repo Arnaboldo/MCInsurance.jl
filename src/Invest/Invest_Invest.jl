@@ -34,17 +34,17 @@ function Invest(name::Symbol,
                 info::Vector{InvestInfo},
                 ig_target::Vector{Float64} 
                 )
-    n_ig =          length(info)
-    ig =            Array(IG, n_ig)
-    ig_symb =       Array(Symbol,n_ig)
-    port_start =    Array(DataFrame, n_ig)
-    mv_total_init = 0.0
-    mv_total_eop =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
-    yield_total =   zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
+    n_ig =            length(info)
+    ig =              Array(IG, n_ig)
+    ig_symb =         Array(Symbol,n_ig)
+    port_start =      Array(DataFrame, n_ig)
+    mv_total_init =   0.0
+    mv_total_eop =    zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
+    yield_total =     zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
     yield_market_c =  zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c ) # per cycle!
     yield_cash_c =    zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c ) # per cycle!
-    asset_target =  Array(Any,0)
-    asset_int =   Dict{Vector{Any}, Int}()
+    asset_target =    Array(Any,0)
+    asset_int =       Dict{Vector{Any}, Int}()
     for i = 1:n_ig
         ig_symb[i] = info[i].ig_name
         push!(asset_target, Array(Float64,0) )
@@ -134,6 +134,24 @@ function Invest(name::Symbol,
     ig_int = Dict(ig_symb, 1:length(ig_symb)) 
     ig_target /= max(eps(), sum(ig_target))
 
+    n_yield_init = 10
+    n_mc = 500
+    n_c = 130
+    yield_cash_min = cap_mkt.tf.n_dt * minimum(ig[ig_int[:cash]].proc.yield)
+    yield_cash_max = cap_mkt.tf.n_dt * maximum(ig[ig_int[:cash]].proc.yield)
+    yield_init_grid = linspace(yield_cash_min, yield_cash_max, n_yield_init)
+    tf = TimeFrame(cap_mkt.tf.init, cap_mkt.tf.init + n_c, cap_mkt.tf.n_dt * n_c)
+    mean_cum_discount_c = Array(Float64, tf.n_c, n_yield_init) #cash, per cycle!
+    for k = 1:length(yield_init_grid)
+        mean_cum_discount_c[:,k] =
+            mean(exp(-cumsum(yieldc(ig[ig_int[:cash]].proc,
+                                    n_mc,
+                                    tf,
+                                    yield_init_grid[k]),
+                             2)),
+                 1)
+    end                        
+    
     alloc = InvestAlloc(ig_target,    ## used by projection
                         ig_target,    ## standard benchmark for dyn. allocation
                         ig_int,
@@ -141,8 +159,8 @@ function Invest(name::Symbol,
                         asset_target, ## standard benchmark for dyn. allocation
                         asset_int)
     Invest(name, cap_mkt, n_ig, ig, ig_symb, alloc,
-           mv_total_init, mv_total_eop, yield_total,
-           yield_cash_c, yield_market_c, false)
+           mv_total_init, mv_total_eop, yield_total, yield_cash_c,
+           yield_market_c, yield_init_grid, mean_cum_discount_c, false)
 end
         
 # Constructor from DataFrames
@@ -197,5 +215,32 @@ function project!(me::Invest,
     me.yield_total[mc,t] = me.mv_total_eop[mc,t]/max(eps(), mv_total_bop) - 1
 end
 
+function meancumdiscountc(me::Invest, approx_yield::Float64)
+    if approx_yield >= me.yield_init_grid[end]
+        return  me.mean_cum_discount_c[:,end]
+    elseif approx_yield < me.yield_init_grid[1]
+        return  me.mean_cum_discount_c[:,1]
+    end
+    k = 0
+    for j = 1:length(me.yield_init_grid)
+        if approx_yield <= me.yield_init_grid[j]
+            k = j
+            break
+        end
+    end
+    lambda = (approx_yield - me.yield_init_grid[k]) /
+             (me.yield_init_grid[k+1] - me.yield_init_grid[k])
+    return ((1-lambda) * me.mean_cum_discount_c[:,k] +
+             lambda * me.mean_cum_discount_c[:,k+1] )
+end
 
+function uncumul(cumdiscount::Vector{Float64}, len::Int = length(cumdiscount))
+    len = min(length(cumdiscount), len)
+    discount = Array(Float64, len)
+    discount[1] = cumdiscount[1]
+    for t = 2:len
+        discount[t] = cumdiscount[t]/max(eps(), cumdiscount[t-1])
+    end
+    return discount
+end
    

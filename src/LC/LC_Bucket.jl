@@ -13,13 +13,16 @@ function Buckets(lc::LC,
                  df_prod::DataFrame,
                  df_load::DataFrame,
                  df_qx::DataFrame,
-                 df_interest::DataFrame)
+                 df_interest::DataFrame,
+                 discount_be::Vector{Float64})
     buckets = Buckets(tf)
+    buckets.n_c =
+        maximum(lc.all[:,:dur] - (buckets.tf.init .- lc.all[:, :y_start ]))
+    discount =  
+    
     for i = 1:lc.n
-        add!(buckets,1, lc, i, df_prod, df_load, df_qx, df_interest, true)     
-    end
-    for b = 1:buckets.n
-        buckets.n_c = max(buckets.n_c, buckets.all[b].n_c)
+        add!(buckets,1, lc, i, df_prod, df_load, df_qx,
+             df_interest, discount_be, true)     
     end
     buckets
 end
@@ -50,6 +53,7 @@ function add!(me::Buckets,
               df_load::DataFrame,    # cost information
               df_qx::DataFrame,      # mortality tables
               interest::DataFrame,   # technical interest rates
+              discount_be::Vector{Float64},
               existing::Bool = true) # default: add existing contract
 
     c_start = lc.all[i, :y_start]-me.tf.init+1 # inception cycle
@@ -83,6 +87,15 @@ function add!(me::Buckets,
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
+    prob_be = zeros( Float64, n_c, 3)
+    prob_be[:,QX] = df_qx[ cat[CAT_AGE] .+ [1:n_c], cat[CAT_QXBE] ]
+    # we insure that sx-prob = 0 if there is no sx-benefit,
+    # even if lc-data record sx-prob != 0
+    prob_be[:,SX] =
+        lc.all[i, :be_sx_fac] *
+        insertc(tf_cond, lc.all[i, :y_start], getprobsx(lc,i,df_prod), true) .*
+        cond[:,SX ] ./ min(-eps(), cond[:,SX ])
+
     tp_stat_calc = 
         tpveceoc(getprob(lc, i, df_prod, df_qx),
                          exp(-convert(Array, interest[1:lc.all[i,:dur],
@@ -92,25 +105,20 @@ function add!(me::Buckets,
     tp_stat = insertc(tf_cond, lc.all[i, :y_start], tp_stat_calc, true)
     if lc.all[i, :y_start] < me.tf.init
         tp_stat_init = tp_stat_calc[ me.tf.init-lc.all[i, :y_start]]
+        tp_be_init = tpeoc(hcat(prob_be, 1 .- prob_be[:, QX] - prob_be[:, SX]),
+                           discount_be,
+                           cond)
     else
         tp_stat_init = 0.0
+        tp_be_init = 0.0
     end
-    prob_be = zeros( Float64, n_c, 2)
-    prob_be[:,QX] = df_qx[ cat[CAT_AGE] .+ [1:n_c], cat[CAT_QXBE] ]
-    # we insure that sx-prob = 0 if there is no sx-benefit,
-    # even if lc-data record sx-prob != 0
-    prob_be[:,SX] =
-        lc.all[i, :be_sx_fac] *
-        insertc(tf_cond, lc.all[i, :y_start], getprobsx(lc,i,df_prod), true) .*
-        cond[:,SX ] ./ min(-eps(), cond[:,SX ])
-
     # create new bucket or merge into existing bucket 
     if b == 0 
         me.n += 1
         push!(me.all, Bucket(1, n_c, dur, cat, cond, tp_stat, tp_stat_init,
-                             prob_be, cond[:,SX], 1, 0.0, false))
+                             tp_be_init, prob_be, cond[:,SX], 1, 0.0, false))
     else
-        merge!(me, b, n_c, cat, cond, tp_stat, tp_stat_init, prob_be) 
+        merge!(me, b, n_c, cat, cond, tp_stat, tp_stat_init, tp_be_init, prob_be) 
     end    
 end
 
@@ -144,6 +152,7 @@ function merge!(me::Buckets,
                 cond::Array{Float64,2},       # cond. cash-flows
                 tp_stat::Vector{Float64},
                 tp_stat_init::Float64,
+                tp_be_init::Float64,
                 prob_be::Array{Float64,2} )   # biom. prob
     if n_c > me.all[b].n_c
         grow!(me.all[b], n_c, prob_be[:,QX])
@@ -154,6 +163,7 @@ function merge!(me::Buckets,
     end
     me.all[b].tp_stat += tp_stat
     me.all[b].tp_stat_init += tp_stat_init
+    me.all[b].tp_be_init += tp_be_init
     me.all[b].prob_be[:,SX] =
         (cond[:,SX] .* prob_be[:,SX] +
          me.all[b].sx_weights .* me.all[b].prob_be[:,SX] ) ./

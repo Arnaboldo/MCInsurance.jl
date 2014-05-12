@@ -12,7 +12,7 @@ function CapMkt(name::Symbol,
     noise = reshape(rand( MvNormal(cov), n_mc * tf.n_p )',
                     n_mc, tf.n_p, size(cov,1) )
 
-    dict_proc = Dict{Symbol, Int64}()
+    proc_int = Dict{Symbol, Int64}()
     proc = Array(Process, n)
     cum_dim = 0
     cum_stoch_dim = 0
@@ -43,9 +43,9 @@ function CapMkt(name::Symbol,
 
         end
         cum_dim += dim
-        dict_proc[proc_info[i].name] = i
+        proc_int[proc_info[i].name] = i
     end
-    CapMkt( name, tf, n_mc, stoch, cov, noise, proc, n, dict_proc)
+    CapMkt( name, tf, n_mc, stoch, cov, noise, proc, n, proc_int)
 end
 
 # Constructor from DataFrames

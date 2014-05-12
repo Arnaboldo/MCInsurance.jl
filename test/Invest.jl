@@ -4,7 +4,8 @@ using Base.Test
 using MCInsurance
 
 
-invest_test = Invest(:iii, cap_mkt, df_inv_inv, df_inv_init, df_inv_asset)
+invest_test =
+    Invest(:iii, cap_mkt, df_general, df_inv_inv, df_inv_init, df_inv_asset)
 
 
 # -----------------------------------------------------------------------------
@@ -81,7 +82,8 @@ end
 ## Test bond projection --------------------------------------------------------
 
 ## Re-initialize because order of calculation is important for testing bonds
-inv_new = Invest(:iii, cap_mkt, df_inv_inv, df_inv_init, df_inv_asset)
+inv_new =
+    Invest(:iii, cap_mkt, df_general, df_inv_inv, df_inv_init, df_inv_asset)
 
 ig_bonds = inv_new.ig[i_bonds]
 

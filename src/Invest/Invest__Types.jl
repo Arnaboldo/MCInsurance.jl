@@ -1,6 +1,6 @@
 export IGStocks, IGRiskfreeBonds, IGCash, Invest, InvestAlloc, project!
 export InvestInfo
-export meancumdiscountc, uncumul
+export meancumdiscrf, meandiscrf
 
 ## Investment Groups: IG #########################################
 ## Investment groups may differ from asset groups as one
@@ -55,7 +55,7 @@ type IGRiskfreeBonds <: IG
     mv_normbond_curr::Vector{Float64} ## curr. norm. market value
 end
 
-type IGCash <: IG
+type IGCash <: IG 
     ## constructor
     name::Symbol                      ## name investment group
     proc::ProcessShortRate            ## stochastic process
@@ -73,7 +73,7 @@ type IGCash <: IG
 end
 
 
-type InvestInfo
+type InvestInfo   ## information for setting up Invest -------------------------
     ig_name::Symbol                   ## name of investment group
     ig_type::Symbol                   ## type of investment
     proc_name::Symbol                 ## name of associated stochastic process
@@ -83,7 +83,14 @@ type InvestInfo
     asset_mkt_benchmark::Vector{Float64} ## percentage of market benchmark
 end
 
-type InvestAlloc
+type MktC         ## mkt indicators per cycle (not period!) --------------------
+    yield_mkt::Array{Float64,2}       ## benchmark for market yield per cycle
+    yield_rf::Array{Float64,2}        ## cash yield per cycle 
+    yield_grid_rf::Vector{Float64}    ## grid for interpolation
+    mean_cum_disc_rf::Array{Float64,2} ## expected cumul. riskfree discount
+end
+
+type InvestAlloc  ## asset allocation ------------------------------------------ 
     ig_target::Vector{Float64}        ## target allocation for IGs
     ig_target_std::Vector{Float64}    ## standard target allocation for IGs
     ig_int::Dict{Symbol, Int}         ## identifier for IG: ig.name  -> Int
@@ -92,7 +99,7 @@ type InvestAlloc
     asset_int:: Dict{Vector{Any}, Int} ## identifier for asset targets
 end
 
-type Invest
+type Invest      ## investment portfolio and valuation --------------------------
     name::Symbol                      ## name of investment scheme
     cap_mkt::CapMkt                   ## capital market
     n::Int                            ## # investment groups
@@ -102,12 +109,7 @@ type Invest
     mv_total_init::Float64            ## initial market value
     mv_total_eop::Array{Float64,2}    ## market value at end of period
     yield_total::Array{Float64,2}     ## investment yield per period
-    yield_cash_c::Array{Float64,2}    ## cash yield per cycle (not per period!)
-    yield_market_c::Array{Float64,2}  ## benchmark y. per cycle (not per period!)
-    yield_init_grid::Vector{Float64}
-    mean_cum_discount_c::Array{Float64,2}
+    c::MktC                           ## market information per cycle
     hook::Any                         ## hook for attaching custom types 
 end
-
-
 

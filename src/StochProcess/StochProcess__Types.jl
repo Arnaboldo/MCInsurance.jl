@@ -25,6 +25,7 @@ abstract ProcessShortRate <: Process
 type Brownian <: ProcessIndex
     name::Symbol                ## name of process
     labels::Vector{Symbol}      ## labels for process components
+    comp_int::Dict{Symbol,Int}   ## identifier for named components
     v_init::Vector{Float64}     ## initial values
     drift::Vector{Float64}      ## parameter for process
     cov::Array{Float64,2}       ## covariance matrix for noise
@@ -40,6 +41,7 @@ end
 type GeomBrownian <: ProcessIndex
     name::Symbol                ## name of process
     labels::Vector{Symbol}      ## labels for process components
+    comp_int::Dict{Symbol,Int}   ## identifier for named components
     v_init::Vector{Float64}     ## initial values
     drift::Vector{Float64}      ## parameter for process
     cov::Array{Float64,2}       ## covariance matrix for noise
@@ -55,6 +57,7 @@ end
 type Vasicek <: ProcessShortRate
     name::Symbol           ## name of process
     labels::Vector{Symbol} ## labels for process components
+    comp_int::Dict{Symbol,Int}   ## identifier for named components
     v_init::Float64             ## initial values
     a::Float64                  ## parameter for process
     v_infty::Float64            ## parameter for process
@@ -71,6 +74,7 @@ end
 type CIR <: ProcessShortRate
     name::Symbol                ## name of process
     labels::Vector{Symbol}      ## labels for process components
+    comp_int::Dict{Symbol,Int}   ## identifier for named components
     v_init::Float64             ## initial values
     a::Float64                  ## parameter for process
     v_infty::Float64            ## parameter for process
@@ -87,6 +91,7 @@ end
 type DetermShortRate <: ProcessShortRate
     name::Symbol                ## name of process
     labels::Vector{Symbol}      ## labels for process components
+    comp_int::Dict{Symbol,Int}   ## identifier for named components
     v_init::Vector{Float64}     ## initial values, filled by v_bo[
     v_bop::Array{Float64,3}     ## projected values beg. of step
     dim::Int                    ## number of assets modeled (=1)
@@ -99,6 +104,7 @@ end
 type ManualShortRate <: ProcessShortRate
     name::Symbol                ## name of process
     labels::Vector{Symbol}      ## labels for process components
+    comp_int::Dict{Symbol,Int}   ## identifier for named components
     v_init::Vector{Float64}     ## initial values, filled by v_bo[
     v_bop::Array{Float64,3}     ## projected values beg. of step
     dim::Int                    ## number of assets modeled (=1)

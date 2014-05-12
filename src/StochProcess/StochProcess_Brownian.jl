@@ -41,7 +41,9 @@ function Brownian(name::Symbol,
              " Corresponding yields are set to -999.")
     end
 
-    Brownian(name, labels, v_init, drift,
+    comp_int = Dict(labels, 1:length(labels))
+
+    Brownian(name, labels, comp_int, v_init, drift,
              cov, noise, dim, v_bop, yield,
              n_mc, dt, n_p
              )

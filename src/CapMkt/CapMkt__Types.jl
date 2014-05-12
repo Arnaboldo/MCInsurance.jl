@@ -9,5 +9,5 @@ type CapMkt
     noise::Array{Float64,3}        ## noise for all stoch.processes
     proc::Vector{Process}          ## StochProcess in capital market
     n::Int                         ## number of process groups
-    dict_proc::Dict{Symbol,Int}    ## proc-name -> index in proc
+    proc_int::Dict{Symbol,Int}     ## proc-name -> index in proc
 end

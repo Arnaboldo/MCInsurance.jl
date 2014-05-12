@@ -39,13 +39,13 @@ function dynprobsx(bucket::Bucket,
                    invest::Invest, 
                    #bonus_rate::Float64
                    )
-    if invest.yield_market_c[mc,t] / max(eps(),invest.yield_cash_c[mc,t]) < 1.1
+    if invest.c.yield_mkt[mc,t] / max(eps(),invest.c.yield_rf[mc,t]) < 1.1
         delta = 0.1
     else
         delta = 0.0
     end
-    si = invest.yield_market_c[mc,t] /
-         max(eps(), bucket.hook.bonus_rate + invest.yield_cash_c[mc,t])
+    si = invest.c.yield_mkt[mc,t] /
+         max(eps(), bucket.hook.bonus_rate + invest.c.yield_rf[mc,t])
 
     return  fluct.fac[mc, t, SX] * bucket.prob_be[t:bucket.n_c, SX] .+
             (delta + 0.05 * min(6,max(0, si - 1.4)))
@@ -59,8 +59,8 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
 
    ## market performance indicator weighted with expected yield
    mkt_perf_ind =
-       0.5 * (invest.yield_market_c[mc,t] + invest.hook.exp_yield_market) /
-       max(0, invest.yield_cash_c[mc,t])
+       0.5 * (invest.c.yield_mkt[mc,t] + invest.hook.exp_yield_market) /
+       max(0, invest.c.yield_rf[mc,t])
     
    alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
 
@@ -84,7 +84,7 @@ function   dynbonusrate!(bucket::Bucket,
     bucket.bonus_rate = 
         invest.hook.bonus_factor *
         (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
-        max(0, invest.yield_market_c[mc,t] - bucket.hook.statinterest(bucket,t))
+        max(0, invest.c.yield_mkt[mc,t] - bucket.hook.statinterest(bucket,t))
 end
 
 ##------------------------------------------------------------------------------
@@ -95,16 +95,14 @@ tf       = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
                      df_general[1, :tf_n_dt] *
                      (df_general[1, :tf_y_end]-df_general[1, :tf_y_start]))
 cap_mkt  = CapMkt(:Capital_Market, tf, n_mc, df_capmkt_1, df_capmkt_2)
-invest   = Invest(:iii, cap_mkt, df_inv_inv, df_inv_init, df_inv_asset)
+invest = Invest(:iii, cap_mkt, df_general, df_inv_inv, df_inv_init, df_inv_asset)
 ## Customize Invest:
 type InvestHook
     bonus_factor::Float64
     exp_yield_market::Float64
 end
 invest.hook = InvestHook(df_general[1, :bonus_factor], 0.03)
-discount_be = uncumul(meancumdiscountc(invest,
-                                       invest.yield_cash_c[1,1]),
-                      125)
+discount_be = meandiscrf(invest.c, invest.c.yield_rf[1,1], 125)
 
 
 lc       = LC(df_lc_lc, df_lc_ph, df_lc_prod, df_lc_load,

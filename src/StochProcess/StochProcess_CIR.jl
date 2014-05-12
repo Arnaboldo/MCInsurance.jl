@@ -28,7 +28,8 @@ function CIR (name::Symbol,
     ## end
     yield = Array(Float64, (n_mc, n_p, dim))
     yield = v_bop[:,1:n_p,:]
-    CIR( name, labels, v_init, a, v_infty,
+    comp_int = Dict(labels, 1:length(labels))
+    CIR( name, labels, comp_int,  v_init, a, v_infty,
         cov, noise, dim, v_bop, yield,
         n_mc, dt, n_p )
 end

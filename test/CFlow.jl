@@ -16,9 +16,8 @@ for mc = 1:n_mc
         prob_b = Array(Float64, buckets.all[b].n_c, 3 )
         lx_boc = 1
         for t = 1:tf.n_c
-            discount = uncumul(meancumdiscountc(invest,
-                                                invest.yield_cash_c[mc,t]), 
-                               buckets.n_c)
+            discount =
+                meandiscrf(invest.c, invest.c.yield_rf[mc,t], buckets.n_c)
 
             yield = 0.0
             for t_p in ((t-1) * tf.n_dt+1):(t * tf.n_dt)    

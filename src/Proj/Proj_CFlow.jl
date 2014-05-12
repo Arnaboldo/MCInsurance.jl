@@ -20,12 +20,8 @@ function CFlow(buckets::Buckets,
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)    
     for mc = 1:cf.n_mc
         for t = 1:cf.tf.n_c
-            discount = uncumul(meancumdiscountc(invest,
-                                                invest.yield_cash_c[mc,t]), 
-                               buckets.n_c)
-                                       
-            projectcycle(cf, mc, t,
-                         buckets, fluct, invest, discount, dividend,
+            disc = meandiscrf(invest.c, invest.c.yield_rf[mc,t], buckets.n_c)                                       
+            projectcycle(cf, mc, t, buckets, fluct, invest, disc, dividend,
                          dynbonusrate!, dynprobsx, dynalloc!)
         end
     end
@@ -75,6 +71,11 @@ function projectcycle(cf::CFlow,
     for bucket in buckets.all
         bucketprojecteoc!(cf, bucket, fluct, invest, discount, mc, t,
                           dynbonusrate!, dynprobsx)
+    end
+    if t == 1
+       cf.v[mc,t, DELTA_TP]  += cf.v[mc, t, TP_EOC]  
+    else
+       cf.v[mc,t, DELTA_TP] =  cf.v[mc, t, TP_EOC] - cf.v[mc, t-1, TP_EOC]
     end
     surplusprojecteoc!(cf, invest, dividend, mc, t)
 end
@@ -141,14 +142,13 @@ function bucketprojecteoc!(cf::CFlow,
     ## println("TPEOC: $(round(cf.v[mc,t,TP_EOC],1)), TPBOC: $(round(tptemp,1))")
     ## println(round(reshape(prob[t,:], 3),4))
     ## println(round(reshape(bucket.cond[t,:], N_COND),4))
-#    if (tf.cf.init +t-1 )
-    cf.v[mc,t, DELTA_TP] +=
-        cf.v[mc,t,TP_EOC] - prob[t,PX] * tpprev(cf.v[mc,t,TP_EOC],
-                                                reshape(prob[t,:], 3),
-                                                discount[t],
-                                                reshape(bucket.cond[t,:], N_COND))
-    tp_stat = t == 1 ? bucket.tp_stat_init : bucket.tp_stat[t-1] 
-    cf.v[mc,t,BONUS] += bucket.bonus_rate * tp_stat 
+    if t == 1
+        cf.v[mc,t, DELTA_TP] -= prob[t,PX] * bucket.tp_be_init # completed later
+        cf.v[mc,t,BONUS] += bucket.bonus_rate * bucket.tp_stat_init
+    else
+        ## cf.v[mc,t, DELTA_TP] is calculated later
+        cf.v[mc,t,BONUS] +=  bucket.bonus_rate * bucket.tp_stat[t-1] 
+    end
     ## roll forward lx to the end of period: EOC
     bucket.lx_boc = bucket.lx_boc * prob[t,PX]
 end              

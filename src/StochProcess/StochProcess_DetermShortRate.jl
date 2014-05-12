@@ -13,7 +13,8 @@ function DetermShortRate (name::Symbol,
     v_init = v_bop[:,1,1]
     yield = Array(Float64, (n_mc, n_p, dim))
     yield = v_bop[:,1:n_p,:]
-    DetermShortRate( name, labels, v_init, v_bop, dim, yield,
+    comp_int = Dict(labels, 1:length(labels))
+    DetermShortRate( name, labels, comp_int, v_init, v_bop, dim, yield,
                     n_mc, dt, n_p )
 end
 

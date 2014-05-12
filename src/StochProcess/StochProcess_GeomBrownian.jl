@@ -30,7 +30,9 @@ function GeomBrownian(name::Symbol,
         yield[:,t,:] = log(v_bop[:,t+1,:] ./ v_bop[:,t,:]) / dt
     end
 
-    GeomBrownian(  name, labels, v_init, drift,
+    comp_int = Dict(labels, 1:length(labels))
+
+    GeomBrownian(name, labels, comp_int, v_init, drift,
                  cov, noise, dim, v_bop, yield,
                  n_mc, dt, n_p  )
 end
@@ -46,6 +48,7 @@ function GeomBrownian(name::Symbol,
                       )
     noise = reshape(rand( MvNormal(cov), n_mc*tf.n_p )',
                     n_mc, tf.n_p, length(v_init) )
+
 
     GeomBrownian(name, labels, v_init, drift,
                  tf, cov, noise )

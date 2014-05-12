@@ -23,11 +23,13 @@ include("CapMkt/CapMkt__Types.jl")
 include("CapMkt/CapMkt_CapMkt.jl")
 
 include("Invest/Invest__Types.jl")
+include("Invest/Invest_InvestInfo.jl")
 include("Invest/Invest_IGCash.jl")
 include("Invest/Invest_IGRiskfreeBonds.jl")
 include("Invest/Invest_IGStocks.jl")
 include("Invest/Invest_IG.jl")
 include("Invest/Invest_Invest.jl")
+include("Invest/Invest_MktC.jl")
 
 include("LC/LC__Types.jl")
 include("LC/LC_LC.jl")

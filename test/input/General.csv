@@ -1,2 +1,2 @@
-random_seed,tf_y_start,tf_y_end,tf_n_dt,cap_mkt_name,n_mc,capital_dividend,bonus_factor
-1,2005,2011,2,Capital Market,4,0.1,0.8
+random_seed,tf_y_start,tf_y_end,tf_n_dt,cap_mkt_name,n_mc,n_mean_mc,n_mean_c,n_mean_grid,capital_dividend,bonus_factor
+1,2005,2011,2,Capital Market,4,500,130,20,0.1,0.8

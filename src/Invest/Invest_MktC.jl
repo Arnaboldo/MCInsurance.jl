@@ -1,7 +1,7 @@
 ## Constructors ----------------------------------------------------------------
 function MktC(info::Vector{InvestInfo},
               cap_mkt::CapMkt,
-              ig_symb::Vector{Symbol},
+              id::Dict{Symbol, Int},
               n_mean_mc::Int,
               n_mean_c::Int,
               n_mean_grid::Int
@@ -10,9 +10,8 @@ function MktC(info::Vector{InvestInfo},
     yield_mkt = Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
     mean_cum_disc_rf = Array(Float64, n_mean_c, n_mean_grid) 
 
-
-    proc_cash_name = info[findin(ig_symb,[:cash])[1]].proc_name
-    ind_cash = cap_mkt.proc_int[proc_cash_name]
+    proc_cash_name = info[id[:cash]].proc_name
+    ind_cash = cap_mkt.id[proc_cash_name]
     
     yield_rf = yieldrf(cap_mkt, proc_cash_name)
     yield_mkt = yieldmkt(info, cap_mkt)
@@ -85,7 +84,7 @@ end
 
 function yieldrf(cap_mkt::CapMkt, proc_cash_name::Symbol)
     yield_rf = zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
-    ind_cash = cap_mkt.proc_int[proc_cash_name]
+    ind_cash = cap_mkt.id[proc_cash_name]
     for mc = 1:cap_mkt.n_mc
         for t = 1:cap_mkt.tf.n_c
             for d = 1:cap_mkt.tf.n_dt
@@ -101,10 +100,10 @@ function yieldmkt(info::Vector{InvestInfo},
                   )
     yield_mkt = zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c ) # per cycle!
     for i = 1:length(info)
-        ind_proc = cap_mkt.proc_int[info[i].proc_name]
+        ind_proc = cap_mkt.id[info[i].proc_name]
         if info[i].ig_type == :IGRiskfreeBonds
-            for j in  info[i].id_asset
-                ind_asset = findin(info[i].id_asset, [j])[1]
+            for j in  info[i].asset
+                ind_asset = findin(info[i].asset, [j])[1]
                 for mc = 1:cap_mkt.n_mc
                     for t = 1:cap_mkt.tf.n_c
                         for d = 1:cap_mkt.tf.n_dt
@@ -116,9 +115,9 @@ function yieldmkt(info::Vector{InvestInfo},
                 end
             end
         else ## :IGCash, :IGStocks
-            for proc_label in info[i].id_asset
-                ind_asset = findin(info[i].id_asset,[proc_label])[1]
-                ind_comp = cap_mkt.proc[ind_proc].comp_int[proc_label]
+            for cpnt in info[i].asset
+                ind_asset = findin(info[i].asset,[cpnt])[1]
+                ind_comp = cap_mkt.proc[ind_proc].cpnt_id[cpnt]
                 for mc = 1:cap_mkt.n_mc
                     for t = 1:cap_mkt.tf.n_c
                         for d = 1:cap_mkt.tf.n_dt

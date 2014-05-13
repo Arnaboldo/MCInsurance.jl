@@ -2,10 +2,10 @@
 ## Minimal constructor
 function IGCash(name::Symbol,
                 proc::ProcessShortRate,
-                port_start::DataFrame,
+                inv_init::DataFrame,
                 n::Int
                 )
-    labels =        convert(Array{Symbol,1}, [port_start[1,:proc_labels]])
+    asset =        convert(Array{Symbol,1}, [inv_init[1,:proc_labels]])
     mv_init =       zeros(Float64,  n )
     mv_eop =        zeros(Float64, proc.n_mc, proc.n_p, n ) # = 0
     mv_total_eop =  zeros(Float64, proc.n_mc, proc.n_p )
@@ -13,9 +13,9 @@ function IGCash(name::Symbol,
     mv_alloc_bop =  zeros(Float64, n )
     mv_total_init = 0
 
-    mv_total_init = port_start[1, :asset_amount]
+    mv_total_init = inv_init[1, :asset_amount]
 
-    IGCash(name, proc, port_start, labels, n,
+    IGCash(name, proc, inv_init, asset, n,
            mv_init, mv_total_init, mv_eop, mv_total_eop, cash_eop,
            mv_alloc_bop)
 end

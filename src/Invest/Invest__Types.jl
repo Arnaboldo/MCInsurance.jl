@@ -16,7 +16,7 @@ type IGStocks <: IG
     name::Symbol                      ## name of investment group
     proc::ProcessIndex                ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{Symbol}            ## identifies assets
+    asset::Vector{Any}                ## assets in IG ( = proc.cpnt)
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -34,7 +34,7 @@ type IGRiskfreeBonds <: IG
     name::Symbol                      ## name of investment group
     proc::ProcessShortRate            ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{Int}               ## identifies assets
+    asset::Vector{Any}                ## assets in IG ( = duration in periods)
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -60,7 +60,7 @@ type IGCash <: IG
     name::Symbol                      ## name investment group
     proc::ProcessShortRate            ## stochastic process
     port_start::DataFrame             ## initial portfolio
-    labels::Vector{Symbol}            ## identifies assets
+    asset::Vector{Any}                ## assets in IG ( = proc.cpnt)
     n::Int                            ## # assets incl. durations
     ## interface
     mv_init::Vector{Float64}          ## market value beg. of pd.
@@ -77,8 +77,8 @@ type InvestInfo   ## information for setting up Invest -------------------------
     ig_name::Symbol                   ## name of investment group
     ig_type::Symbol                   ## type of investment
     proc_name::Symbol                 ## name of associated stochastic process
-    port_start::DataFrame             ## initial portfolio
-    id_asset::Vector{Any}             ## identifies assets in asset_xxx below
+    inv_init::DataFrame               ## initial portfolio
+    asset::Vector{Any}                ## identifies assets in asset_xxx below
     asset_target::Vector{Float64}     ## asset allocation within ig
     asset_mkt_benchmark::Vector{Float64} ## percentage of market benchmark
 end
@@ -104,7 +104,7 @@ type Invest      ## investment portfolio and valuation -------------------------
     cap_mkt::CapMkt                   ## capital market
     n::Int                            ## # investment groups
     ig::Vector{IG}                    ## investment groups: IG
-    ig_symb::Vector{Symbol}           ## identifier for IG: Int -> ig.name
+#    ig_symb::Vector{Symbol}           ## identifier for IG: Int -> ig.name
     alloc::InvestAlloc                ## initial target asset allocation
     mv_total_init::Float64            ## initial market value
     mv_total_eop::Array{Float64,2}    ## market value at end of period

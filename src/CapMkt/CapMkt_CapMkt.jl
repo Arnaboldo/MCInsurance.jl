@@ -1,4 +1,5 @@
 ## Constructors ----------------------------------------------------------------
+## Standard constructor
 function CapMkt(name::Symbol,
                 tf::TimeFrame,
                 n_mc::Int64,
@@ -11,41 +12,39 @@ function CapMkt(name::Symbol,
 
     noise = reshape(rand( MvNormal(cov), n_mc * tf.n_p )',
                     n_mc, tf.n_p, size(cov,1) )
-
-    proc_int = Dict{Symbol, Int64}()
     proc = Array(Process, n)
-    cum_dim = 0
-    cum_stoch_dim = 0
+    cum_n_cpnt = 0
+    cum_stoch_n_cpnt = 0
     for i = 1:n
-        dim = length(proc_info[i].labels)
-        if stoch[cum_dim+1]
+        n_cpnt = length(proc_info[i].cpnt)
+        if stoch[cum_n_cpnt+1]
             proc[i] =
                 eval(proc_info[i].type_name)(proc_info[i].name,
-                                             proc_info[i].labels,
+                                             proc_info[i].cpnt,
                                              proc_info[i].v_init,
                                              proc_info[i].param,
                                              tf,
-                                             cov[(cum_stoch_dim+(1:dim)),
-                                                 (cum_stoch_dim+(1:dim))],
-                                             noise[: , :, cum_stoch_dim+(1:dim)]
+                                             cov[(cum_stoch_n_cpnt+(1:n_cpnt)),
+                                                 (cum_stoch_n_cpnt+(1:n_cpnt))],
+                                             noise[:,
+                                                   :,
+                                                   cum_stoch_n_cpnt+(1:n_cpnt)]
                                              )
-            cum_stoch_dim += dim
+            cum_stoch_n_cpnt += n_cpnt
         else
             proc[i] =
                 eval(proc_info[i].type_name)(proc_info[i].name,
-                                             proc_info[i].labels,
+                                             proc_info[i].cpnt,
                                              proc_info[i].v_determ_bop,
-                                             #proc_info[i].v_init,
-                                                    #proc_info[i].param,
                                              tf,
                                              n_mc
                                              )
 
         end
-        cum_dim += dim
-        proc_int[proc_info[i].name] = i
+        cum_n_cpnt += n_cpnt
     end
-    CapMkt( name, tf, n_mc, stoch, cov, noise, proc, n, proc_int)
+    id = Dict(Symbol[proc[i].name for i = 1:n], 1:n)
+    CapMkt(name, tf, n_mc, cov, noise, proc, id, n)
 end
 
 # Constructor from DataFrames

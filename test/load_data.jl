@@ -68,7 +68,7 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
    total_other = 1 - invest.alloc.ig_target_std[invest.alloc.ig_int[:cash]]
    fac_other = (1-alloc_cash) / max(eps(), total_other)
     for i = 1:invest.n
-      if invest.ig_symb[i] == :cash
+      if invest.ig[i].name == :cash
           invest.alloc.ig_target[i] = alloc_cash
       else
           invest.alloc.ig_target[i] = fac_other * invest.alloc.ig_target_std[i]

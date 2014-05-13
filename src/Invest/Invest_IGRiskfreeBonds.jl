@@ -2,9 +2,9 @@
 ## Minimal constructor
 function IGRiskfreeBonds(name::Symbol,
                           proc::ProcessShortRate,
-                          port_start::DataFrame,
+                          inv_init::DataFrame,
                           n::Int   )
-    labels = [1:n]
+    asset = [1:n]
     
     mv_init =          zeros(Float64, n )
     mv_total_init =    0
@@ -22,12 +22,12 @@ function IGRiskfreeBonds(name::Symbol,
     mv_normbond_init = zeros(Float64, n )
     mv_normbond_curr = zeros(Float64, n )
 
-    for j=1:n, k=1:nrow(port_start)
-        if port_start[k, :asset_dur] == j  ## duration
+    for j=1:n, k=1:nrow(inv_init)
+        if inv_init[k, :asset_dur] == j  ## duration
             coupon_init[j] +=
-                 port_start[k, :asset_coupon] *
-                 port_start[k, :asset_amount]
-            amount_init[j] += port_start[k, :asset_amount]
+                 inv_init[k, :asset_coupon] *
+                 inv_init[k, :asset_amount]
+            amount_init[j] += inv_init[k, :asset_amount]
         end
     end
     coupon_init = coupon_init ./ max(eps(), amount_init)
@@ -45,7 +45,7 @@ function IGRiskfreeBonds(name::Symbol,
     # At beginning of first period we have not yet generated cash:
     mv_total_init = sum( mv_init )
 
-    IGRiskfreeBonds(name, proc, port_start, labels, n,
+    IGRiskfreeBonds(name, proc, inv_init, asset, n,
                     mv_init, mv_total_init, mv_eop, mv_total_eop,
                     cash_eop, mv_alloc_bop,
                     riskfree_bop,

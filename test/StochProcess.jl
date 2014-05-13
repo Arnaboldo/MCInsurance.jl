@@ -63,7 +63,7 @@ proc = Array(Process, length(D))
 for i=1:length(D)
     noise[i] = reshape(rand( MvNormal(cov[i]), n_mc * tf.n_p )',
                        n_mc, tf.n_p, n_dim[i] )
-    proc[i] = eval(info[i].type_name)(info[i].name, info[i].labels,
+    proc[i] = eval(info[i].type_name)(info[i].name, info[i].cpnt,
                                       info[i].v_init, info[i].param,
                                       tf, cov[i], noise[i] )
 end
@@ -83,7 +83,7 @@ proc_determ = Array(Process, length(D))
 
 ## Brownian: dv = (drift*dt+dW), where dW ~ N(0,cov)
 i = D["brown"]
-for mc = 1:n_mc, t = 1:tf.n_p, d= 1:proc[i].dim
+for mc = 1:n_mc, t = 1:tf.n_p, d= 1:proc[i].n
   @test_approx_eq_eps(proc[i].v_bop[mc,t+1,d]- proc[i].v_bop[mc,t,d],
                       proc[i].drift[d] * tf.dt + sqrt(tf.dt) * noise[i][mc,t,d],
                       tol )
@@ -94,7 +94,7 @@ i= D["geombrown"]
 msg_v_bop[i] =
     "0 = dlog(v) - ((drift-0.5diag(Sigma)^2)*dt+sqrt(dt)* dW)" *
     ", where dW ~ N(0,cov)"
-for mc = 1:n_mc, t = 1:tf.n_p, d = 1:proc[i].dim
+for mc = 1:n_mc, t = 1:tf.n_p, d = 1:proc[i].n
     @test_approx_eq_eps(log(proc[i].v_bop[mc,t+1,d])- log(proc[i].v_bop[mc,t,d]),
                         (proc[i].drift[d] - 0.5cov[i][d,d]) * tf.dt +
                         + sqrt(tf.dt) * noise[i][mc,t,d],
@@ -103,7 +103,7 @@ end
 
 ## Cox Ingersoll Ross: dv = a*(v_infty-v[t])*dt + sqrt(v[t])*sqrt(dt)*dW
 i= D["cir"]
-for mc = 1:n_mc, t = 1:tf.n_p, d= 1:proc[i].dim
+for mc = 1:n_mc, t = 1:tf.n_p, d= 1:proc[i].n
     @test_approx_eq_eps(proc[i].v_bop[mc,t+1,d]- proc[i].v_bop[mc,t,d],
                         proc[i].a * (proc[i].v_infty-proc[i].v_bop[mc,t,d]) * tf.dt +
                         sqrt(proc[i].v_bop[mc,t,d]) *  sqrt(tf.dt) * noise[i][mc,t,d],
@@ -115,7 +115,7 @@ i= D["vasicek"]
 msg_v_bop[i] =
     "0 = dv - (a*(v_infty-v[t])*dt+sqrt(dt)*dW)" *
           ", where dW ~ N(0,cov)"
-for mc = 1:n_mc, t = 1:tf.n_p, d= 1:proc[i].dim
+for mc = 1:n_mc, t = 1:tf.n_p, d= 1:proc[i].n
     @test_approx_eq_eps(proc[i].v_bop[mc,t+1,d]- proc[i].v_bop[mc,t,d],
                         proc[i].a * (proc[i].v_infty-proc[i].v_bop[mc,t,d]) * tf.dt +
                         sqrt(tf.dt) * noise[i][mc,t,d],
@@ -130,7 +130,7 @@ i = D["brown"]
 ## test only if v[s] > 0 for all s <= t+1 (otherwise log is not defined)
 for i= 1:length(D)
     if typeof(proc[i]) <: ProcessIndex
-        for mc = 1:n_mc, d = 1:proc[i].dim
+        for mc = 1:n_mc, d = 1:proc[i].n
                 v_positive = true
             for t = 1:tf.n_p
                 if (proc[i].v_bop[mc,t+1,d] <= 0) & i == D["brown"]
@@ -150,7 +150,7 @@ end
 ## Processes that model short rates:  v[t] = yield[t] 
 for i= 1:length(D)
     if typeof(proc[i]) <: ProcessShortRate
-        for mc = 1:n_mc, d = 1:proc[i].dim, t = 1:tf.n_p
+        for mc = 1:n_mc, d = 1:proc[i].n, t = 1:tf.n_p
             @test_approx_eq_eps(proc[i].v_bop[mc,t,d], proc[i].yield[mc,t,d],
                                 tol)
         end
@@ -166,7 +166,7 @@ for i= 1:length(D)
     end
     noise_det = zeros(Float64, (1, tf.n_p, n_dim[i]))
     proc_determ[i] =
-        eval(info[i].type_name)(info[i].name, info[i].labels,
+        eval(info[i].type_name)(info[i].name, info[i].cpnt,
                                 info[i].v_init, param, tf,
                                 zeros(Float64, (n_dim[i] ,n_dim[i])),
                                 noise_det  )

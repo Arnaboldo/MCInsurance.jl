@@ -3,10 +3,10 @@
 ## Minimal constructor
 function IGStocks( name::Symbol,
                   proc::ProcessIndex,
-                  port_start::DataFrame,
+                  inv_init::DataFrame,
                   n::Int
                   )
-    labels = proc.labels
+    asset = proc.cpnt
     mv_init =       zeros(Float64, n )
     mv_eop =        zeros(Float64, proc.n_mc, proc.n_p, n )
     mv_total_eop =  zeros(Float64, proc.n_mc, proc.n_p )
@@ -15,15 +15,15 @@ function IGStocks( name::Symbol,
     amount_bop =    zeros(Float64, n )
 
     amount_init = zeros(Float64, n)
-    for j=1:n, k=1:nrow(port_start)
-        if port_start[k, :proc_labels] == string(proc.labels[j])
-            amount_init[j] += port_start[k, :asset_amount]
+    for j=1:n, k=1:nrow(inv_init)
+        if inv_init[k, :proc_labels] == string(proc.cpnt[j])
+            amount_init[j] += inv_init[k, :asset_amount]
         end
     end
     mv_init = amount_init .*  proc.v_init
     mv_total_init = sum( mv_init )    
 
-    IGStocks(name, proc, port_start, labels, n,
+    IGStocks(name, proc, inv_init, asset, n,
              mv_init, mv_total_init, mv_eop, mv_total_eop,
              cash_eop, 
              mv_alloc_bop,

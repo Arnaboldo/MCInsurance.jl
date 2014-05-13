@@ -12,32 +12,42 @@ function Brownian(name::Symbol,
     n_mc = size(noise,1)
     dt = tf.dt
     n_p = tf.n_p
-
+    is_bankrupt = false
     v_bop = zeros(Float64, (n_mc, n_p+1, n))
-    for mc = 1:n_mc, t = 0:n_p, d =1:n
-        if t==0
-            v_bop[mc, t+1, d] = v_init[d]
-        else
-            v_bop[mc, t+1, d] =
-                v_bop[mc, t, d] +
-            drift[d] * dt + sqrt(dt) * noise[mc,t,d]
+    for mc = 1:n_mc
+        for d = 1:n
+            for t = 1:(n_p+1) 
+                if t==1
+                    v_bop[mc,t,d] = v_init[d]
+                else
+                    v_bop[mc,t,d] = v_bop[mc,t-1,d] + drift[d] * dt +
+                                    sqrt(dt) * noise[mc,t-1,d]
+                    if v_bop[mc,t,d] <= 0.0 ## bankruptcy
+                        for tau = t:(n_p+1)
+                            v_bop[mc,tau,d] = 0
+                        end
+                        is_bankrupt = true
+                        break
+                    end
+                end
+            end
         end
     end  
     yield = Array(Float64, (n_mc, n_p, n))
-    negative_values = false
     for mc = 1:n_mc, t = 1:n_p, d = 1:n
-        if (v_bop[mc,t+1,d] <0) |  (v_bop[mc,t,d] <0)
-            negative_values = true
-            yield[mc,t,d] = -999.
+        if v_bop[mc,t+1,d] < eps(1.0)
+            if v_bop[mc,t,d] > eps(1.0)
+                yield[mc,t,d] = -1.0
+            else
+                yield[mc,t,d] = 0.0
+            end
         else
-            yield[mc,t,d] =
-                log( max(eps(),
-                         v_bop[mc,t+1,d] ./ v_bop[mc,t,d])) / dt
+            yield[mc,t,d] = log(max(eps(), v_bop[mc,t+1,d]./v_bop[mc,t,d])) / dt
         end
     end
-    if negative_values
-        warn("Brownian: Some projected values are negative.",
-             " Corresponding yields are set to -999.")
+    if is_bankrupt
+        warn("Brownian: On some paths the index has become non-positive. From ",
+             "then onwards it has been set to zero (index ceases to exist) ")
     end
 
     cpnt_id = Dict(cpnt, 1:length(cpnt))

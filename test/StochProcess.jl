@@ -84,9 +84,12 @@ proc_determ = Array(Process, length(D))
 ## Brownian: dv = (drift*dt+dW), where dW ~ N(0,cov)
 i = D["brown"]
 for mc = 1:n_mc, t = 1:tf.n_p, d= 1:proc[i].n
-  @test_approx_eq_eps(proc[i].v_bop[mc,t+1,d]- proc[i].v_bop[mc,t,d],
-                      proc[i].drift[d] * tf.dt + sqrt(tf.dt) * noise[i][mc,t,d],
-                      tol )
+    if proc[i].v_bop[mc, t+1, d] > 0
+        @test_approx_eq_eps(proc[i].v_bop[mc,t+1,d]- proc[i].v_bop[mc,t,d],
+                            proc[i].drift[d] * tf.dt +
+                            sqrt(tf.dt) * noise[i][mc,t,d],
+                            tol )
+    end
 end
 
 ## Geom. Brownian: dlog(v) = (drift-0.5diag(Sigma)^2)*dt+sqrt(dt)* dW
@@ -126,17 +129,13 @@ end
 
 ## yield test ------------------------------------------------------------------
 ## Processes that model indices:  v[t+1] = v[t] * exp( dt* yield[t] )
-i = D["brown"]
+#i = D["brown"]
 ## test only if v[s] > 0 for all s <= t+1 (otherwise log is not defined)
 for i= 1:length(D)
     if typeof(proc[i]) <: ProcessIndex
         for mc = 1:n_mc, d = 1:proc[i].n
-                v_positive = true
             for t = 1:tf.n_p
-                if (proc[i].v_bop[mc,t+1,d] <= 0) & i == D["brown"]
-                    v_positive = false
-                end
-                if v_positive
+                if !((proc[i].v_bop[mc,t+1,d] < eps(1.0)) & (i == D["brown"]))
                     @test_approx_eq_eps(proc[i].v_bop[mc,t+1,d],
                                         proc[i].v_bop[mc,t,d] *
                                         exp(tf.dt * proc[i].yield[mc,t,d]),

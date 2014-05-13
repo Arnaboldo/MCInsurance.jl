@@ -45,7 +45,7 @@ function IGRiskfreeBonds(name::Symbol,
     # At beginning of first period we have not yet generated cash:
     mv_total_init = sum( mv_init )
 
-    IGRiskfreeBonds(name, proc, inv_init, asset, n,
+    IGRiskfreeBonds(name, proc, asset, n,
                     mv_init, mv_total_init, mv_eop, mv_total_eop,
                     cash_eop, mv_alloc_bop,
                     riskfree_bop,

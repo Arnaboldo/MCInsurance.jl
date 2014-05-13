@@ -15,7 +15,6 @@ type IGStocks <: IG
     ## constructor
     name::Symbol                      ## name of investment group
     proc::ProcessIndex                ## stochastic process
-    port_start::DataFrame             ## initial portfolio
     asset::Vector{Any}                ## assets in IG ( = proc.cpnt)
     n::Int                            ## # assets incl. durations
     ## interface
@@ -33,7 +32,6 @@ type IGRiskfreeBonds <: IG
     ## constructor
     name::Symbol                      ## name of investment group
     proc::ProcessShortRate            ## stochastic process
-    port_start::DataFrame             ## initial portfolio
     asset::Vector{Any}                ## assets in IG ( = duration in periods)
     n::Int                            ## # assets incl. durations
     ## interface
@@ -59,7 +57,6 @@ type IGCash <: IG
     ## constructor
     name::Symbol                      ## name investment group
     proc::ProcessShortRate            ## stochastic process
-    port_start::DataFrame             ## initial portfolio
     asset::Vector{Any}                ## assets in IG ( = proc.cpnt)
     n::Int                            ## # assets incl. durations
     ## interface
@@ -93,7 +90,6 @@ end
 type InvestAlloc  ## asset allocation ------------------------------------------ 
     ig_target::Vector{Float64}        ## target allocation for IGs
     ig_target_std::Vector{Float64}    ## standard target allocation for IGs
-    ig_int::Dict{Symbol, Int}         ## identifier for IG: ig.name  -> Int
     asset_target::Vector{Vector{Float64}}     ## target allocation within IG
     asset_target_std::Vector{Vector{Float64}} ## standard target alloc within IG
     asset_int:: Dict{Vector{Any}, Int} ## identifier for asset targets
@@ -104,7 +100,7 @@ type Invest      ## investment portfolio and valuation -------------------------
     cap_mkt::CapMkt                   ## capital market
     n::Int                            ## # investment groups
     ig::Vector{IG}                    ## investment groups: IG
-#    ig_symb::Vector{Symbol}           ## identifier for IG: Int -> ig.name
+    id::Dict{Symbol, Int}             ## id (vector index) of IG 
     alloc::InvestAlloc                ## initial target asset allocation
     mv_total_init::Float64            ## initial market value
     mv_total_eop::Array{Float64,2}    ## market value at end of period

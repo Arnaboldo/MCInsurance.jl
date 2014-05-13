@@ -65,7 +65,7 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
    alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
 
     ## Now we adjust all allocations accordingly
-   total_other = 1 - invest.alloc.ig_target_std[invest.alloc.ig_int[:cash]]
+   total_other = 1 - invest.alloc.ig_target_std[invest.id[:cash]]
    fac_other = (1-alloc_cash) / max(eps(), total_other)
     for i = 1:invest.n
       if invest.ig[i].name == :cash
@@ -83,7 +83,7 @@ function   dynbonusrate!(bucket::Bucket,
                         invest::Invest)
     bucket.bonus_rate = 
         invest.hook.bonus_factor *
-        (1-invest.alloc.ig_target[invest.alloc.ig_int[:cash]]) *
+        (1-invest.alloc.ig_target[invest.id[:cash]]) *
         max(0, invest.c.yield_mkt[mc,t] - bucket.hook.statinterest(bucket,t))
 end
 

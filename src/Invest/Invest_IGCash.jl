@@ -15,7 +15,7 @@ function IGCash(name::Symbol,
 
     mv_total_init = inv_init[1, :asset_amount]
 
-    IGCash(name, proc, inv_init, asset, n,
+    IGCash(name, proc, asset, n,
            mv_init, mv_total_init, mv_eop, mv_total_eop, cash_eop,
            mv_alloc_bop)
 end

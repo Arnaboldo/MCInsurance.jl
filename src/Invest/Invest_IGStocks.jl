@@ -23,11 +23,9 @@ function IGStocks( name::Symbol,
     mv_init = amount_init .*  proc.v_init
     mv_total_init = sum( mv_init )    
 
-    IGStocks(name, proc, inv_init, asset, n,
+    IGStocks(name, proc, asset, n,
              mv_init, mv_total_init, mv_eop, mv_total_eop,
-             cash_eop, 
-             mv_alloc_bop,
-             amount_bop )
+             cash_eop, mv_alloc_bop, amount_bop )
 end
 
 ## Interface functions for IG types ------------------------------

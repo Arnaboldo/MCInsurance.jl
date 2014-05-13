@@ -27,9 +27,9 @@ function Invest(name::Symbol,
                                info[i].inv_init[:asset_dur] ] )
             ## cap_mkt has only 1 short rateprocess (dur = 1)
             ## all other durations are calculated using forwardbop
-            ## we assume that port_stat is ordered with increasing duration
+            ## we assume that inv_init is ordered with increasing duration
             asset_target[i] = zeros(Float64, n)
-            ind_port = [1:nrow(info[i].inv_init)]
+            ind_inv_init = [1:nrow(info[i].inv_init)]
             for j in info[i].asset
                 ind_asset = findin(info[i].asset, j)[1]
                 asset_target[i][j] = info[i].asset_target[ind_asset]
@@ -39,21 +39,21 @@ function Invest(name::Symbol,
             ## line up up proc in process group defined by info[i] with cap_mkt
             n = length(cap_mkt.proc[ind_proc].cpnt)
             asset_target[i] = zeros(Float64, n)
-            ind_port = zeros(Int, n)
+            ind_inv_init = zeros(Int, n)
             for j = 1:n
-                symb_cap_mkt_proc = cap_mkt.proc[ind_proc].cpnt[j]
-                if symb_cap_mkt_proc in info[i].asset
-                    ind_asset = findin(info[i].asset,[symb_cap_mkt_proc])[1]
+                cap_mkt_proc_cpnt = cap_mkt.proc[ind_proc].cpnt[j]
+                if cap_mkt_proc_cpnt in info[i].asset
+                    ind_asset = findin(info[i].asset,[cap_mkt_proc_cpnt])[1]
                     asset_target[i][j] = info[i].asset_target[ind_asset]
-                    merge!(asset_int, [{i, symb_cap_mkt_proc} => j])
-                    ind_port[j] = ind_asset
+                    merge!(asset_int, [{i, cap_mkt_proc_cpnt} => j])
+                    ind_inv_init[j] = ind_asset
                 end
             end
         end
         asset_target[i] /= max(eps(), sum(asset_target[i]))
         ig[i] = eval(info[i].ig_type)(info[i].ig_name,
                                       cap_mkt.proc[ind_proc],
-                                      info[i].inv_init[ind_port, :],
+                                      info[i].inv_init[ind_inv_init, :],
                                       n )
         mv_total_init += ig[i].mv_total_init        
     end
@@ -61,14 +61,14 @@ function Invest(name::Symbol,
     ig_target /= max(eps(), sum(ig_target))    
     alloc = InvestAlloc(ig_target,    ## used by projection
                         ig_target,    ## standard benchmark for dyn. allocation
-                        id,
+#                        id,
                         asset_target, ## used by projection
                         asset_target, ## standard benchmark for dyn. allocation
                         asset_int)
 
     mkt_c = MktC(info, cap_mkt, id, n_mean_mc, n_mean_c, n_mean_grid)
     
-    Invest(name, cap_mkt, n_ig, ig, alloc,
+    Invest(name, cap_mkt, n_ig, ig, id, alloc,
            mv_total_init, mv_total_eop, yield_total, mkt_c, false)
 end
         

@@ -16,7 +16,7 @@ function Vasicek(name::Symbol,
 
     yield = Array(Float64, n_mc, n_p + 1, n)
     proc = Vasicek(name, cpnt, cpnt_id, init, a, yield_infty, cov, noise, n,
-                   yield, n_mc, dt, n_p )
+                   yield, n_mc, n_p )
 
     cycle2period!(proc, tf)
 

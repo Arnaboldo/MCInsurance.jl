@@ -18,7 +18,7 @@ function DetermShortRate (name::Symbol,
     init = yield_input[1]
     cpnt_id = Dict(cpnt, 1:length(cpnt))
     proc = DetermShortRate(name, cpnt, cpnt_id, init, n, yield, yield_input,
-                           n_mc, dt, n_p )
+                           n_mc, n_p )
     cycle2period!(proc, tf)
     proc
 end

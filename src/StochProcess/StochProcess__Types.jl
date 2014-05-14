@@ -32,8 +32,7 @@ type Brownian <: ProcessIndex
     v_bop::Array{Float64,3}     ## projected values beg. of step
     yield::Array{Float64,3}     ## relative return during step
     n_mc::Int                   ## number of Monte Carlo scenarios
-    dt::Float64                 ## length of time step
-    n_p::Int                    ## number of projection periods
+    n_p::Int                    ## number of full projection periods
 end
 
 type GeomBrownian <: ProcessIndex
@@ -48,8 +47,7 @@ type GeomBrownian <: ProcessIndex
     v_bop::Array{Float64,3}     ## projected values beg. of step
     yield::Array{Float64,3}     ## relative return during step
     n_mc::Int                   ## number of Monte Carlo scenarios
-    dt::Float64                 ## length of time step
-    n_p::Int                    ## number of projection periods
+    n_p::Int                    ## number of full projection periods
 end
 
 type Vasicek <: ProcessShortRate
@@ -64,8 +62,7 @@ type Vasicek <: ProcessShortRate
     n::Int                      ## number of components (=1)
     yield::Array{Float64,3}     ## relative return during step
     n_mc::Int                   ## number of Monte Carlo scenarios
-    dt::Float64                 ## length of time step
-    n_p::Int                    ## number of projection periods
+    n_p::Int                    ## number of full projection periods
 end
 
 type CIR <: ProcessShortRate
@@ -80,8 +77,7 @@ type CIR <: ProcessShortRate
     n::Int                      ## number of components (=1)
     yield::Array{Float64,3}     ## relative return during step
     n_mc::Int                   ## number of Monte Carlo scenarios
-    dt::Float64                 ## length of time step
-    n_p::Int                    ## number of projection periods
+    n_p::Int                    ## number of full projection periods
 end
 
 type ManualShortRate <: ProcessShortRate
@@ -92,8 +88,7 @@ type ManualShortRate <: ProcessShortRate
     n::Int                      ## number of components (=1)
     yield::Array{Float64,3}     ## relative return during step
     n_mc::Int                   ## number of Monte Carlo scenarios
-    dt::Float64                 ## length of time step
-    n_p::Int                    ## number of projection periods
+    n_p::Int                    ## number of full projection periods
 end
 
 type DetermShortRate <: ProcessShortRate  # 1-dimensional short rate 
@@ -105,7 +100,6 @@ type DetermShortRate <: ProcessShortRate  # 1-dimensional short rate
     yield::Array{Float64,3}     ## relative return during step
     yield_input::Vector{Float64} ## yield input may exceed time frame
     n_mc::Int                   ## number of Monte Carlo scenarios
-    dt::Float64                 ## length of time step
-    n_p::Int                    ## number of projection periods
+    n_p::Int                    ## number of full projection periods
 end
 

@@ -16,7 +16,7 @@ function Brownian(name::Symbol,
     proc = Brownian(name, cpnt, cpnt_id, init, drift,  cov, noise, n,
                     zeros(Float64, n_mc, n_p+1, n), # v_bop
                     Array(Float64, n_mc, n_p, n),   # yield
-                    n_mc, dt, n_p )
+                    n_mc, n_p )
     cycle2period!(proc, tf)
 
     for mc = 1:n_mc

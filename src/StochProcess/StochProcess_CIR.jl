@@ -15,7 +15,7 @@ function CIR (name::Symbol,
     cpnt_id = Dict(cpnt, 1:length(cpnt))     
     yield = Array(Float64, n_mc, n_p + 1, n)
     proc = CIR(name, cpnt, cpnt_id, init, a, yield_infty, cov, noise, n, yield,
-               n_mc, dt, n_p )
+               n_mc, n_p )
     cycle2period!(proc, tf)
     for mc = 1:n_mc
         proc.yield[mc,:,1] =

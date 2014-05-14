@@ -20,8 +20,7 @@ function ManualShortRate (name::Symbol,
         end
     end
     cpnt_id = Dict(cpnt, 1:length(cpnt))
-    proc = ManualShortRate(name, cpnt, cpnt_id, init, n, yield_input,
-                           n_mc, dt, n_p )
+    proc = ManualShortRate(name, cpnt, cpnt_id, init, n, yield_input, n_mc, n_p)
     cycle2period!(proc, tf)
     proc
 end

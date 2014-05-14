@@ -16,11 +16,11 @@ function IGStocks( name::Symbol,
 
     amount_init = zeros(Float64, n)
     for j=1:n, k=1:nrow(inv_init)
-        if inv_init[k, :proc_labels] == string(proc.cpnt[j])
+        if inv_init[k, :cpnt] == string(proc.cpnt[j])
             amount_init[j] += inv_init[k, :asset_amount]
         end
     end
-    mv_init = amount_init .*  proc.v_init
+    mv_init = amount_init .*  proc.init
     mv_total_init = sum( mv_init )    
 
     IGStocks(name, proc, asset, n,

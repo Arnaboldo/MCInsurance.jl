@@ -20,7 +20,7 @@ function CFlow(buckets::Buckets,
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)    
     for mc = 1:cf.n_mc
         for t = 1:cf.tf.n_c
-            disc = meandiscrf(invest.c, invest.c.yield_rf[mc,t], buckets.n_c)                                       
+            disc = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)                                       
             projectcycle(cf, mc, t, buckets, fluct, invest, disc, dividend,
                          dynbonusrate!, dynprobsx, dynalloc!)
         end

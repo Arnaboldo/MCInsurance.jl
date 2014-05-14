@@ -2,35 +2,31 @@
 ## Standard constructor
 function ManualShortRate (name::Symbol,
                           cpnt::Vector{Any},
-                          v_bop::Array{Float64, 3},
+                          yield_manual::Array{Float64, 3},
                           tf::TimeFrame
                           )
-
     n = 1
-    n_mc = size(v_bop,1)
+    n_mc = size(yield_manual, 1)
     dt = tf.dt
     n_p = tf.n_p
-    v_init = v_bop[:,1,1]
-    yield = Array(Float64, (n_mc, n_p, n))
-    yield = v_bop[:,1:n_p,:]
+    init = yield_manual[:,1,1]
+    if size(yield_manual) != (n_mc, n_p + 1, n)
+        error("ManualShortRate: yield_manual has incorrect dimensions")
+    end
     cpnt_id = Dict(cpnt, 1:length(cpnt))
-
-    ManualShortRate( name, cpnt, cpnt_id, v_init, v_bop, n, yield,
-                    n_mc, dt, n_p )
+    ManualShortRate(name, cpnt, cpnt_id, init, n, yield_manual, n_mc, dt, n_p )
 end
 
 ## Constructor interface to CapMkt
 function ManualShortRate(name::Symbol,
                          cpnt::Vector{Any},
-                         v_init::Vector{Float64},
+                         init::Vector{Float64},
                          param::Array{Float64, 3},
                          tf::TimeFrame,
                          cov::Array{Float64, 2},
                          noise::Array{Float64,3})
-    # We ignore v_init, cov, noise.
-    # param contains the data for v_bop
-
-    
+    # We ignore init, cov, noise.
+    # param contains the yield for very mc and every t  
     ManualShortRate( name, cpnt, param, tf)
 end
 
@@ -44,27 +40,33 @@ function show(io::IO, me::ManualShortRate)
 end
 
 
-function yieldc(me::ManualShortRate,
+function yieldeoc(me::ManualShortRate,
                 n_mc::Int,
                 tf::TimeFrame,
-                yield_init_c::Float64)
-    yield_c = zeros(Float64, n_mc, tf.n_c, 1)
+                init_c::Float64)
+    ## This function calculates the yield retrospectively at eoc
+    yield_c = zeros(Float64, n_mc, tf.n_c + 1, 1)
     ind = rand(DiscreteUniform(1,me.n_mc), n_mc)
+    ## |-.-.-.-|-.-.-.-|-.-.-.-|-.  here: tf.n_dt = 4, tf.n_c = 3
+    ##         ^                          t=2  (unit: n_c)
+    ##         t                          tau = (t-1) * tf.n_t + 1 (unit: n_p)
+    ##         |-| known at time t: yield_mc for this interval
+    ## Assumption: interest rate will not change for the rest of the cycle
     for mc = 1:n_mc
-        for t = 1:tf.n_c
+        for t = 1:(tf.n_c)
             for d = 1:tf.n_dt
-                yield_c[mc,t] += me.yield[ind[mc], t-1+d, 1]
+                yield_c[mc,t] += me.yield[ind[mc], tf.n_dt*(t-1) + d, 1]
             end
         end
+        ## for cycle tf.n_c+1 we only have the initial period yield
+        yield_c[mc,tf.n_c+1] = tf.n_dt * me.yield[ind[mc], tf.n_p + 1, 1]
     end
-    return (yield_c .+ (yield_init_c .- yield_c[:,1]))
+    return (yield_c .+ (init_c .- yield_c[:,1]))
 end
-
-
 
 ## deterministic yields for noise=0, relative to beginning of pd.
 ## we simply take the average for each time step
-determbop(me::ManualShortRate) = vec(mean(me.v_bop,1))
+determbop(me::ManualShortRate) = vec(mean(me.yield,1))
 
 ## forward rate relative to beginning of period
 function forwardbop(me::ManualShortRate,

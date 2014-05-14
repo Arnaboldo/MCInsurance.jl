@@ -2,13 +2,13 @@
 ## Standard constructor, interface to CapMkt
 function Brownian(name::Symbol,
                   cpnt::Vector{Any},
-                  v_init::Vector{Float64},
+                  init::Vector{Float64},
                   drift::Vector{Float64},
                   tf::TimeFrame,
                   cov::Array{Float64,2},
                   noise::Array{Float64,3})
 
-    n = length(v_init)
+    n = length(init)
     n_mc = size(noise,1)
     dt = tf.dt
     n_p = tf.n_p
@@ -18,7 +18,7 @@ function Brownian(name::Symbol,
         for d = 1:n
             for t = 1:(n_p+1) 
                 if t==1
-                    v_bop[mc,t,d] = v_init[d]
+                    v_bop[mc,t,d] = init[d]
                 else
                     v_bop[mc,t,d] = v_bop[mc,t-1,d] + drift[d] * dt +
                                     sqrt(dt) * noise[mc,t-1,d]
@@ -46,13 +46,13 @@ function Brownian(name::Symbol,
         end
     end
     if is_bankrupt
-        warn("Brownian: On some paths the index has become non-positive. From ",
+        info("Brownian: On some paths the index has become non-positive. From ",
              "then onwards it has been set to zero (index ceases to exist) ")
     end
 
     cpnt_id = Dict(cpnt, 1:length(cpnt))
 
-    Brownian(name, cpnt, cpnt_id, v_init, drift,
+    Brownian(name, cpnt, cpnt_id, init, drift,
              cov, noise, n, v_bop, yield,
              n_mc, dt, n_p
              )
@@ -61,15 +61,15 @@ end
 ## Constructor with automatic generation of noise
 function Brownian (name::Symbol,
                    cpnt::Vector{Any},
-                   v_init::Vector{Float64},
+                   init::Vector{Float64},
                    drift::Vector{Float64},
                    tf::TimeFrame,
                    cov::Array{Float64,2},
                    n_mc::Int )
 
     noise = reshape(rand( MvNormal(cov), n_mc*tf.n_p )',
-                    n_mc, tf.n_p, length(v_init) )
-    Brownian(name, cpnt, v_init, drift, tf, cov, noise )
+                    n_mc, tf.n_p, length(init) )
+    Brownian(name, cpnt, init, drift, tf, cov, noise )
 end
 
 ## Interface functions ---------------------------------------------------------
@@ -78,8 +78,8 @@ function show(io::IO, me::Brownian)
     println(io, string(typeof(me)))
     print(io,  "name           : "); println(io,me.name)
     println(io,"cpnt         : "); println(io,transpose(me.cpnt))
-    print(io,  "v_init'        : "); println(io,me.v_init')
-    print(io,  "drift'         : "); print\ln(io,me.drift')
+    print(io,  "init'        : "); println(io,me.init')
+    print(io,  "drift'         : "); println(io,me.drift')
     print(io,  "cov            : ")
     print(io,me.cov)
     print(io,  "dt             : "); println(io,me.dt)
@@ -87,6 +87,6 @@ function show(io::IO, me::Brownian)
 end
 
 determbop(me::Brownian) =
-    [ me.v_init[d] + (t-1) * me.drift[d] * me.dt
+    [ me.init[d] + (t-1) * me.drift[d] * me.dt
      for t = 1:(me.n_p+1), d= 1:me.n ]
 

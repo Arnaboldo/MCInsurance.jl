@@ -2,13 +2,13 @@
 ## Standard constructor, interface to CapMkt
 function GeomBrownian(name::Symbol,
                       cpnt::Vector{Any},
-                      v_init::Vector{Float64},
+                      init::Vector{Float64},
                       drift::Vector{Float64},
                       tf::TimeFrame,
                       cov::Array{Float64,2},
                       noise::Array{Float64,3} )
 
-    n = length(v_init)
+    n = length(init)
     n_mc = size(noise,1)
     dt = tf.dt
     n_p = tf.n_p
@@ -16,7 +16,7 @@ function GeomBrownian(name::Symbol,
     v_bop = zeros(Float64, (n_mc, n_p+1, n))
     for mc = 1:n_mc, t = 0:n_p, d =1:n
         if t==0
-            v_bop[mc, t+1, d] = v_init[d]
+            v_bop[mc, t+1, d] = init[d]
         else
             v_bop[mc, t+1, d] =
                 v_bop[mc, t, d] *
@@ -31,32 +31,32 @@ function GeomBrownian(name::Symbol,
 
     cpnt_id = Dict(cpnt, 1:length(cpnt))
 
-    GeomBrownian(name, cpnt, cpnt_id, v_init, drift,
+    GeomBrownian(name, cpnt, cpnt_id, init, drift,
                  cov, noise, n, v_bop, yield,
                  n_mc, dt, n_p  )
 end
 
 ## Constructor with automatic generation of noise
 
-GeomBrownian(name::Symbol, cpnt::Vector{Symbol}, v_init::Vector{Float64},
+GeomBrownian(name::Symbol, cpnt::Vector{Symbol}, init::Vector{Float64},
              drift::Vector{Float64}, tf::TimeFrame, cov::Array{Float64,2},
              n_mc::Int64) =
-                 GeomBrownian(name, convert(Array{Any,1}, cpnt), v_init, drift,
+                 GeomBrownian(name, convert(Array{Any,1}, cpnt), init, drift,
                               tf, cov, n_mc)
 
 function GeomBrownian(name::Symbol,
                       cpnt::Vector{Any},
-                      v_init::Vector{Float64},
+                      init::Vector{Float64},
                       drift::Vector{Float64},
                       tf::TimeFrame,
                       cov::Array{Float64,2},
                       n_mc::Int64
                       )
     noise = reshape(rand( MvNormal(cov), n_mc*tf.n_p )',
-                    n_mc, tf.n_p, length(v_init) )
+                    n_mc, tf.n_p, length(init) )
 
 
-    GeomBrownian(name, cpnt, v_init, drift,
+    GeomBrownian(name, cpnt, init, drift,
                  tf, cov, noise )
 end
 
@@ -66,7 +66,7 @@ function show(io::IO, me::GeomBrownian)
     println(io, string(typeof(me)))
     print(io,"name              : "); println(io,me.name)
     print(io,"cpnt'           : "); println(io,transpose(me.cpnt))
-    print(io,"v_init'           : "); println(io,me.v_init')
+    print(io,"init'           : "); println(io,me.init')
     print(io,"drift'            : "); println(io,me.drift')
     print(io,"cov               : ")
     println(io,me.cov)
@@ -75,5 +75,5 @@ function show(io::IO, me::GeomBrownian)
 end
 
 determbop(me::GeomBrownian) =
-    [ me.v_init[d] * exp( (t-1) * me.drift[d] * me.dt )
+    [ me.init[d] * exp( (t-1) * me.drift[d] * me.dt )
     for t = 1:(me.n_p+1), d= 1:me.n ]

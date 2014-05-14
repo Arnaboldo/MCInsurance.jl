@@ -1,4 +1,4 @@
-ig_name,proc_labels,asset_dur,asset_coupon,asset_amount
+ig_name,cpnt,asset_dur,asset_coupon,asset_amount
 riskfree_bonds,short_rate,1,0.02,4300.0
 riskfree_bonds,short_rate,2,0.025,8500.0
 riskfree_bonds,short_rate,5,0.03,13000.0

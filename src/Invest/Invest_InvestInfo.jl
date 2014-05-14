@@ -11,8 +11,8 @@ function InvestInfo(name::Symbol,
     asset_target = convert(Array, inv_asset[:asset_target])
     asset_mkt_benchmark = convert(Array, inv_asset[:market_benchmark])
     if any(isna(inv_init[:asset_dur]))
-        inv_init = inv_init[:, [:proc_labels, :asset_amount]]
-        asset = convert(Array{Symbol},inv_asset[:,:proc_labels])
+        inv_init = inv_init[:, [:cpnt, :asset_amount]]
+        asset = convert(Array{Symbol},inv_asset[:,:cpnt])
     else
         inv_init = inv_init[:,[ :asset_dur, :asset_coupon, :asset_amount]]
         asset = convert(Array{Int},inv_asset[:,:asset_dur])

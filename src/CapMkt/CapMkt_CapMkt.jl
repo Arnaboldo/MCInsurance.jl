@@ -21,7 +21,7 @@ function CapMkt(name::Symbol,
             proc[i] =
                 eval(proc_info[i].type_name)(proc_info[i].name,
                                              proc_info[i].cpnt,
-                                             proc_info[i].v_init,
+                                             proc_info[i].init,
                                              proc_info[i].param,
                                              tf,
                                              cov[(cum_stoch_n_cpnt+(1:n_cpnt)),
@@ -35,7 +35,7 @@ function CapMkt(name::Symbol,
             proc[i] =
                 eval(proc_info[i].type_name)(proc_info[i].name,
                                              proc_info[i].cpnt,
-                                             proc_info[i].v_determ_bop,
+                                             proc_info[i].yield_determ,
                                              tf,
                                              n_mc
                                              )

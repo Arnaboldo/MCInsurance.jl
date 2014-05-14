@@ -5,7 +5,7 @@ function IGCash(name::Symbol,
                 inv_init::DataFrame,
                 n::Int
                 )
-    asset =        convert(Array{Symbol,1}, [inv_init[1,:proc_labels]])
+    asset =         convert(Array{Symbol,1}, [inv_init[1,:cpnt]])
     mv_init =       zeros(Float64,  n )
     mv_eop =        zeros(Float64, proc.n_mc, proc.n_p, n ) # = 0
     mv_total_eop =  zeros(Float64, proc.n_mc, proc.n_p )

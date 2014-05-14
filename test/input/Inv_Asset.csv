@@ -1,4 +1,4 @@
-ig_name,proc_labels,asset_dur,asset_target,market_benchmark
+ig_name,cpnt,asset_dur,asset_target,market_benchmark
 cash,short_rate,NA,1.0,0.0
 riskfree_bonds,short_rate,1,0.1,0.0
 riskfree_bonds,short_rate,2,0.2,0.0

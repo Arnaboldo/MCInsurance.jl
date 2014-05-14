@@ -1,31 +1,31 @@
 ## Constructors ----------------------------------------------------------------
 function StochProcessInfo(name::Symbol,
-                          df_proc_1::DataFrame,
-                          df_proc_2::DataFrame)
+                          df_capmkt_1::DataFrame,
+                          df_capmkt_2::DataFrame)
     
-    proc_1 = df_proc_1[ df_proc_1[:proc_name] .== string(name), :]
-    proc_2 = df_proc_2[ df_proc_2[:proc_name] .== string(name), :]   
-    labels = Array(Symbol, 0)
-    v_init = Array(Float64, 0)
-    v_determ_bop = Array(Float64, nrow(proc_2), 0)
-    for j = 1: nrow(proc_2)
-        push!(labels, symbol(proc_2[j,:proc_labels]))
-        if !isna(proc_2[j,:v_init])
-            push!(v_init, proc_2[j,:v_init])
+    capmkt_1 = df_capmkt_1[ df_capmkt_1[:proc_name] .== string(name), :]
+    capmkt_2 = df_capmkt_2[ df_capmkt_2[:proc_name] .== string(name), :]   
+    cpnt = Array(Symbol, 0)
+    init = Array(Float64, 0)
+    v_determ_bop = Array(Float64, nrow(capmkt_2), 0)
+    for j = 1: nrow(capmkt_2)
+        push!(cpnt, symbol(capmkt_2[j,:cpnt]))
+        if !isna(capmkt_2[j,:init])
+            push!(init, capmkt_2[j,:init])
         end
     end
     param = Array(Float64,0)
-    for j = 1:ncol(proc_1)
-        if ismatch(r"param*", string(names(proc_1)[j])) & !isna(proc_1[1,j])
-            push!(param,proc_1[1,j])
+    for j = 1:ncol(capmkt_1)
+        if ismatch(r"param*", string(names(capmkt_1)[j])) & !isna(capmkt_1[1,j])
+            push!(param,capmkt_1[1,j])
         end
     end
-    for j = 1:ncol(proc_2)
-        if ismatch(r"v_bop*",string(names(proc_2)[j])) & !isna(proc_2[1,j])
-            v_determ_bop = hcat(v_determ_bop, proc_2[:,j])
+    for j = 1:ncol(capmkt_2)
+        if ismatch(r"v_bop*",string(names(capmkt_2)[j])) & !isna(capmkt_2[1,j])
+            v_determ_bop = hcat(v_determ_bop, capmkt_2[:,j])
         end
     end
-    StochProcessInfo(symbol(proc_1[1, :proc_type]),
-                     name, labels, v_init, v_determ_bop, param)
+    StochProcessInfo(symbol(capmkt_1[1, :proc_type]),
+                     name, cpnt, init, v_determ_bop, param)
 end
      

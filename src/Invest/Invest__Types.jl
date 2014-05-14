@@ -81,8 +81,8 @@ type InvestInfo   ## information for setting up Invest -------------------------
 end
 
 type MktC         ## mkt indicators per cycle (not period!) --------------------
-    yield_mkt::Array{Float64,2}       ## benchmark for market yield per cycle
-    yield_rf::Array{Float64,2}        ## cash yield per cycle 
+    yield_mkt_eoc::Array{Float64,2}   ## benchmark for market yield per cycle
+    yield_rf_eoc::Array{Float64,2}    ## cash yield per cycle 
     yield_grid_rf::Vector{Float64}    ## grid for interpolation
     mean_cum_disc_rf::Array{Float64,2} ## expected cumul. riskfree discount
 end

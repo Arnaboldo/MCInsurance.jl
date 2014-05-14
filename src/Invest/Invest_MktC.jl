@@ -6,15 +6,15 @@ function MktC(info::Vector{InvestInfo},
               n_mean_c::Int,
               n_mean_grid::Int
               )
-    yield_rf = Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
-    yield_mkt = Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
+    yield_rf_eoc = Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
+    yield_mkt_eoc = Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
     mean_cum_disc_rf = Array(Float64, n_mean_c, n_mean_grid) 
 
     proc_cash_name = info[id[:cash]].proc_name
     ind_cash = cap_mkt.id[proc_cash_name]
     
-    yield_rf = yieldrf(cap_mkt, proc_cash_name)
-    yield_mkt = yieldmkt(info, cap_mkt)
+    yield_rf_eoc = yieldrfeoc(cap_mkt, proc_cash_name)
+    yield_mkt_eoc = yieldmkteoc(info, cap_mkt)
     
     tf = TimeFrame(cap_mkt.tf.init,
                    cap_mkt.tf.init + n_mean_c,
@@ -24,14 +24,14 @@ function MktC(info::Vector{InvestInfo},
     yield_grid_rf = linspace(yield_rf_min, yield_rf_max, n_mean_grid)
     
     for k = 1:n_mean_grid
-        mean_cum_disc_rf[:,k] = mean(exp(-cumsum(yieldc(cap_mkt.proc[ind_cash],
-                                                        n_mean_mc,
-                                                        tf,
-                                                        yield_grid_rf[k]),
-                                                 2)),
+        mean_cum_disc_rf[:,k] = mean(exp(-cumsum(yieldeoc(cap_mkt.proc[ind_cash],
+                                                          n_mean_mc,
+                                                          tf,
+                                                          yield_grid_rf[k]),
+                                                 2)[:,1:tf.n_c]),
                                      1)
     end                        
-    return MktC(yield_mkt, yield_rf, yield_grid_rf, mean_cum_disc_rf)
+    return MktC(yield_mkt_eoc, yield_rf_eoc, yield_grid_rf, mean_cum_disc_rf)
 end
 
 
@@ -44,9 +44,9 @@ function meancumdiscrf(me::MktC, yield_init_rf::Float64, len::Int=0)
            length(me.mean_cum_disc_rf) :
            min(length(me.mean_cum_disc_rf),len))
     
-    if yield_init_rf >= me.yield_grid_rf[end]
-        return  me.mean_cum_discount_c[1:len, end]
-    elseif yield_init_rf < me.yield_grid_rf[1]
+    if yield_init_rf > me.yield_grid_rf[end] 
+        return  me.mean_cum_disc_rf[1:len, end]
+    elseif yield_init_rf <= me.yield_grid_rf[1] 
         return  me.mean_cum_disc_rf[1:len, 1]
     end
    
@@ -57,10 +57,10 @@ function meancumdiscrf(me::MktC, yield_init_rf::Float64, len::Int=0)
             break
         end
     end
-    lambda = (yield_init_rf - me.yield_grid_rf[k]) /
-             (me.yield_grid_rf[k+1] - me.yield_grid_rf[k])
-    return ((1-lambda) * me.mean_cum_disc_rf[1:len, k] +
-             lambda * me.mean_cum_disc_rf[1:len, k+1] )
+    lambda = (yield_init_rf - me.yield_grid_rf[k-1]) /
+             (me.yield_grid_rf[k] - me.yield_grid_rf[k-1])
+    return ((1-lambda) * me.mean_cum_disc_rf[1:len, k-1] +
+             lambda * me.mean_cum_disc_rf[1:len, k] )
 end
 
 function meandiscrf(me::MktC, yield_init_rf::Float64, len::Int = 0)
@@ -82,23 +82,27 @@ end
 
 ## Private functions for MarketCycle -------------------------------------------
 
-function yieldrf(cap_mkt::CapMkt, proc_cash_name::Symbol)
-    yield_rf = zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
+function yieldrfeoc(cap_mkt::CapMkt, proc_cash_name::Symbol)
+    ## calculates riskfree interest retrospectively at eoc
+    yield_rf_eoc = zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
     ind_cash = cap_mkt.id[proc_cash_name]
     for mc = 1:cap_mkt.n_mc
         for t = 1:cap_mkt.tf.n_c
             for d = 1:cap_mkt.tf.n_dt
-                yield_rf[mc,t] +=  cap_mkt.proc[ind_cash].yield[mc, t-1+d, 1]
+                yield_rf_eoc[mc,t] +=
+                    cap_mkt.proc[ind_cash].yield[mc,
+                                                 cap_mkt.tf.n_dt*(t-1) + d, 1]
             end
         end
     end
-    return yield_rf
+    return yield_rf_eoc
 end
 
-function yieldmkt(info::Vector{InvestInfo},
-                  cap_mkt::CapMkt
-                  )
-    yield_mkt = zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c ) # per cycle!
+function yieldmkteoc(info::Vector{InvestInfo},
+                     cap_mkt::CapMkt
+                     )
+    ## calculates market yield benchmark retrospectively at eoc
+    yield_mkt_eoc = zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c ) # per cycle!
     for i = 1:length(info)
         ind_proc = cap_mkt.id[info[i].proc_name]
         if info[i].ig_type == :IGRiskfreeBonds
@@ -107,29 +111,32 @@ function yieldmkt(info::Vector{InvestInfo},
                 for mc = 1:cap_mkt.n_mc
                     for t = 1:cap_mkt.tf.n_c
                         for d = 1:cap_mkt.tf.n_dt
-                            yield_mkt[mc,t] +=
+                            yield_mkt_eoc[mc,t] +=
                                 info[i].asset_mkt_benchmark[ind_asset] *
-                                forwardbop(cap_mkt.proc[ind_proc], mc, t-1+d, j)
+                                forwardbop(cap_mkt.proc[ind_proc],
+                                           mc,
+                                           cap_mkt.tf.n_dt*(t-1)+d,
+                                           j)
                         end
                     end
                 end
             end
-        else ## :IGCash, :IGStocks
+        else  ## :IGCash, :IGStocks
             for cpnt in info[i].asset
                 ind_asset = findin(info[i].asset,[cpnt])[1]
-                ind_comp = cap_mkt.proc[ind_proc].cpnt_id[cpnt]
+                ind_cpnt = cap_mkt.proc[ind_proc].cpnt_id[cpnt]
                 for mc = 1:cap_mkt.n_mc
                     for t = 1:cap_mkt.tf.n_c
                         for d = 1:cap_mkt.tf.n_dt
-                            yield_mkt[mc,t] +=
+                            yield_mkt_eoc[mc,t] +=
                                 info[i].asset_mkt_benchmark[ind_asset] *
-                                cap_mkt.proc[ind_proc].yield[mc, t-1+d, ind_comp]  
+                                cap_mkt.proc[ind_proc].yield[mc, t-1+d, ind_cpnt]  
                         end
                     end
                 end 
             end
         end
     end
-    return yield_mkt
+    return yield_mkt_eoc
 end
     

@@ -1,40 +1,27 @@
 ## Constructors ----------------------------------------------------------------
-## Standard constructor
+## Standard constructor, interface to CapMkt
 function DetermShortRate (name::Symbol,
                           cpnt::Vector{Any},
-                          yield::Array{Float64, 3},
+                          yield_input::Vector{Float64},
                           tf::TimeFrame,
-                          n::Int,
-                          n_mc::Int
-                          )
+                          n_mc::Int )
+    n = 1
     dt = tf.dt
     n_p = tf.n_p
-    if size(yield) != (n_mc, n_p + 1, n)
-        error("DetermShortRate: yield has incorrect dimensions")
-    end
-    init = yield[:,1,1]
-    cpnt_id = Dict(cpnt, 1:length(cpnt))
-    DetermShortRate(name, cpnt, cpnt_id, init, n, yield,
-                    n_mc, dt, n_p )
-end
-
-## Constructor interface to CapMkt
-function DetermShortRate(name::Symbol,
-                         cpnt::Vector{Any},
-                         yield_input::Vector{Float64},
-                         tf::TimeFrame,
-                         n_mc::Int)
-    n = 1
-    while length(yield_input) < (tf.n_p + 1)
+    yield = Array(Float64, n_mc, n_p + 1, n)
+    while length(yield_input) < n_p + 1
        yield_input = vcat(yield_input, yield_input[end])
     end
-    yield = Array(Float64, n_mc, tf.n_p + 1, n)
     for mc = 1:n_mc
-        yield[mc,:,1] = yield_input
+        yield[mc,:,1] = yield_input[1:(n_p+1)]
     end
-    DetermShortRate( name, cpnt, yield, tf, n, n_mc)
+    init = yield_input[1]
+    cpnt_id = Dict(cpnt, 1:length(cpnt))
+    proc = DetermShortRate(name, cpnt, cpnt_id, init, n, yield, yield_input,
+                           n_mc, dt, n_p )
+    cycle2period!(proc, tf)
+    proc
 end
-
 
 ## Interface functions ---------------------------------------------------------
 function show(io::IO, me::DetermShortRate)
@@ -78,25 +65,29 @@ function forwardbop(me::DetermShortRate,
                     mc::Int,
                     t::Int,
                     delta_t::Int)
-    warn("DetermShortRate.forwardbop: Code reflects CIR and needs to be changed")
-    gamma = sqrt( me.a^2 + 2me.cov )
-    dexp_gamma = exp( gamma * delta_t ) - 1
-    B = 2dexp_gamma / ( (gamma+me.a)dexp_gamma +2gamma )
-    A = ( 2gamma * exp( (gamma+me.a)delta_t / 2 ) /
-         ( (gamma+me.a)dexp_gamma +2gamma )
-         )^( 2me.a * me.v_infty / me.cov )
-    return (B * me.v_bop[mc,t,1] -log(A)) / delta_t
-end
+    last_init = min(length(yield_init), t+delta_t -1)
+    excess_time = t+deta_t-1 - last_init
+    if  excess_time > 0
+        excess_yield = excess_time * yield_init[end]
+    else
+        excess_yield = 0.0
+    end
+    return (sum(yield_init[t:(t+delta_t-1)]) + excess_yield) / delta_t
+ end
 
 function forwardbop(me::DetermShortRate,
                     t::Int,
                     delta_t::Int)
-    warn("DetermShortRate.forwardbop: Code reflects CIR and needs to be changed")
-    gamma = sqrt( me.a^2 + 2me.cov )
-    dexp_gamma = exp( gamma * delta_t ) - 1
-    B = 2dexp_gamma / ( (gamma+me.a)dexp_gamma +2gamma )
-    A = ( 2gamma * exp( (gamma+me.a)delta_t / 2 ) /
-         ( (gamma+me.a)dexp_gamma +2gamma )
-         )^( 2me.a * me.v_infty / me.cov )
-    return (B * me.v_bop[:,t,1] -log(A)) / delta_t
+    forward_bop = forwardbop(me,1,t,delta_t)
+    return [forward_bop for mc = 1:me.n_mc]
+ end
+
+
+## Private functions -----------------------------------------------------------
+function cycle2period!(DetermShortRate::CIR, tf::TimeFrame)
+    ## assumption: init, yield are given with respect to cycles
+    me.yield .*= tf.dt
+    me.yield_input .*= tf.dt
+    me.init *= tf.dt
 end
+

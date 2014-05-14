@@ -17,7 +17,8 @@ end
 
 abstract Process
 abstract ProcessIndex <: Process
-abstract ProcessShortRate <: Process  
+abstract ProcessShortRate <: Process
+
 
 type Brownian <: ProcessIndex
     name::Symbol                ## name of process
@@ -87,8 +88,7 @@ type ManualShortRate <: ProcessShortRate
     name::Symbol                ## name of process
     cpnt::Vector{Any}           ## process components
     cpnt_id::Dict{Any, Int}     ## id (vector index) of component
-    init::Vector{Float64}       ## initial values, filled by v_bob
-#    v_bop::Array{Float64,3}     ## projected values beg. of step
+    init::Float64               ## initial values, filled by yield
     n::Int                      ## number of components (=1)
     yield::Array{Float64,3}     ## relative return during step
     n_mc::Int                   ## number of Monte Carlo scenarios
@@ -96,11 +96,11 @@ type ManualShortRate <: ProcessShortRate
     n_p::Int                    ## number of projection periods
 end
 
-type DetermShortRate <: ProcessShortRate
+type DetermShortRate <: ProcessShortRate  # 1-dimensional short rate 
     name::Symbol                ## name of process
     cpnt::Vector{Any}           ## process components
     cpnt_id::Dict{Any, Int}     ## id (vector index) of component
-    init::Vector{Float64}       ## initial values, filled by v_bob
+    init::Float64               ## initial values, filled by v_bob
     n::Int                      ## number of components (=1)
     yield::Array{Float64,3}     ## relative return during step
     yield_input::Vector{Float64} ## yield input may exceed time frame

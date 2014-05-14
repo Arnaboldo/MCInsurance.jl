@@ -12,28 +12,27 @@ function GeomBrownian(name::Symbol,
     n_mc = size(noise,1)
     dt = tf.dt
     n_p = tf.n_p
+    cpnt_id = Dict(cpnt, 1:length(cpnt))
+    proc =  GeomBrownian(name, cpnt, cpnt_id, init, drift,  cov, noise, n,
+                         zeros(Float64, n_mc, n_p+1, n), # v_bop
+                         Array(Float64, n_mc, n_p, n),   # yield
+                         n_mc, dt, n_p  )
+    cycle2period!(proc, tf)
 
-    v_bop = zeros(Float64, (n_mc, n_p+1, n))
     for mc = 1:n_mc, t = 0:n_p, d =1:n
         if t==0
-            v_bop[mc, t+1, d] = init[d]
+            proc.v_bop[mc, t+1, d] = proc.init[d]
         else
-            v_bop[mc, t+1, d] =
-                v_bop[mc, t, d] *
-            exp( (drift[d] - 0.5 * cov[d,d]) * dt  +
-                sqrt(dt) * noise[mc,t,d] )
+            proc.v_bop[mc, t+1, d] =
+                proc.v_bop[mc, t, d] * exp((proc.drift[d] - 0.5 * proc.cov[d,d])
+                                           + proc.noise[mc,t,d])
         end
     end
-    yield = Array(Float64, (n_mc, n_p, n))
     for t = 1:n_p
-        yield[:,t,:] = log(v_bop[:,t+1,:] ./ v_bop[:,t,:]) / dt
+        proc.yield[:,t,:] = log(proc.v_bop[:,t+1,:] ./ proc.v_bop[:,t,:])
     end
 
-    cpnt_id = Dict(cpnt, 1:length(cpnt))
-
-    GeomBrownian(name, cpnt, cpnt_id, init, drift,
-                 cov, noise, n, v_bop, yield,
-                 n_mc, dt, n_p  )
+    proc
 end
 
 ## Constructor with automatic generation of noise
@@ -75,5 +74,14 @@ function show(io::IO, me::GeomBrownian)
 end
 
 determbop(me::GeomBrownian) =
-    [ me.init[d] * exp( (t-1) * me.drift[d] * me.dt )
-    for t = 1:(me.n_p+1), d= 1:me.n ]
+    [ me.init[d] * exp((t-1) * me.drift[d]) for t = 1:(me.n_p+1), d= 1:me.n ]
+
+## Private functions -----------------------------------------------------------
+function cycle2period!(me::GeomBrownian, tf::TimeFrame)
+    # assumption: drift, cov, noise are given with respect to cycles
+    # me.a: not changed
+    me.drift *= tf.dt
+    me.cov .*= tf.dt
+    me.noise .*= sqrt(tf.dt)
+end
+

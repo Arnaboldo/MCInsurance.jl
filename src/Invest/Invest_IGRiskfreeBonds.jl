@@ -36,10 +36,10 @@ function IGRiskfreeBonds(name::Symbol,
         # t=1: same value for all mc, hence mc=1:
         riskfree_bop[j] = forwardbop(proc, 1, 1, j)
         mv_normcf_init[j] =
-            sum(exp( -proc.dt * riskfree_bop[1:j] .* [1:j]))
+            sum(exp( -riskfree_bop[1:j] .* [1:j]))
         mv_normbond_init[j] =
             coupon_init[j] * mv_normcf_init[j] +
-            exp( - proc.dt * riskfree_bop[j] * j )
+            exp( - riskfree_bop[j] * j )
     end
     mv_init = amount_init .* mv_normbond_init
     # At beginning of first period we have not yet generated cash:
@@ -91,8 +91,7 @@ end
 ## Update mv of normalized cashflow relative to end of period
 function mvnormcf!(me::IGRiskfreeBonds)
     for j = 1:me.n
-        me.mv_normcf_curr[j] =
-            sum(exp(-me.proc.dt * [1:j] .* me.riskfree_bop[1:j]))
+        me.mv_normcf_curr[j] =  sum(exp( - [1:j] .* me.riskfree_bop[1:j]))
     end
 end
 
@@ -101,7 +100,7 @@ function mvnormbond!(me::IGRiskfreeBonds)
     for j = 1:me.n
         me.mv_normbond_curr[j] =
             me.coupon_curr[j] * me.mv_normcf_curr[j] +
-            exp( - me.proc.dt * j * me.riskfree_bop[j] )
+            exp( - j * me.riskfree_bop[j] )
     end
 end
 
@@ -116,8 +115,7 @@ function reallocbop!(me::IGRiskfreeBonds, mc::Int, t::Int )
         max(0,me.mv_alloc_bop - amount_old .* me.mv_normbond_curr)
     ## coupon for new investments
     coupon_mkt =
-        (1 .- exp(-me.proc.dt * [1:me.n] .* me.riskfree_bop)) ./
-        me.mv_normcf_curr
+        (1 .- exp(-[1:me.n] .* me.riskfree_bop)) ./ me.mv_normcf_curr
     ## curr: _bop(t) ---------------------------------------------
     me.amount_curr = amount_old + amount_new
     me.coupon_curr =
@@ -142,8 +140,7 @@ function valeop!(me::IGRiskfreeBonds,
     # update coupon_curr for period t+1 before reallocation:
     me.coupon_curr[1:(me.n-1)] = me.coupon_curr[2:me.n]
     me.coupon_curr[me.n] =
-        (1-exp(- me.proc.dt * me.riskfree_bop[me.n] * me.n) ) /
-        me.mv_normcf_curr[me.n]
+        (1-exp(- me.riskfree_bop[me.n] * me.n) ) / me.mv_normcf_curr[me.n]
     mvnormbond!(me)
     me.mv_eop[mc,t,:] =  me.amount_curr .* me.mv_normbond_curr
 end

@@ -64,7 +64,7 @@ for mc = 1:n_mc, t = 1:tf.n_p
                         invest_test.alloc.ig_target[i_cash] *
                         invest_test.alloc.asset_target[i_cash][1] *
                         mv_bop[t] *
-                        exp(tf.dt*invest_test.ig[i_cash].proc.yield[mc,t,1]),
+                        exp(invest_test.ig[i_cash].proc.yield[mc,t,1]),
                         tol)  
 end
 
@@ -75,7 +75,7 @@ for  mc = 1:n_mc, t = 1:tf.n_p, j = 1:invest_test.ig[i_stocks].n
                         invest_test.alloc.ig_target[i_stocks] *
                         invest_test.alloc.asset_target[i_stocks][j] *
                         mv_bop[t] *
-                        exp(tf.dt * invest_test.ig[i_stocks].proc.yield[mc,t,j]),
+                        exp(invest_test.ig[i_stocks].proc.yield[mc,t,j]),
                         tol)
 end
 
@@ -93,9 +93,9 @@ tau = ig_bonds.n
 
 value_coup = sum(ig_bonds.amount_init[tau] *
                  ig_bonds.coupon_init[tau] *
-                 exp( - tf.dt * [1:tau] .* ig_bonds.riskfree_bop[1:tau]) )
+                 exp( - [1:tau] .* ig_bonds.riskfree_bop[1:tau]) )
 value_mat =
-    ig_bonds.amount_init[tau] * exp(-tf.dt * tau * ig_bonds.riskfree_bop[tau])
+    ig_bonds.amount_init[tau] * exp(-tau * ig_bonds.riskfree_bop[tau])
 @test_approx_eq_eps( ig_bonds.mv_init[tau], value_coup+value_mat, tol)
 
 ## Other bond tests
@@ -137,8 +137,7 @@ for mc in 1:n_mc
         MCInsurance.riskfreebop!(ig_bonds, mc, t+1)
         MCInsurance.mvnormcf!(ig_bonds) 
         tmp_coupon[mc,t,ig_bonds.n] =
-            (1-exp(- ig_bonds.proc.dt * ig_bonds.riskfree_bop[ig_bonds.n] *
-                   ig_bonds.n) ) /
+            (1-exp(-ig_bonds.riskfree_bop[ig_bonds.n] * ig_bonds.n) ) /
             ig_bonds.mv_normcf_curr[ig_bonds.n]
 
         MCInsurance.valeop!(ig_bonds, mc, t)

@@ -26,8 +26,7 @@ end
 function project!(me::IGCash, mc::Int, t::Int)
     # mv_eop = 0 to avoid double-counting with cash_eop
     # field mv_eop is present to avoid access errors in Invest
-    me.cash_eop[mc,t] = me.mv_alloc_bop[1] *
-                        exp(me.proc.dt * me.proc.yield[mc,t,1])         
+    me.cash_eop[mc,t] = me.mv_alloc_bop[1] * exp(me.proc.yield[mc,t,1])         
     me.mv_total_eop[mc,t] =  me.cash_eop[mc,t]
 end
 

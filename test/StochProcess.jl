@@ -71,6 +71,9 @@ end
 
 proc_determ = Array(Process, length(D))
 
+noise_p = noise .* sqrt(tf.dt)
+cov_p = cov .* tf.dt
+
 ## v_bop test ------------------------------------------------------------------    
 
 ## Brownian: dv = (drift*dt+dW), where dW ~ N(0,cov)
@@ -78,8 +81,8 @@ i = D["brown"]
 for mc = 1:n_mc, t = 1:tf.n_p, d= 1:proc[i].n
     if proc[i].v_bop[mc, t+1, d] > 0
         @test_approx_eq_eps(proc[i].v_bop[mc,t+1,d]- proc[i].v_bop[mc,t,d],
-                            proc[i].drift[d] * tf.dt +
-                            sqrt(tf.dt) * noise[i][mc,t,d],
+                            proc[i].drift[d]  +
+                            noise_p[i][mc,t,d],
                             tol )
     end
 end
@@ -88,8 +91,8 @@ end
 i= D["geombrown"]
 for mc = 1:n_mc, t = 1:tf.n_p, d = 1:proc[i].n
     @test_approx_eq_eps(log(proc[i].v_bop[mc,t+1,d])- log(proc[i].v_bop[mc,t,d]),
-                        (proc[i].drift[d] - 0.5cov[i][d,d]) * tf.dt +
-                        + sqrt(tf.dt) * noise[i][mc,t,d],
+                        (proc[i].drift[d] - 0.5cov_p[i][d,d]) +
+                        noise_p[i][mc,t,d],
                         tol)
 end
 
@@ -105,7 +108,7 @@ for i= 1:length(D)
                 if !((proc[i].v_bop[mc,t+1,d] < eps(1.0)) & (i == D["brown"]))
                     @test_approx_eq_eps(proc[i].v_bop[mc,t+1,d],
                                         proc[i].v_bop[mc,t,d] *
-                                        exp(tf.dt * proc[i].yield[mc,t,d]),
+                                        exp(proc[i].yield[mc,t,d]),
                                         tol)
                 end
             end
@@ -117,8 +120,8 @@ end
 i= D["cir"]
 for mc = 1:n_mc, t = 1:(tf.n_p-1), d= 1:proc[i].n
     @test_approx_eq_eps(proc[i].yield[mc,t+1,d]- proc[i].yield[mc,t,d],
-                        proc[i].a * (proc[i].yield_infty-proc[i].yield[mc,t,d]) * tf.dt +
-                        sqrt(proc[i].yield[mc,t,d]) *  sqrt(tf.dt) * noise[i][mc,t,d],
+                        proc[i].a * (proc[i].yield_infty-proc[i].yield[mc,t,d]) +
+                        sqrt(proc[i].yield[mc,t,d])  * noise_p[i][mc,t,d],
                         tol)
 end
 
@@ -126,8 +129,8 @@ end
 i= D["vasicek"]
 for mc = 1:n_mc, t = 1:(tf.n_p-1), d= 1:proc[i].n
     @test_approx_eq_eps(proc[i].yield[mc,t+1,d]- proc[i].yield[mc,t,d],
-                        proc[i].a * (proc[i].yield_infty-proc[i].yield[mc,t,d]) * tf.dt +
-                        sqrt(tf.dt) * noise[i][mc,t,d],
+                        proc[i].a * (proc[i].yield_infty-proc[i].yield[mc,t,d]) +
+                        noise_p[i][mc,t,d],
                         tol)
 end
 

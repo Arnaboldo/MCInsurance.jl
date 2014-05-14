@@ -7,24 +7,30 @@ function Brownian(name::Symbol,
                   tf::TimeFrame,
                   cov::Array{Float64,2},
                   noise::Array{Float64,3})
-
     n = length(init)
     n_mc = size(noise,1)
     dt = tf.dt
     n_p = tf.n_p
+    cpnt_id = Dict(cpnt, 1:length(cpnt))
     is_bankrupt = false
-    v_bop = zeros(Float64, (n_mc, n_p+1, n))
+    proc = Brownian(name, cpnt, cpnt_id, init, drift,  cov, noise, n,
+                    zeros(Float64, n_mc, n_p+1, n), # v_bop
+                    Array(Float64, n_mc, n_p, n),   # yield
+                    n_mc, dt, n_p )
+    cycle2period!(proc, tf)
+
     for mc = 1:n_mc
         for d = 1:n
             for t = 1:(n_p+1) 
                 if t==1
-                    v_bop[mc,t,d] = init[d]
+                    proc.v_bop[mc,t,d] = proc.init[d]
                 else
-                    v_bop[mc,t,d] = v_bop[mc,t-1,d] + drift[d] * dt +
-                                    sqrt(dt) * noise[mc,t-1,d]
-                    if v_bop[mc,t,d] <= 0.0 ## bankruptcy
+                    proc.v_bop[mc,t,d] =
+                        proc.v_bop[mc,t-1,d] + proc.drift[d] +
+                        proc.noise[mc,t-1,d]
+                    if proc.v_bop[mc,t,d] <= 0.0 ## bankruptcy
                         for tau = t:(n_p+1)
-                            v_bop[mc,tau,d] = 0
+                            proc.v_bop[mc,tau,d] = 0
                         end
                         is_bankrupt = true
                         break
@@ -33,29 +39,23 @@ function Brownian(name::Symbol,
             end
         end
     end  
-    yield = Array(Float64, (n_mc, n_p, n))
     for mc = 1:n_mc, t = 1:n_p, d = 1:n
-        if v_bop[mc,t+1,d] < eps(1.0)
-            if v_bop[mc,t,d] > eps(1.0)
-                yield[mc,t,d] = -1.0
+        if proc.v_bop[mc,t+1,d] < eps()
+            if proc.v_bop[mc,t,d] > eps()
+                proc.yield[mc,t,d] = -1.0
             else
-                yield[mc,t,d] = 0.0
+                proc.yield[mc,t,d] = 0.0
             end
         else
-            yield[mc,t,d] = log(max(eps(), v_bop[mc,t+1,d]./v_bop[mc,t,d])) / dt
+            proc.yield[mc,t,d] =
+                log(max(eps(), proc.v_bop[mc,t+1,d] ./ proc.v_bop[mc,t,d])) 
         end
     end
     if is_bankrupt
         info("Brownian: On some paths the index has become non-positive. From ",
              "then onwards it has been set to zero (index ceases to exist) ")
     end
-
-    cpnt_id = Dict(cpnt, 1:length(cpnt))
-
-    Brownian(name, cpnt, cpnt_id, init, drift,
-             cov, noise, n, v_bop, yield,
-             n_mc, dt, n_p
-             )
+    proc
 end
 
 ## Constructor with automatic generation of noise
@@ -87,6 +87,14 @@ function show(io::IO, me::Brownian)
 end
 
 determbop(me::Brownian) =
-    [ me.init[d] + (t-1) * me.drift[d] * me.dt
-     for t = 1:(me.n_p+1), d= 1:me.n ]
+    [ me.init[d] + (t-1) * me.drift[d] for t = 1:(me.n_p+1), d= 1:me.n ]
+
+## Private functions -----------------------------------------------------------
+function cycle2period!(me::Brownian, tf::TimeFrame)
+    # assumption: drift, cov, noise  are given with respect to cycles
+    # me.a: not changed
+    me.drift *= tf.dt
+    me.cov .*= tf.dt
+    me.noise .*= sqrt(tf.dt)
+end
 

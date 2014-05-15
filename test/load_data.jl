@@ -56,24 +56,26 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
     ## cash allocation is chosen dependent on market performance
     ## all other investments / assets are adjusted proportionally
     ## In-place computation for higher efficiency
-
-   ## market performance indicator weighted with expected yield
-   mkt_perf_ind =
-       0.5 * (invest.c.yield_mkt_eoc[mc,t] + invest.hook.exp_yield_market) /
-       max(0, invest.c.yield_rf_eoc[mc,t])
+    if t > 1 # allocation is boc.  For t= 1 we use original allocation
+        ## market performance indicator weighted with expected yield
+        mkt_perf_ind = 0.5 * (invest.c.yield_mkt_eoc[mc,t-1] +
+                              invest.hook.exp_yield_market) /
+                       max(0, invest.c.yield_rf_eoc[mc,t-1])
     
-   alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
+        alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
 
-    ## Now we adjust all allocations accordingly
-   total_other = 1 - invest.alloc.ig_target_std[invest.id[:cash]]
-   fac_other = (1-alloc_cash) / max(eps(), total_other)
-    for i = 1:invest.n
-      if invest.ig[i].name == :cash
-          invest.alloc.ig_target[i] = alloc_cash
-      else
-          invest.alloc.ig_target[i] = fac_other * invest.alloc.ig_target_std[i]
-      end
-   end
+        ## Now we adjust all allocations accordingly
+        total_other = 1 - invest.alloc.ig_target_std[invest.id[:cash]]
+        fac_other = (1-alloc_cash) / max(eps(), total_other)
+        for i = 1:invest.n
+            if invest.ig[i].name == :cash
+                invest.alloc.ig_target[i] = alloc_cash
+            else
+                invest.alloc.ig_target[i] =
+                    fac_other * invest.alloc.ig_target_std[i]
+            end
+        end
+    end
 end
 
 ## Dynamic bonus declaration ---------------------------------------------------

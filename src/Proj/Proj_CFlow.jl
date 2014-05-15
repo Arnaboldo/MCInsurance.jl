@@ -31,7 +31,7 @@ end
 
 ## Interface functions for CFlow -----------------------------------------------
 
-function isequal(cf1::CFlow, cf2::CFlow)
+function ==(cf1::CFlow, cf2::CFlow)
     cf1.n == cf2.n &&
     cf1.n_mc == cf2.n_mc &&
     cf1.tf == cf2.tf &&

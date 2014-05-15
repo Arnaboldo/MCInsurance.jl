@@ -17,13 +17,13 @@ end
 
 ## Interface functions for TimeFrame  ------------------------------------------
 
-function isequal(tf1::TimeFrame, tf2::TimeFrame)
-    isequal(tf1.init, tf2.init) &&
-    isequal(tf1.final, tf2.final) &&
-    isequal(tf1.n_p, tf2.n_p) &&
-    isequal(tf1.n_c, tf2.n_c) &&
-    isequal(tf1.n_dt, tf2.n_dt) &&
-    isequal(tf1.dt, tf2.dt)
+function ==(tf1::TimeFrame, tf2::TimeFrame)
+    ==(tf1.init, tf2.init) &&
+    ==(tf1.final, tf2.final) &&
+    ==(tf1.n_p, tf2.n_p) &&
+    ==(tf1.n_c, tf2.n_c) &&
+    ==(tf1.n_dt, tf2.n_dt) &&
+    ==(tf1.dt, tf2.dt)
 end
 
 function show(io::IO, me::TimeFrame)

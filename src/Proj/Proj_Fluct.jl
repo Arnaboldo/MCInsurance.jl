@@ -59,7 +59,7 @@ end
                   
 ## Interface functions ---------------------------------------------------------
 
-function isequal(fluct1::Fluct, fluct2::Fluct)
+function ==(fluct1::Fluct, fluct2::Fluct)
     fluct1.n == fluct2.n &&
     fluct1.kind == fluct2.kind &&
     fluct1.fac == fluct2.fac

@@ -29,20 +29,20 @@ end
 
 ## Interface functions for Bucket and Buckets  ---------------------------------
 
-function isequal(b1::Bucket, b2::Bucket)
-    isequal(b1.n, b2.n) &&
-    isequal(b1.n_c, b2.n_c) &&
-    isequal(b1.cat, b2.cat) &&
-    isequal(b1.cond, b2.cond) &&
-    isequal(b1.tp_stat, b2.tp_stat) &&
-    isequal(b1.prob_be, b2.prob_be) &&
-    isequal(b1.sx_weights, b2.sx_weights)
+function ==(b1::Bucket, b2::Bucket)
+    ==(b1.n, b2.n) &&
+    ==(b1.n_c, b2.n_c) &&
+    ==(b1.cat, b2.cat) &&
+    ==(b1.cond, b2.cond) &&
+    ==(b1.tp_stat, b2.tp_stat) &&
+    ==(b1.prob_be, b2.prob_be) &&
+    ==(b1.sx_weights, b2.sx_weights)
 end
 
-function isequal(buckets_1::Buckets, buckets_2::Buckets)
-    isequal(buckets_1.n, buckets_2.n) &&
-    isequal(buckets_1.all, buckets_2.all) &&
-    isequal(buckets_1.tf, buckets_2.tf) 
+function ==(buckets_1::Buckets, buckets_2::Buckets)
+    ==(buckets_1.n, buckets_2.n) &&
+    ==(buckets_1.all, buckets_2.all) &&
+    ==(buckets_1.tf, buckets_2.tf) 
 end
 
 function add!(me::Buckets,              

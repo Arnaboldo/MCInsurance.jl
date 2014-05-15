@@ -27,28 +27,22 @@ end
 function show(io::IO, me::DetermShortRate)
     println(io,"Type       : $(string(typeof(me)))")
     println(io,"name       : $(me.name)")
-    println(io,"dt         : $(me.dt)")
     println(io,"(n_mc n_p) : ($(me.n_mc) $(me.n_p))")
 end
 
 function yieldeoc(me::DetermShortRate,
                 n_mc::Int,
-                tf_curr::TimeFrame, ## in general different from CapMkt.tf
+                tf::TimeFrame, ## in general different from CapMkt.tf
                 init_c::Float64)
     ## This function calculates the yield retrospectively at eoc
-    while length(yield_input) < tf_curr.n_p  + tf_curr.n_dt
+    while length(me.yield_input) < tf.n_p  + tf.n_dt
        me.yield_input = vcat(me.yield_input, me.yield_input[end])
     end
-    yield_c = zeros(Float64, n_mc, tf_curr.n_c + 1, 1)
-    ## |-.-.-.-|-.-.-.-|-.-.-.-|-.  here: tf.n_dt = 4, tf.n_c = 3
-    ##         ^                          t=2  (unit: n_c)
-    ##         t                          tau = (t-1) * tf.n_t + 1 (unit: n_p)
-    ##         |-| known at time t: yield_mc for this interval
-    ## Assumption: interest rate will not change for the rest of the cycle
+    yield_c = zeros(Float64, n_mc, tf.n_c + 1, 1)
     for mc = 1:n_mc
         for t = 1:(tf.n_c + 1)
             for d = 1:tf.n_dt
-                yield_c[mc,t] += me.yield_input[1, tf.n_dt*(t-1) + d, 1]
+                yield_c[mc,t] += me.yield_input[tf.n_dt*(t-1) + d]
             end
         end
     end
@@ -84,7 +78,7 @@ function forwardbop(me::DetermShortRate,
 
 
 ## Private functions -----------------------------------------------------------
-function cycle2period!(DetermShortRate::CIR, tf::TimeFrame)
+function cycle2period!(me::DetermShortRate, tf::TimeFrame)
     ## assumption: init, yield are given with respect to cycles
     me.yield .*= tf.dt
     me.yield_input .*= tf.dt

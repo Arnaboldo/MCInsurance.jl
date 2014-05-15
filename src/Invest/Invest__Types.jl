@@ -69,7 +69,6 @@ type IGCash <: IG
     ## internal
 end
 
-
 type InvestInfo   ## information for setting up Invest -------------------------
     ig_name::Symbol                   ## name of investment group
     ig_type::Symbol                   ## type of investment

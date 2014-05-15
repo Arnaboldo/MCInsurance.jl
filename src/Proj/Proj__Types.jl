@@ -1,4 +1,4 @@
-## column names for CFlow.v.  QX, SX, PX, PREM: 1:4 
+## column names for CFlow.v.  QX, SX, PX, PREM, C_BOC, C_EOC: 1:6
 export  DELTA_TP, BONUS, DIVID, TP_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
 export Fluct
 export CFlow, df

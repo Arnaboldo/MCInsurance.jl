@@ -10,7 +10,7 @@ type StochProcessInfo
     name::Symbol                      ## process name
     cpnt::Vector{Any}                 ## process components (usually type Symbol)
     init::Vector{Float64}             ## initial value
-    yield_determ::Array{Float64,2}    ## only used for DetermShortRate
+    yield_determ::Array{Float64}      ## for ManualShortRate, DetermShortRate
     param::Any                        ## process parameters
 end
 

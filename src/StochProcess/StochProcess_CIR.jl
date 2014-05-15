@@ -57,7 +57,6 @@ function show(io::IO, me::CIR)
     print(io,"init     : "); println(io,me.init)
     print(io,"(a, yield_infty)  : "); print(io,[me.a,me.yield_infty]')
     print(io,"cov           : "); println(io,me.cov)
-    print(io,"dt            : "); println(io,me.dt)
     print(io,"(n_mc n_p): "); print(io, size(me.noise))
 end
 

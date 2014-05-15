@@ -43,7 +43,6 @@ end
 function show(io::IO, me::ManualShortRate)
     println(io,"Type       : $(string(typeof(me)))")
     println(io,"name       : $(me.name)")
-    println(io,"dt         : $(me.dt)")
     println(io,"(n_mc n_p) : ($(me.n_mc) $(me.n_p))")
 end
 

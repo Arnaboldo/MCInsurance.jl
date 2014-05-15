@@ -82,7 +82,6 @@ function show(io::IO, me::Brownian)
     print(io,  "drift'         : "); println(io,me.drift')
     print(io,  "cov            : ")
     print(io,me.cov)
-    print(io,  "dt             : "); println(io,me.dt)
     print(io,  "(n_mc n_p n) : "); print(io, size(me.noise))
 end
 

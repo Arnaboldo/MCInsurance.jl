@@ -20,6 +20,7 @@ df_lc_ph = readtable(joinpath(dirname(@__FILE__), "input/LC_PH.csv"))
 df_lc_lc = readtable(joinpath(dirname(@__FILE__), "input/LC_LC.csv"))
 df_proj_fluct = readtable(joinpath(dirname(@__FILE__), "input/Proj_Fluct.csv"))
 
+## convert references from string to symbol
 df_lc_lc[:prod_name] = convert(DataArray{Symbol,1}, df_lc_lc[:prod_name])
 df_lc_load[:name] = convert(DataArray{Symbol,1}, df_lc_load[:name])
 for col in (:name, :cost_name, :cost_be_name, :qx_name, :interest_name) 

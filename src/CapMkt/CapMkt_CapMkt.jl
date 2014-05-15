@@ -32,6 +32,9 @@ function CapMkt(name::Symbol,
                                              )
             cum_stoch_n_cpnt += n_cpnt
         else
+            if proc_info[i].type_name == :DetermShortRate
+              proc_info[i].yield_determ = vec(proc_info[i].yield_determ)
+            end
             proc[i] =
                 eval(proc_info[i].type_name)(proc_info[i].name,
                                              proc_info[i].cpnt,

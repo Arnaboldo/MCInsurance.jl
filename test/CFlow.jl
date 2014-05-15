@@ -7,7 +7,7 @@ using MCInsurance
 n_cf = 6 # QX, SX, PX, PREM, C_BOC, C_EOC
 
 
-discount = Array(Float64, buckets.n_c)
+tst_discount = Array(Float64, buckets.n_c)
 
 for mc = 1:n_mc
     tmp_tp = zeros(Float64, tf.n_c)
@@ -16,7 +16,7 @@ for mc = 1:n_mc
         prob_b = Array(Float64, buckets.all[b].n_c, 3 )
         lx_boc = 1
         for t = 1:tf.n_c
-            discount =
+            tst_discount =
                 meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)
 
             yield = 0.0
@@ -35,7 +35,7 @@ for mc = 1:n_mc
 
             tmp_tp[t] +=  lx_boc * prob_b[t,PX] *
                           tpeoc(prob_b[t:buckets.all[b].n_c,:],
-                                discount[t:buckets.all[b].n_c],
+                                tst_discount[t:buckets.all[b].n_c],
                                 buckets.all[b].cond[t:buckets.all[b].n_c,:])
             # accumulate cashflows
             tmp_cf[t,QX] += lx_boc * prob_b[t,QX] * buckets.all[b].cond[t,QX]

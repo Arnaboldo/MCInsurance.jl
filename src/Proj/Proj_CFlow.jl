@@ -1,11 +1,9 @@
 ## Constructors --------------------------------------------------
 
 function CFlow(tf::TimeFrame, n_mc::Int)
-    labels = ["QX","SX", "PX", "PREM", "C_BOC", "C_EOC", "DELTA_TP", "BONUS",
-              "DIVID", "TP_EOC", "ASSET_EOC", "SURPLUS_EOC", "CYCLE"]
-    n = length(labels)
+    n = length(col_CFLOW)
     v = zeros(Float64, (n_mc, tf.n_c, n ))
-    CFlow(n, n_mc, tf, v, labels)
+    CFlow(n, n_mc, tf, v)
 end
 
 function CFlow(buckets::Buckets,
@@ -36,14 +34,13 @@ function ==(cf1::CFlow, cf2::CFlow)
     cf1.n_mc == cf2.n_mc &&
     cf1.tf == cf2.tf &&
     cf1.v == cf2.v
-    # labels are constant and therefore the same for all instances of CFlow  
-end
+ end
 
 function df(cf::CFlow, mc::Int, digits::Int=1)
    ## use showall for printing to screen
    dframe = DataFrame()
     for i = 1:size(cf.v,3)
-        dframe[symbol(cf.labels[i])] =
+        dframe[col_CFLOW[i]] =
             round(reshape(cf.v[mc,:,i], size(cf.v,2)), digits)
     end
     dframe[:CYCLE] = int( dframe[:CYCLE])
@@ -97,16 +94,18 @@ function assetsprojecteoc!(cf::CFlow,
                            t::Int,
                            dynalloc!::Function)
     if t == 1 
-        asset_BOC = invest.mv_total_init
+        mv_bop = invest.mv_total_init
     else
-        asset_BOC = cf.v[mc,t-1,ASSET_EOC] 
+        mv_bop = cf.v[mc,t-1,ASSET_EOC] 
     end
-    asset_BOC += cf.v[mc,t,PREM] + cf.v[mc,t,C_BOC]
+    mv_bop += cf.v[mc,t,PREM] + cf.v[mc,t,C_BOC]
+    mv_boc = mv_bop
     for t_p in ((t-1) * cf.tf.n_dt+1):(t * cf.tf.n_dt)
         dynalloc!(invest, mc, t)
-        project!( invest, mc, t_p, asset_BOC)
-        asset_BOC = invest.mv_total_eop[mc,t_p]
+        project!( invest, mc, t_p, mv_bop)
+        mv_bop = invest.mv_total_eop[mc,t_p]
     end
+    cf.v[mc,t,INVEST] += invest.mv_total_eop[mc, t * cf.tf.n_dt] - mv_boc
 end
 
 function bucketprojecteoc!(cf::CFlow,
@@ -134,14 +133,6 @@ function bucketprojecteoc!(cf::CFlow,
         bucket.lx_boc * prob[t,PX] * tpeoc(prob[ t:bucket.n_c, :],
                                            discount[t:bucket.n_c],
                                            bucket.cond[ t:bucket.n_c, :])
-    ## print("mc: $mc, t: $t, discount: $(round(discount[t],3)), ")
-    ## tptemp = tpprev(cf.v[mc,t,TP_EOC],
-    ##                 reshape(prob[t,:], 3),
-    ##                 discount[t],
-    ##                 reshape(bucket.cond[t,:], N_COND))
-    ## println("TPEOC: $(round(cf.v[mc,t,TP_EOC],1)), TPBOC: $(round(tptemp,1))")
-    ## println(round(reshape(prob[t,:], 3),4))
-    ## println(round(reshape(bucket.cond[t,:], N_COND),4))
     if t == 1
         cf.v[mc,t, DELTA_TP] -= prob[t,PX] * bucket.tp_be_init # completed later
         cf.v[mc,t,BONUS] += bucket.bonus_rate * bucket.tp_stat_init

@@ -1,17 +1,17 @@
 ## Constructors --------------------------------------------------
 
 function Fluct(tf::TimeFrame, n_mc::Int, kind::Symbol)
-    labels = ["QX", "SX", "C_BOC", "C_EOC"]
-    n = length(labels)
-    d = Dict( int64([eval(parse(labels[i])) for i in 1:n]), [1:n] )
+    n = length(col_FLUCT)
+    d = Dict( int64([eval(col_FLUCT[i]) for i in 1:n]), [1:n] )
     fac = Array(Float64, n_mc, tf.n_c, n)
-    Fluct(length(labels), kind, convert(Array{Symbol,1}, labels), fac, d)    
+    Fluct(length(col_FLUCT), kind, fac, d)    
+#    Fluct(length(cpnt), kind, convert(Array{Symbol,1}, cpnt), fac, d)    
 end
 
 function Fluct(tf::TimeFrame, n_mc::Int,  df::DataFrame)
     ## data frame with the following structure:
     ## 8 rows: QX, SX, C_INIT, C_ABS, C_IS, C_PREM
-    ## columns: labels:                 names of rows
+    ## columns: cols:                   names of rows (= col_FLUCT)
     ##          init:                   initial value
     ##          drift:                  param (drift of Brownian)
     ##          std:                    param (std of Brownian)
@@ -29,7 +29,7 @@ function Fluct(tf::TimeFrame, n_mc::Int,  df::DataFrame)
     cov =(stdev*stdev') .* cov
     tf_c = TimeFrame(tf.init, tf.final, tf.final-tf.init)
     fluct.fac = GeomBrownian(:proc_fac,
-                            fluct.labels,
+                            col_FLUCT, 
                             float(df[:init]),
                             float(df[:drift]),
                             tf_c,
@@ -63,15 +63,12 @@ function ==(fluct1::Fluct, fluct2::Fluct)
     fluct1.n == fluct2.n &&
     fluct1.kind == fluct2.kind &&
     fluct1.fac == fluct2.fac
-    # labels are constant and therefore always equal
-    # d is constant and therefore always equal
 end
     
 function show(io::IO, me::Fluct)
     println(io, "Type:     $(string(typeof(me)))")
-    println(io, "n:        $(me.n)")
     println(io, "kind:     $(me.kind)")
-    println(  io, "labels:   $(transpose(me.labels))")
+    println(  io, "fluctuates:   $(transpose(col_FLUCT))")
     println(io, "fac size: $(size(me.fac))")
  end
 

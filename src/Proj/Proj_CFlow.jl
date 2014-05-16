@@ -12,7 +12,8 @@ function CFlow(buckets::Buckets,
                dividend::Float64,
                dynbonusrate!::Function = defaultdynbonusrate!,
                dynprobsx::Function = defaultdynprobsx,
-               dynalloc!::Function = defaultdynalloc!
+               dynalloc!::Function = defaultdynalloc!,
+               dyndividend::Function = defaultdyndividend
               )
     ## buckets.tf == invest.cap_mkt.tf
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)    
@@ -20,7 +21,7 @@ function CFlow(buckets::Buckets,
         for t = 1:cf.tf.n_c
             disc = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)                                       
             projectcycle(cf, mc, t, buckets, fluct, invest, disc, dividend,
-                         dynbonusrate!, dynprobsx, dynalloc!)
+                         dynbonusrate!, dynprobsx, dynalloc!, dyndividend)
         end
     end
     cf
@@ -90,7 +91,8 @@ function projectcycle(cf::CFlow,
                       dividend::Float64,
                       dynbonusrate!::Function,
                       dynprobsx::Function,
-                      dynalloc!::Function)
+                      dynalloc!::Function,
+                      dyndividend::Function)
     cf.v[mc,t,CYCLE] = cf.tf.init - 1 + t
     for bucket in buckets.all
         bucketprojectboc!(cf::CFlow, bucket, fluct, mc, t)
@@ -105,7 +107,7 @@ function projectcycle(cf::CFlow,
     else
        cf.v[mc,t, DELTA_TP] =  cf.v[mc, t, TP_EOC] - cf.v[mc, t-1, TP_EOC]
     end
-    surplusprojecteoc!(cf, invest, dividend, mc, t)
+    surplusprojecteoc!(cf, invest, dividend, mc, t, dividend, dyndividend)
 end
 
 function bucketprojectboc!(cf::CFlow,
@@ -180,14 +182,15 @@ function surplusprojecteoc!(cf::CFlow,
                             invest::Invest,
                             dividend::Float64,
                             mc::Int,
-                            t::Int)
+                            t::Int,
+                            dividend_rate::Float64,
+                            dyndividend::Function)
     cf.v[mc,t,ASSET_EOC] =
         invest.mv_total_eop[mc, t * cf.tf.n_dt]
     for j in [QX, SX, PX, C_EOC, BONUS]
         cf.v[mc,t,ASSET_EOC] += cf.v[mc, t, j]
     end
-    cf.v[mc, t, DIVID] =
-        - dividend * max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
+    cf.v[mc, t, DIVID] = dyndividend(cf, mc, t, dividend_rate, invest)
     cf.v[mc, t, ASSET_EOC] += cf.v[mc, t, DIVID]               
     cf.v[mc, t, SURPLUS_EOC] = cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC]
 end
@@ -204,3 +207,30 @@ function cfdisccycles(me::CFlow, ind::Vector{Int}, invest::Invest)
   end
   return result  
 end
+
+## dynamic defaults
+
+function defaultdynbonusrate!(bucket::Bucket,
+                              mc::Int,
+                              t::Int,
+                              invest::Invest)
+   bucket.bonus_rate = 0.0
+end
+
+function defaultdynprobsx(sx::Vector{Float64}, mc...)
+    return sx
+end
+
+function defaultdynalloc!(invest::Invest, mc...)
+    invest.alloc.asset_target = invest.alloc.asset_target_std
+    invest.alloc.ig_target = invest.alloc.ig_target_std
+end
+
+function defaultdyndividend(cf::CFlow,
+                            mc::Int,
+                            t::Int,
+                            dividend_rate::Float64,
+                            invest::Invest)
+    return -dividend_rate * max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
+end
+

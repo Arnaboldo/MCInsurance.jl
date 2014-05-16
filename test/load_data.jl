@@ -90,6 +90,16 @@ function   dynbonusrate!(bucket::Bucket,
         max(0, invest.c.yield_mkt_eoc[mc,t] - bucket.hook.statinterest(bucket,t))
 end
 
+## Dynamic dividend declaration ------------------------------------------------
+function dyndividend(cf::CFlow,
+                     mc::Int,
+                     t::Int,
+                     dividend_rate::Float64,
+                     invest::Invest)
+    return -dividend_rate * max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
+end
+
+
 ##------------------------------------------------------------------------------
 srand(df_general[1, :random_seed])
 
@@ -127,7 +137,7 @@ dividend = df_general[1, :capital_dividend]
 
 fluct    = Fluct(tf, n_mc, 1.0)
 cflow    = CFlow(buckets, fluct, invest, dividend,
-                 dynbonusrate!, dynprobsx, dynalloc!)
+                 dynbonusrate!, dynprobsx, dynalloc!, dyndividend)
 
 ##------------------------------------------------------------------------------
 

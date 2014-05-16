@@ -36,7 +36,7 @@ function ==(cf1::CFlow, cf2::CFlow)
     cf1.v == cf2.v
  end
 
-function df(cf::CFlow, mc::Int, digits::Int=1)
+function cf(cf::CFlow, mc::Int, digits::Int=1)
    ## use showall for printing to screen
    dframe = DataFrame()
     for i = 1:size(cf.v,3)
@@ -46,7 +46,38 @@ function df(cf::CFlow, mc::Int, digits::Int=1)
     dframe[:CYCLE] = int( dframe[:CYCLE])
     dframe
 end
+
+function disccf(me::CFlow, invest::Invest, prec::Int=-1)
+    cols = [:PX, :QX, :SX, :PREM, :C_BOC, :C_EOC, :INVEST, :BONUS, :DIVID]
+    ind = Int[eval(c) for c in cols]
     
+    
+ 
+    if prec < 0
+        disc_cf = reshape(sum(cfdisccycles(me, ind, invest), 2),
+                          size(me.v,1), length(ind))
+    else
+        disc_cf = round(reshape(sum(cfdisccycles(me, ind, invest), 2),
+                                size(me.v,1), length(ind)),
+                        prec)
+    end
+    df_disc_cf = convert(DataFrame, disc_cf)
+    names!(df_disc_cf, cols)
+    return df_disc_cf
+end
+
+function pvcf(me::CFlow, invest::Invest, prec::Int=-1)
+    disc_cf = disccf(me, invest, -1)
+    if prec < 0
+        pv_cf = (Float64[x[1] for x in colwise(mean, disc_cf)])'
+    else
+        pv_cf = round((Float64[x[1] for x in colwise(mean, disc_cf)])',prec)
+    end
+    df_pv_cf = convert(DataFrame, pv_cf)
+    names!(df_pv_cf, names(disc_cf))
+    return df_pv_cf
+end
+
 ## Private functions for Cflow -------------------------------------------------
 
 function projectcycle(cf::CFlow,
@@ -161,16 +192,15 @@ function surplusprojecteoc!(cf::CFlow,
     cf.v[mc, t, SURPLUS_EOC] = cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC]
 end
 
-function defaultdynbonusrate!(bucket::Bucket, mc::Int, t::Int, invest::Invest)
-   bucket.bonus_rate = 0.0
+function cfdisccycles(me::CFlow, ind::Vector{Int}, invest::Invest)
+  cfl = me.v[:,:,ind]
+  result = Array(Float64, size(cfl) )
+  for mc = 1:size(cfl,1)
+      for j = 1:size(cfl,3)
+          result[mc,:,j] = map(*,
+                               exp(-cumsum(invest.c.yield_rf_eoc,2))[mc,:],
+                               cfl[mc,:,j])
+     end    
+  end
+  return result  
 end
-
-function defaultdynprobsx(sx::Vector{Float64}, mc...)
-    return sx
-end
-
-function defaultdynalloc!(invest::Invest, mc...)
-    invest.alloc.asset_target = invest.alloc.asset_target_std
-    invest.alloc.ig_target = invest.alloc.ig_target_std
-end
-

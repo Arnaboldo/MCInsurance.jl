@@ -23,7 +23,7 @@ df_proj_fluct = readtable(joinpath(dirname(@__FILE__), "input/Proj_Fluct.csv"))
 ## convert references from string to symbol
 df_lc_lc[:prod_name] = convert(DataArray{Symbol,1}, df_lc_lc[:prod_name])
 df_lc_load[:name] = convert(DataArray{Symbol,1}, df_lc_load[:name])
-for col in (:name, :cost_name, :cost_be_name, :qx_name, :interest_name) 
+for col in (:name, :cost_name, :cost_be_name, :qx_name, :interest_name)
     df_lc_prod[col] = convert(DataArray{Symbol,1}, df_lc_prod[col])
 end
 for col in (:ph_gender, :ph_qx_be_name)
@@ -37,7 +37,7 @@ function dynprobsx(bucket::Bucket,
                 ##   sx::Vector{Float64},
                    mc::Int,
                    t::Int,
-                   invest::Invest, 
+                   invest::Invest,
                    #bonus_rate::Float64
                    )
     if invest.c.yield_mkt_eoc[mc,t]/max(eps(),invest.c.yield_rf_eoc[mc,t]) < 1.1
@@ -62,7 +62,7 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
         mkt_perf_ind = 0.5 * (invest.c.yield_mkt_eoc[mc,t-1] +
                               invest.hook.exp_yield_market) /
                        max(0, invest.c.yield_rf_eoc[mc,t-1])
-    
+
         alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
 
         ## Now we adjust all allocations accordingly
@@ -84,7 +84,7 @@ function   dynbonusrate!(bucket::Bucket,
                         mc::Int,
                         t::Int,
                         invest::Invest)
-    bucket.bonus_rate = 
+    bucket.bonus_rate =
         invest.hook.bonus_factor *
         (1-invest.alloc.ig_target[invest.id[:cash]]) *
         max(0, invest.c.yield_mkt_eoc[mc,t] - bucket.hook.statinterest(bucket,t))
@@ -99,8 +99,18 @@ function dyndividend(cf::CFlow,
     return -dividend_rate * max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
 end
 
+## Dynamic expense ------------ ------------------------------------------------
+function dynexpense(invest::Invest,
+                     mc::Int,
+                     t::Int,
+                     expense::Any)
+    return 0
+end
+
 
 ##------------------------------------------------------------------------------
+
+
 srand(df_general[1, :random_seed])
 
 n_mc     = df_general[1, :n_mc]
@@ -136,8 +146,9 @@ end
 dividend = df_general[1, :capital_dividend]
 
 fluct    = Fluct(tf, n_mc, 1.0)
-cflow    = CFlow(buckets, fluct, invest, dividend,
-                 dynbonusrate!, dynprobsx, dynalloc!, dyndividend)
+expense = Any[false]
+cflow    = CFlow(buckets, fluct, invest, dividend, expense,
+                 dynbonusrate!, dynprobsx, dynalloc!, dyndividend, dynexpense)
 
 ##------------------------------------------------------------------------------
 

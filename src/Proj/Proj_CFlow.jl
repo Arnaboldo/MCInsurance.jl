@@ -10,18 +10,22 @@ function CFlow(buckets::Buckets,
                fluct::Fluct,
                invest::Invest,
                dividend::Float64,
+               expense,
                dynbonusrate!::Function = defaultdynbonusrate!,
                dynprobsx::Function = defaultdynprobsx,
                dynalloc!::Function = defaultdynalloc!,
-               dyndividend::Function = defaultdyndividend
+               dyndividend::Function = defaultdyndividend,
+               dynexpense::Function = defaultdynexpense
               )
     ## buckets.tf == invest.cap_mkt.tf
-    cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)    
+    cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     for mc = 1:cf.n_mc
         for t = 1:cf.tf.n_c
-            disc = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)                                       
+            disc = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)
             projectcycle(cf, mc, t, buckets, fluct, invest, disc, dividend,
-                         dynbonusrate!, dynprobsx, dynalloc!, dyndividend)
+                         expense,
+                         dynbonusrate!, dynprobsx, dynalloc!, dyndividend,
+                         dynexpense)
         end
     end
     cf
@@ -37,23 +41,24 @@ function ==(cf1::CFlow, cf2::CFlow)
     cf1.v == cf2.v
  end
 
-function cf(cf::CFlow, mc::Int, digits::Int=1)
+function cf(me::CFlow, mc::Int, digits::Int=1)
    ## use showall for printing to screen
    dframe = DataFrame()
-    for i = 1:size(cf.v,3)
+    for i = 1:size(me.v,3)
         dframe[col_CFLOW[i]] =
-            round(reshape(cf.v[mc,:,i], size(cf.v,2)), digits)
+            round(reshape(me.v[mc,:,i], size(me.v,2)), digits)
     end
     dframe[:CYCLE] = int( dframe[:CYCLE])
     dframe
 end
 
 function disccf(me::CFlow, invest::Invest, prec::Int=-1)
-    cols = [:PX, :QX, :SX, :PREM, :C_BOC, :C_EOC, :INVEST, :BONUS, :DIVID]
+    cols = [:PX, :QX, :SX, :PREM, :C_BOC, :C_EOC, :INVEST, :EXPENSE,
+            :BONUS, :DIVID]
     ind = Int[eval(c) for c in cols]
-    
-    
- 
+
+
+
     if prec < 0
         disc_cf = reshape(sum(cfdisccycles(me, ind, invest), 2),
                           size(me.v,1), length(ind))
@@ -83,30 +88,33 @@ end
 
 function projectcycle(cf::CFlow,
                       mc::Int,
-                      t::Int, 
+                      t::Int,
                       buckets::Buckets,
                       fluct::Fluct,
                       invest::Invest,
                       discount::Vector{Float64},
                       dividend::Float64,
+                      expense::Any,
                       dynbonusrate!::Function,
                       dynprobsx::Function,
                       dynalloc!::Function,
-                      dyndividend::Function)
+                      dyndividend::Function,
+                      dynexpense::Function)
     cf.v[mc,t,CYCLE] = cf.tf.init - 1 + t
     for bucket in buckets.all
         bucketprojectboc!(cf::CFlow, bucket, fluct, mc, t)
     end
     assetsprojecteoc!(cf, invest, mc, t, dynalloc!)
     for bucket in buckets.all
-        bucketprojecteoc!(cf, bucket, fluct, invest, discount, mc, t,
-                          dynbonusrate!, dynprobsx)
+        bucketprojecteoc!(cf, bucket, fluct, invest, discount, mc, t, expense,
+                          dynbonusrate!, dynprobsx, dynexpense)
     end
     if t == 1
-       cf.v[mc,t, DELTA_TP]  += cf.v[mc, t, TP_EOC]  
+       cf.v[mc,t, DELTA_TP]  += cf.v[mc, t, TP_EOC]
     else
        cf.v[mc,t, DELTA_TP] =  cf.v[mc, t, TP_EOC] - cf.v[mc, t-1, TP_EOC]
     end
+    cf.v[mc,t,EXPENSE] += dynexpense(invest, mc, t, expense)
     surplusprojecteoc!(cf, invest, dividend, mc, t, dividend, dyndividend)
 end
 
@@ -115,7 +123,7 @@ function bucketprojectboc!(cf::CFlow,
                            fluct::Fluct,
                            mc::Int,
                            t:: Int)
-    if t == 1  bucket.lx_boc = 1  end 
+    if t == 1  bucket.lx_boc = 1  end
     cf.v[mc,t,PREM] +=  bucket.lx_boc * bucket.cond[t,PREM]
     cf.v[mc,t,C_BOC] +=
         bucket.lx_boc * fluct.fac[mc,t,fluct.d[C_BOC]] * bucket.cond[t,C_BOC]
@@ -126,10 +134,10 @@ function assetsprojecteoc!(cf::CFlow,
                            mc::Int,
                            t::Int,
                            dynalloc!::Function)
-    if t == 1 
+    if t == 1
         mv_bop = invest.mv_total_init
     else
-        mv_bop = cf.v[mc,t-1,ASSET_EOC] 
+        mv_bop = cf.v[mc,t-1,ASSET_EOC]
     end
     mv_bop += cf.v[mc,t,PREM] + cf.v[mc,t,C_BOC]
     mv_boc = mv_bop
@@ -148,8 +156,10 @@ function bucketprojecteoc!(cf::CFlow,
                            discount::Vector{Float64},
                            mc::Int,
                            t::Int,
+                           expense::Any,
                            dynbonusrate!::Function,
-                           dynprobsx::Function)
+                           dynprobsx::Function,
+                           dynexpense::Function)
     prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
     ## bucket.lx (initially) represents the value at BOP
     dynbonusrate!(bucket, mc, t, invest)
@@ -171,11 +181,11 @@ function bucketprojecteoc!(cf::CFlow,
         cf.v[mc,t,BONUS] += bucket.bonus_rate * bucket.tp_stat_init
     else
         ## cf.v[mc,t, DELTA_TP] is calculated later
-        cf.v[mc,t,BONUS] +=  bucket.bonus_rate * bucket.tp_stat[t-1] 
+        cf.v[mc,t,BONUS] +=  bucket.bonus_rate * bucket.tp_stat[t-1]
     end
     ## roll forward lx to the end of period: EOC
     bucket.lx_boc = bucket.lx_boc * prob[t,PX]
-end              
+end
 
 
 function surplusprojecteoc!(cf::CFlow,
@@ -187,11 +197,11 @@ function surplusprojecteoc!(cf::CFlow,
                             dyndividend::Function)
     cf.v[mc,t,ASSET_EOC] =
         invest.mv_total_eop[mc, t * cf.tf.n_dt]
-    for j in [QX, SX, PX, C_EOC, BONUS]
+    for j in [QX, SX, PX, C_EOC, EXPENSE, BONUS]
         cf.v[mc,t,ASSET_EOC] += cf.v[mc, t, j]
     end
     cf.v[mc, t, DIVID] = dyndividend(cf, mc, t, dividend_rate, invest)
-    cf.v[mc, t, ASSET_EOC] += cf.v[mc, t, DIVID]               
+    cf.v[mc, t, ASSET_EOC] += cf.v[mc, t, DIVID]
     cf.v[mc, t, SURPLUS_EOC] = cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC]
 end
 
@@ -203,9 +213,9 @@ function cfdisccycles(me::CFlow, ind::Vector{Int}, invest::Invest)
           result[mc,:,j] = map(*,
                                exp(-cumsum(invest.c.yield_rf_eoc,2))[mc,:],
                                cfl[mc,:,j])
-     end    
+     end
   end
-  return result  
+  return result
 end
 
 ## dynamic defaults
@@ -234,3 +244,6 @@ function defaultdyndividend(cf::CFlow,
     return -dividend_rate * max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
 end
 
+function defaultdynexpense(invest::Invest, mc::Int, t::Int, expense::Any)
+  return 0
+end

@@ -40,16 +40,31 @@ function dynprobsx(bucket::Bucket,
                    invest::Invest,
                    #bonus_rate::Float64
                    )
-    if invest.c.yield_mkt_eoc[mc,t]/max(eps(),invest.c.yield_rf_eoc[mc,t]) < 1.1
-        delta = 0.1
-    else
-        delta = 0.0
+    delta = 1.0
+    state_econ_quotient =
+        (invest.c.yield_mkt_eoc[mc,t]/max(eps(),invest.c.yield_rf_eoc[mc,t])-1)/
+        (invest.hook.yield_mkt_init/ max(eps(),invest.hook.yield_rf_init) - 1)
+       
+    if state_econ_quotient < 0.5
+        delta += 0.15
+    elseif  state_econ_quotient > 2.0
+        delta -= 0.15
     end
-    si = invest.c.yield_mkt_eoc[mc,t] /
-         max(eps(), bucket.hook.bonus_rate + invest.c.yield_rf_eoc[mc,t])
+    bonus_rate_init = dynbonusrate(bucket, t, invest.hook.bonus_factor,
+                                   invest.alloc.ig_target_std[invest.id[:cash]],
+                                   invest.hook.yield_mkt_init)
+    bi_quotient =
+        (invest.c.yield_mkt_eoc[mc,t] /
+         max(eps(), bucket.hook.bonus_rate + invest.c.yield_rf_eoc[mc,t])) /
+        (invest.hook.yield_mkt_init /
+         max(eps(), bonus_rate_init + invest.hook.yield_rf_init)) 
+    
 
-    return  fluct.fac[mc, t, SX] * bucket.prob_be[t:bucket.n_c, SX] .+
-            (delta + 0.05 * min(6,max(0, si - 1.4)))
+    delta += 0.25 * min(4.0, max(0.0, bi_quotient - 1.2))
+    
+    return  min(1.0,
+                fluct.fac[mc, t, SX] * delta * bucket.prob_be[t:bucket.n_c, SX])
+            
  end
 
 ## Dynamic asset allocation ----------------------------------------------------
@@ -80,14 +95,25 @@ function dynalloc!(invest::Invest, mc::Int, t::Int)
 end
 
 ## Dynamic bonus declaration ---------------------------------------------------
+function   dynbonusrate(bucket::Bucket,
+                        t::Int,
+                        bonus_factor::Float64,
+                        cash_target::Float64,
+                        yield_mkt_eoc::Float64)
+    return (bonus_factor * (1-cash_target) *
+            max(0, yield_mkt_eoc - bucket.hook.statinterest(bucket,t)))
+end
+
 function   dynbonusrate!(bucket::Bucket,
                         mc::Int,
                         t::Int,
                         invest::Invest)
-    bucket.bonus_rate =
-        invest.hook.bonus_factor *
-        (1-invest.alloc.ig_target[invest.id[:cash]]) *
-        max(0, invest.c.yield_mkt_eoc[mc,t] - bucket.hook.statinterest(bucket,t))
+    
+    bucket.bonus_rate = dynbonusrate(bucket,
+                                     t,
+                                     invest.hook.bonus_factor,
+                                     invest.alloc.ig_target[invest.id[:cash]],
+                                     invest.c.yield_mkt_eoc[mc,t])
 end
 
 ## Dynamic dividend declaration ------------------------------------------------
@@ -117,14 +143,24 @@ n_mc     = df_general[1, :n_mc]
 tf       = TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
                      df_general[1, :tf_n_dt] *
                      (df_general[1, :tf_y_end]-df_general[1, :tf_y_start]))
-cap_mkt  = CapMkt(:Capital_Market, tf, n_mc, df_capmkt_1, df_capmkt_2)
-invest = Invest(:iii, cap_mkt, df_general, df_inv_inv, df_inv_init, df_inv_asset)
+cap_mkt  = CapMkt(:cap_mkt_rn, tf, n_mc, df_capmkt_1, df_capmkt_2)
+cap_mkt_det  = CapMkt(:cap_mkt_det, tf, 1, df_capmkt_1, df_capmkt_2)
+
+invest = Invest(:invest_rn, cap_mkt, df_general,
+                df_inv_inv, df_inv_init, df_inv_asset)
+invest_det = Invest(:invest_det, cap_mkt_det,
+                    df_general, df_inv_inv, df_inv_init, df_inv_asset)
 ## Customize Invest:
 type InvestHook
     bonus_factor::Float64
-    exp_yield_market::Float64
+    exp_yield_market::Float64 ## with respect to risk-neutral probabilities
+    yield_mkt_init::Float64
+    yield_rf_init::Float64
 end
-invest.hook = InvestHook(df_general[1, :bonus_factor], 0.03)
+invest.hook = InvestHook(df_general[1, :bonus_factor],
+                         0.03,
+                         invest_det.c.yield_mkt_eoc[1,1], ## approx only
+                         invest_det.c.yield_rf_eoc[1,1])  ## approx only
 discount_be = meandiscrf(invest.c, invest.c.yield_rf_eoc[1,1], 125)
 
 
@@ -148,7 +184,7 @@ dividend = df_general[1, :capital_dividend]
 fluct    = Fluct(tf, n_mc, 1.0)
 expense = Any[false]
 cflow    = CFlow(buckets, fluct, invest, dividend, expense,
-                 dynbonusrate!, dynprobsx, dynalloc!, dyndividend, dynexpense)
+                 dynbonusrate, dynprobsx, dynalloc!, dyndividend, dynexpense)
 
 ##------------------------------------------------------------------------------
 

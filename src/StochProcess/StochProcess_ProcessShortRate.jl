@@ -8,9 +8,13 @@ function yieldeoc(me::ProcessShortRate,
     ## This function calculates the yield retrospectively at eoc
     yield_mc = Array(Float64, 1, tf.n_p + tf.n_dt + 1, 1)
     yield_c = zeros(Float64, n_mc, tf.n_c + 1, 1)
-    noise = reshape(rand(Normal(0,sqrt(me.cov)),
-                         n_mc * (tf.n_p + tf.n_dt) ),
-                    n_mc, tf.n_p + tf.n_dt)
+    if me.cov > eps() 
+        noise = reshape(rand(Normal(0,sqrt(me.cov)),
+                             n_mc * (tf.n_p + tf.n_dt) ),
+                        n_mc, tf.n_p + tf.n_dt)
+    else
+        noise = zeros(Float64, n_mc, tf.n_p + tf.n_dt)
+    end
     ## |-.-.-.-|-.-.-.-|-.-.-.-|-.  here: tf.n_dt = 4, tf.n_c = 3
     ##         ^                          t=2  (unit: n_c)
     ##         t                          tau = (t-1) * tf.n_t + 1 (unit: n_p)

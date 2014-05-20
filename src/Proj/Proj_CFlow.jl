@@ -11,7 +11,7 @@ function CFlow(buckets::Buckets,
                invest::Invest,
                dividend::Float64,
                expense,
-               dynbonusrate!::Function = defaultdynbonusrate!,
+               dynbonusrate::Function = defaultdynbonusrate!,
                dynprobsx::Function = defaultdynprobsx,
                dynalloc!::Function = defaultdynalloc!,
                dyndividend::Function = defaultdyndividend,
@@ -24,7 +24,7 @@ function CFlow(buckets::Buckets,
             disc = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)
             projectcycle(cf, mc, t, buckets, fluct, invest, disc, dividend,
                          expense,
-                         dynbonusrate!, dynprobsx, dynalloc!, dyndividend,
+                         dynbonusrate, dynprobsx, dynalloc!, dyndividend,
                          dynexpense)
         end
     end
@@ -95,7 +95,7 @@ function projectcycle(cf::CFlow,
                       discount::Vector{Float64},
                       dividend::Float64,
                       expense::Any,
-                      dynbonusrate!::Function,
+                      dynbonusrate::Function,
                       dynprobsx::Function,
                       dynalloc!::Function,
                       dyndividend::Function,
@@ -107,7 +107,7 @@ function projectcycle(cf::CFlow,
     assetsprojecteoc!(cf, invest, mc, t, dynalloc!)
     for bucket in buckets.all
         bucketprojecteoc!(cf, bucket, fluct, invest, discount, mc, t, expense,
-                          dynbonusrate!, dynprobsx, dynexpense)
+                          dynbonusrate, dynprobsx, dynexpense)
     end
     if t == 1
        cf.v[mc,t, DELTA_TP]  += cf.v[mc, t, TP_EOC]
@@ -157,12 +157,17 @@ function bucketprojecteoc!(cf::CFlow,
                            mc::Int,
                            t::Int,
                            expense::Any,
-                           dynbonusrate!::Function,
+                           dynbonusrate::Function,
                            dynprobsx::Function,
                            dynexpense::Function)
     prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
     ## bucket.lx (initially) represents the value at BOP
-    dynbonusrate!(bucket, mc, t, invest)
+#    dynbonusrate!(bucket, mc, t, invest)
+    bucket.bonus_rate = dynbonusrate(bucket,
+                                     t,
+                                     invest.hook.bonus_factor,
+                                     invest.alloc.ig_target[invest.id[:cash]],
+                                     invest.c.yield_mkt_eoc[mc,t])
     prob[t:bucket.n_c, QX] =
         fluct.fac[mc, t, QX] * bucket.prob_be[t:bucket.n_c, QX]
     prob[t:bucket.n_c, SX] = dynprobsx(bucket, fluct, mc, t, invest)

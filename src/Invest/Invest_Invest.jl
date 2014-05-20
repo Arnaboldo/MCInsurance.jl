@@ -60,10 +60,10 @@ function Invest(name::Symbol,
     id = Dict(Symbol[info[i].ig_name for i = 1:n_ig], 1:n_ig)
     ig_target /= max(eps(), sum(ig_target))    
     alloc = InvestAlloc(ig_target,    ## used by projection
-                        ig_target,    ## standard benchmark for dyn. allocation
+                        deepcopy(ig_target),    ## standard benchmark for dyn. allocation
 #                        id,
                         asset_target, ## used by projection
-                        asset_target, ## standard benchmark for dyn. allocation
+                        deepcopy(asset_target), ## standard benchmark for dyn. allocation
                         asset_int)
 
     mkt_c = MktC(info, cap_mkt, id, n_mean_mc, n_mean_c, n_mean_grid)
@@ -104,7 +104,7 @@ function show(io::IO, me::Invest)
     println(io,"cap_mkt.n_mc: $(me.cap_mkt.n_mc)")
     ig_names = [me.ig[i].name for i=1:me.n]
     println(io,"ig          : $(transpose(ig_names))")
-    println(io,"target      : $(me.ig_target')")
+    println(io,"alloc.target: $(me.alloc.ig_target')")
 end
 
 

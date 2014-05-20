@@ -10,8 +10,14 @@ function CapMkt(name::Symbol,
 
     n = length(proc_info)
 
-    noise = reshape(rand( MvNormal(cov), n_mc * tf.n_p )',
-                    n_mc, tf.n_p, size(cov,1) )
+    if n_mc <= 1
+        n_mc = 1
+        cov *= 0.0
+        noise = zeros(Float64,  n_mc, tf.n_p, size(cov,1))
+    else
+        noise = reshape(rand( MvNormal(cov), n_mc * tf.n_p )',
+                        n_mc, tf.n_p, size(cov,1) )
+    end
     proc = Array(Process, n)
     cum_n_cpnt = 0
     cum_stoch_n_cpnt = 0
@@ -54,41 +60,41 @@ end
 function CapMkt(name::Symbol,
                 tf::TimeFrame,
                 n_mc::Int,
-                df_proc_1::DataFrame,
-                df_proc_2::DataFrame)
+                df_cap_1::DataFrame,
+                df_cap_2::DataFrame)
     stoch = Array(Bool,0)
     stdev = Array(Float64,0)
-    for i = 1:nrow(df_proc_2)
-        if isna(df_proc_2[i,:std])
+    for i = 1:nrow(df_cap_2)
+        if isna(df_cap_2[i,:std])
             push!(stoch,false)
         else
             push!(stoch,true)
-            push!(stdev,df_proc_2[i,:std])
+            push!(stdev,df_cap_2[i,:std])
         end
     end
     corr = Array(Float64, (length(stdev),length(stdev)) )
     ctr_corr_col = 0
     ctr_col = 0
-    for j = 1:ncol(df_proc_2)
-        if ismatch(r"corr*",string(names(df_proc_2)[j]))
+    for j = 1:ncol(df_cap_2)
+        if ismatch(r"corr*",string(names(df_cap_2)[j]))
             ctr_corr_col += 1
             if stoch[ctr_corr_col]
                 ctr_col += 1
                 ctr_row = 0
-                for k = 1:nrow(df_proc_2)
+                for k = 1:nrow(df_cap_2)
                      if stoch[k]
                         ctr_row += 1
-                        corr[ctr_row,ctr_col] = df_proc_2[k,j]
+                        corr[ctr_row,ctr_col] = df_cap_2[k,j]
                     end
                 end
             end
         end
     end
-    proc_info = Array(StochProcessInfo, nrow(df_proc_1))
-    for i = 1:nrow(df_proc_1)
-        proc_info[i] = StochProcessInfo(symbol(df_proc_1[i, :proc_name]),
-                                        df_proc_1,
-                                        df_proc_2)
+    proc_info = Array(StochProcessInfo, nrow(df_cap_1))
+    for i = 1:nrow(df_cap_1)
+        proc_info[i] = StochProcessInfo(symbol(df_cap_1[i, :proc_name]),
+                                        df_cap_1,
+                                        df_cap_2)
     end
     CapMkt(name, tf, n_mc, stoch, (stdev*stdev') .* corr,  proc_info )
 end

@@ -31,6 +31,7 @@ for mc = 1:n_mc
             prob_b[t:buckets.all[b].n_c, SX] =
                 dynprobsx(buckets.all[b],  fluct, mc, t,  invest)
             prob_b[:,PX] = 1 .- prob_b[:,QX] - prob_b[:,SX]
+            
             # accumulate technical provisions
 
             tmp_tp[t] +=  lx_boc * prob_b[t,PX] *

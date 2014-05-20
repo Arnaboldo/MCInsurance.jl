@@ -102,14 +102,26 @@ function getprob(lc::LC,
                  products::DataFrame,
                  qx_df::DataFrame
                  )
-    age_range = lc.all[i,:ph_age_start] .+ [0: lc.all[i,:dur] - 1]
+    return getprob(lc, i, products, qx_df, lc.all[i, :qx_name],
+                   (lc.all[i,:ph_age_start]+1) .+ [0: lc.all[i,:dur] - 1])
+end
+
+function getprob(lc::LC,
+                 i::Int,
+                 df_prod::DataFrame,
+                 df_qx::DataFrame,
+                 qx_name::Symbol,
+                 age_range::Vector{Int},
+                 be_sx_fac::Float64 = 1.0
+                 )
     prob    = zeros( Float64, length(age_range), 3)    
     ## qx_df starts with age_period = 1, i.e. age = 0. Hence +1
-    prob[:,QX] = qx_df[age_range .+ 1, lc.all[i, :qx_name] ]
-    prob[:,SX] = getprobsx(lc, i, products)
+    prob[:,QX] = df_qx[age_range, qx_name] 
+    prob[:,SX] = be_sx_fac * getprobsx(lc, i, df_prod)
     prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
     return prob
 end
+
 
 ## price of an insurance contract
 function price(is::Float64,

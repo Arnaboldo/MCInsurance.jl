@@ -17,7 +17,8 @@ function Buckets(lc::LC,
                  discount_be::Vector{Float64})
     buckets = Buckets(tf)
     buckets.n_c =
-        maximum(lc.all[:,:dur] - (buckets.tf.init .- lc.all[:, :y_start ]))
+        max(maximum(lc.all[:,:dur] - (buckets.tf.init .- lc.all[:, :y_start ])),
+            tf.n_c)
     discount =  
     
     for i = 1:lc.n
@@ -74,7 +75,6 @@ function add!(me::Buckets,
     dur = max(lc.all[i, :dur]- (me.tf.init-lc.all[i, :y_start]),  b_n_c)
     n_c = max(dur, me.tf.n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
-    cond = zeros(Float64, n_c, N_COND)
     ## Make sure that inflation is calculated with respect to me.tf.init 
     delta_t_infl =  me.tf.init - lc.all[i, :y_start]
     prof = profile(lc,
@@ -82,30 +82,37 @@ function add!(me::Buckets,
                    df_prod,
                    loadings(df_load, df_prod[lc.all[i, :prod_id],:cost_be_name]),
                    delta_t_infl)
-    cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_prod, prof)
 
+    cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_prod, prof)
+    cond = zeros(Float64, n_c, N_COND)
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
     end
-    prob_be = zeros( Float64, n_c, 3)
-    prob_be[:,QX] = df_qx[ cat[CAT_AGE] .+ [1:n_c], cat[CAT_QXBE] ]
-    # we insure that sx-prob = 0 if there is no sx-benefit,
-    # even if lc-data record sx-prob != 0
-    prob_be[:,SX] =
-        lc.all[i, :be_sx_fac] *
-        insertc(tf_cond, lc.all[i, :y_start], getprobsx(lc,i,df_prod), true) .*
-        cond[:,SX ] ./ min(-eps(), cond[:,SX ])
 
-    tp_stat_calc = 
-        tpveceoc(getprob(lc, i, df_prod, df_qx),
-                         exp(-convert(Array, interest[1:lc.all[i,:dur],
-                                                      df_prod[lc.all[i,:prod_id],
-                                                               :interest_name]])),
-                         cond_cf)
-    tp_stat = insertc(tf_cond, lc.all[i, :y_start], tp_stat_calc, true)
+    # age_range refers to age_cycles from the inception of the contract
+    age_range = (lc.all[i,:ph_age_start]+1) .+ [0: lc.all[i,:dur] - 1]
+    prob_be = zeros( Float64, n_c, 3)
+    prob_be_tmp = getprob(lc, i, df_prod, df_qx, cat[CAT_QXBE],
+                          age_range,
+                          lc.all[i, :be_sx_fac]
+                          )
+    for X in [QX,SX]
+        prob_be[:,X] =
+            insertc(tf_cond, lc.all[i, :y_start], prob_be_tmp[:,X], true)
+    end
+    prob_be[:,SX] .*= [ abs(x)>eps() ? 1 : 0 for x in cond[:,SX]]            
+
+    prob_stat = getprob(lc, i, df_prod, df_qx, lc.all[i, :qx_name], age_range)
+    tp_stat_tmp = 
+        tpveceoc(prob_stat,
+                 exp(-convert(Array, interest[1:lc.all[i,:dur],
+                                              df_prod[lc.all[i,:prod_id],
+                                                      :interest_name]])),
+                 cond_cf)
+    tp_stat = insertc(tf_cond, lc.all[i, :y_start], tp_stat_tmp, true)
     if lc.all[i, :y_start] < me.tf.init
-        tp_stat_init = tp_stat_calc[ me.tf.init-lc.all[i, :y_start]]
-        tp_be_init = tpeoc(hcat(prob_be, 1 .- prob_be[:, QX] - prob_be[:, SX]),
+        tp_stat_init = tp_stat_tmp[ me.tf.init-lc.all[i, :y_start]]
+        tp_be_init = tpeoc(prob_be, 
                            discount_be,
                            cond)
     else
@@ -238,4 +245,5 @@ function getcat(lc::LC,
      df_load[df_load[:name] .== load_name, :infl][1,1], # be cost inflation
      lc.all[i, :risk]]                                  # risk class  
 end
+
 

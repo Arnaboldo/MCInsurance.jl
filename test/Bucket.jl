@@ -74,6 +74,9 @@ for b = 1:buckets.n
                             tol)
         if j in [QX,SX]
             ## Test that expected QX, SX benefits coincide
+ #           println("$j $b $t $(buckets.all[b].prob_be[t,j])")
+  #          println("$(buckets.all[b].cat)")
+   #         println("$(lc_bucket[b])")
             @test_approx_eq_eps(tmp_exp_ben[t,j,b],
                             buckets.all[b].cond[t,j] * buckets.all[b].prob_be[t,j],
                             tol)

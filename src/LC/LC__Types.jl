@@ -35,7 +35,7 @@ end
 type Bucket
     n::Int                      ## # contracts in bucket
     n_c::Int                    ## max projection cycles
-    dur::Int                    ## max remaining duration
+    dur::Int                    ## max remaining duration 
     cat::Vector{Any}            ## age, gender, qx_be_name, risk
     cond::Array{Float64,2}      ## conditional cash-flows
     tp_stat::Vector{Float64}    ## statutory technical provisions

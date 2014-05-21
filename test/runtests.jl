@@ -1,4 +1,6 @@
 tests = ["load_data",  
+         "dynamic_behavior",  
+         "setup_objects",  
          "TimeFrame",
          "StochProcess",
          "Invest",

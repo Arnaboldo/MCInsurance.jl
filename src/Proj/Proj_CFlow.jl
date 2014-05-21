@@ -9,8 +9,6 @@ end
 function CFlow(buckets::Buckets,
                fluct::Fluct,
                invest::Invest,
-               dividend::Float64,
-               expense,
                dyn::Dynamic )
     ## buckets.tf == invest.cap_mkt.tf
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)

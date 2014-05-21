@@ -4,6 +4,8 @@ using Base.Test
 
 using MCInsurance
 
+import MCInsurance.Dynamic
+
 tol = 1e-8  # Testing tolerance for floating points
 
 df_general = readtable(joinpath(dirname(@__FILE__), "input/General.csv"))
@@ -30,110 +32,123 @@ for col in (:ph_gender, :ph_qx_be_name)
     df_lc_ph[col] = convert(DataArray{Symbol,1}, df_lc_ph[col])
 end
 
+tmp = Dynamic(df_general)
 
-## Dynamic policy behavior -----------------------------------------------------
-function dynprobsx(bucket::Bucket,
-                   fluct::Fluct,
-                ##   sx::Vector{Float64},
-                   mc::Int,
-                   t::Int,
-                   invest::Invest,
-                   #bonus_rate::Float64
-                   )
-    delta = 1.0
-    state_econ_quotient =
-        (invest.c.yield_mkt_eoc[mc,t]/max(eps(),invest.c.yield_rf_eoc[mc,t])-1)/
+
+function Dynamic(invest::Invest, df_general::DataFrame)
+    me = Dynamic(df_general)
+    ## Dynamic policy behavior -------------------------------------------------
+    function dynprobsx(mc::Int,
+                       t::Int,
+                       bucket::Bucket,
+                       invest::Invest,
+                       fluct::Fluct,
+                       dyn::Dynamic
+                       )
+        delta = 1.0
+        state_econ_quotient =
+            (invest.c.yield_mkt_eoc[mc,t]/max(eps(),invest.c.yield_rf_eoc[mc,t])-1)/
         (invest.hook.yield_mkt_init/ max(eps(),invest.hook.yield_rf_init) - 1)
-       
-    if state_econ_quotient < 0.5
-        delta += 0.15
-    elseif  state_econ_quotient > 2.0
-        delta -= 0.15
-    end
-    bonus_rate_init = dynbonusrate(bucket, t, invest.hook.bonus_factor,
-                                   invest.alloc.ig_target_std[invest.id[:cash]],
-                                   invest.hook.yield_mkt_init)
-    bi_quotient =
-        (invest.c.yield_mkt_eoc[mc,t] /
-         max(eps(), bucket.hook.bonus_rate + invest.c.yield_rf_eoc[mc,t])) /
+        
+        if state_econ_quotient < 0.5
+            delta += 0.15
+        elseif  state_econ_quotient > 2.0
+            delta -= 0.15
+        end
+        bonus_rate_init = dynbonusrate(t,
+                                       bucket.hook.statinterest(bucket,t),
+                                       dyn.bonus_factor,
+                                       invest.alloc.ig_target_std[invest.id[:cash]],
+                                       invest.hook.yield_mkt_init)
+        bi_quotient =
+            (invest.c.yield_mkt_eoc[mc,t] /
+             max(eps(), bucket.hook.bonus_rate + invest.c.yield_rf_eoc[mc,t])) /
         (invest.hook.yield_mkt_init /
          max(eps(), bonus_rate_init + invest.hook.yield_rf_init)) 
-    
+        
 
-    delta += 0.25 * min(4.0, max(0.0, bi_quotient - 1.2))
-    
-    return  min(1.0,
-                fluct.fac[mc, t, SX] * delta * bucket.prob_be[t:bucket.n_c, SX])
-            
- end
+        delta += 0.25 * min(4.0, max(0.0, bi_quotient - 1.2))
+        
+        return  min(1.0,
+                    fluct.fac[mc, t, SX] * delta *
+                    bucket.prob_be[t:bucket.n_c, SX])
+    end
 
-## Dynamic asset allocation ----------------------------------------------------
-function dynalloc!(invest::Invest, mc::Int, t::Int)
-    ## cash allocation is chosen dependent on market performance
-    ## all other investments / assets are adjusted proportionally
-    ## In-place computation for higher efficiency
-    if t > 1 # allocation is boc.  For t= 1 we use original allocation
-        ## market performance indicator weighted with expected yield
-        mkt_perf_ind = 0.5 * (invest.c.yield_mkt_eoc[mc,t-1] +
-                              invest.hook.exp_yield_market) /
-                       max(0, invest.c.yield_rf_eoc[mc,t-1])
+    ## Dynamic asset allocation ------------------------------------------------
+    function dynalloc!(mc::Int, t::Int, invest::Invest, dyn::Dynamic)
+        ## cash allocation is chosen dependent on market performance
+        ## all other investments / assets are adjusted proportionally
+        ## In-place computation for higher efficiency
+        if t > 1 # allocation is boc.  For t= 1 we use original allocation
+            ## market performance indicator weighted with expected yield
+            mkt_perf_ind = 0.5 * (invest.c.yield_mkt_eoc[mc,t-1] +
+                                  invest.hook.exp_yield_market) /
+            max(0, invest.c.yield_rf_eoc[mc,t-1])
 
-        alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
+            alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
 
-        ## Now we adjust all allocations accordingly
-        total_other = 1 - invest.alloc.ig_target_std[invest.id[:cash]]
-        fac_other = (1-alloc_cash) / max(eps(), total_other)
-        for i = 1:invest.n
-            if invest.ig[i].name == :cash
-                invest.alloc.ig_target[i] = alloc_cash
-            else
-                invest.alloc.ig_target[i] =
-                    fac_other * invest.alloc.ig_target_std[i]
+            ## Now we adjust all allocations accordingly
+            total_other = 1 - invest.alloc.ig_target_std[invest.id[:cash]]
+            fac_other = (1-alloc_cash) / max(eps(), total_other)
+            for i = 1:invest.n
+                if invest.ig[i].name == :cash
+                    invest.alloc.ig_target[i] = alloc_cash
+                else
+                    invest.alloc.ig_target[i] =
+                        fac_other * invest.alloc.ig_target_std[i]
+                end
             end
         end
     end
-end
 
-## Dynamic bonus declaration ---------------------------------------------------
-function   dynbonusrate(bucket::Bucket,
+    ## Dynamic bonus declaration -----------------------------------------------    
+    function   dynbonusrate(mc::Int,
+                            t::Int,
+                            bkt::Bucket,
+                            invest::Invest,
+                            dyn::Dynamic)
+        return  dynbonusrate(t,
+                              bkt.hook.statinterest(bkt,t),
+                              dyn.bonus_factor,
+                              invest.alloc.ig_target[invest.id[:cash]],
+                              invest.c.yield_mkt_eoc[mc,t])
+    end
+    ##||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+    function   dynbonusrate(t::Int,
+                            stat_interest::Float64,
+                            bonus_factor::Float64,
+                            cash_target::Float64,
+                            yield_mkt_eoc::Float64)
+        return (bonus_factor * (1-cash_target) *
+                max(0, yield_mkt_eoc - stat_interest))
+    end
+
+    ## Dynamic dividend declaration --------------------------------------------
+    function dyndividend(mc::Int,
+                         t::Int,
+                         invest::Invest,
+                         cf::CFlow,
+                         dyn::Dynamic)
+        return -dyn.capital_dividend *
+               max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
+    end
+
+    ## Dynamic expense ---------------------------------------------------------
+    function dynexpense(mc::Int,
                         t::Int,
-                        bonus_factor::Float64,
-                        cash_target::Float64,
-                        yield_mkt_eoc::Float64)
-    return (bonus_factor * (1-cash_target) *
-            max(0, yield_mkt_eoc - bucket.hook.statinterest(bucket,t)))
+                        invest::Invest,
+                        cf::CFlow,
+                        dyn::Dynamic)
+        return 0
+    end
+    ## -------------------------------------------------------------------------
+    me.probsx = dynprobsx
+    me.alloc! = dynalloc!
+    me.bonusrate = dynbonusrate
+    me.dividend = dyndividend
+    me.expense = dynexpense
+    return me
 end
-
-function   dynbonusrate!(bucket::Bucket,
-                        mc::Int,
-                        t::Int,
-                        invest::Invest)
-    
-    bucket.bonus_rate = dynbonusrate(bucket,
-                                     t,
-                                     invest.hook.bonus_factor,
-                                     invest.alloc.ig_target[invest.id[:cash]],
-                                     invest.c.yield_mkt_eoc[mc,t])
-end
-
-## Dynamic dividend declaration ------------------------------------------------
-function dyndividend(cf::CFlow,
-                     mc::Int,
-                     t::Int,
-                     dividend_rate::Float64,
-                     invest::Invest)
-    return -dividend_rate * max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
-end
-
-## Dynamic expense ------------ ------------------------------------------------
-function dynexpense(invest::Invest,
-                     mc::Int,
-                     t::Int,
-                     expense::Any)
-    return 0
-end
-
-
 ##------------------------------------------------------------------------------
 
 
@@ -183,8 +198,10 @@ dividend = df_general[1, :capital_dividend]
 
 fluct    = Fluct(tf, n_mc, 1.0)
 expense = Any[false]
-cflow    = CFlow(buckets, fluct, invest, dividend, expense,
-                 dynbonusrate, dynprobsx, dynalloc!, dyndividend, dynexpense)
+
+dyn = Dynamic(invest, df_general)
+cflow    = CFlow(buckets, fluct, invest, dividend, expense, dyn)
+          #       dynbonusrate, dynprobsx, dynalloc!, dyndividend, dynexpense)
 
 ##------------------------------------------------------------------------------
 

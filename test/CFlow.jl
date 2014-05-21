@@ -23,13 +23,14 @@ for mc = 1:n_mc
             for t_p in ((t-1) * tf.n_dt+1):(t * tf.n_dt)    
                 yield += invest.yield_total[mc, t_p] 
             end
-            dynalloc!(invest, mc, t)
-            dynbonusrate!(buckets.all[b],  mc, t,  invest)
+            dyn.alloc!(mc, t, invest, dyn)
+            buckets.all[b].bonus_rate =
+                dyn.bonusrate( mc, t,  buckets.all[b], invest, dyn)
             prob_b[t:buckets.all[b].n_c, QX] =
                 fluct.fac[mc, t, QX] *
                 buckets.all[b].prob_be[t:buckets.all[b].n_c, QX]
             prob_b[t:buckets.all[b].n_c, SX] =
-                dynprobsx(buckets.all[b],  fluct, mc, t,  invest)
+                dyn.probsx(mc, t, buckets.all[b], invest,  fluct, dyn)
             prob_b[:,PX] = 1 .- prob_b[:,QX] - prob_b[:,SX]
             
             # accumulate technical provisions

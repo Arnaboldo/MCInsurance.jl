@@ -3,6 +3,7 @@ export  DELTA_TP, BONUS, INVEST, EXPENSE, DIVID, TP_EOC,
         ASSET_EOC, SURPLUS_EOC, CYCLE
 export Fluct
 export CFlow, cf, disccf, pvcf
+export Dynamic
 
 const DELTA_TP, BONUS, INVEST, EXPENSE, DIVID, TP_EOC,
       ASSET_EOC, SURPLUS_EOC, CYCLE = 7:15
@@ -26,4 +27,17 @@ type CFlow
     n_mc::Int64                   ## # monte carlo scenarios
     tf::TimeFrame                 ## time frame (from buckets)
     v::Array{Float64,3}           ## values
+end
+
+type Dynamic
+    probsx::Function # bkt::Bucket, mc::Int, t::Int, invest::Invest
+    alloc!::Function #invest::Invest, mc::Int, t::Int
+    bonusrate::Function
+    dividend::Function
+    expense::Function
+    # often used constants
+    bonus_factor::Float64
+    capital_dividend::Float64
+    # hook for customization
+    hook::Any
 end

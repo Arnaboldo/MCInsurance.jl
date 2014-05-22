@@ -7,22 +7,23 @@ function CFlow(tf::TimeFrame, n_mc::Int)
 end
 
 function CFlow(buckets::Buckets,
-               fluct::Fluct,
                invest::Invest,
+               other::Other,
+               fluct::Fluct,
                dyn::Dynamic )
     ## buckets.tf == invest.cap_mkt.tf
     cf = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     for mc = 1:cf.n_mc
         for t = 1:cf.tf.n_c
             disc = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)
-            projectcycle(cf, mc, t, buckets, fluct, invest, disc, dyn)
+            projectcycle(cf, mc, t, buckets, invest, other, fluct, disc, dyn)
         end
     end
     cf
 end
 
 
-## Interface functions for CFlow -----------------------------------------------
+## Interface functions ---------------------------------------------------------
 
 function ==(cf1::CFlow, cf2::CFlow)
     cf1.n == cf2.n &&
@@ -43,7 +44,7 @@ function cf(me::CFlow, mc::Int, digits::Int=1)
 end
 
 function disccf(me::CFlow, invest::Invest, prec::Int=-1)
-    cols = [:PX, :QX, :SX, :PREM, :C_BOC, :C_EOC, :INVEST, :EXPENSE,
+    cols = [:PX, :QX, :SX, :PREM, :C_BOC, :C_EOC, :INVEST, :OTHER,
             :BONUS, :DIVID]
     ind = Int[eval(c) for c in cols]
 
@@ -74,14 +75,15 @@ function pvcf(me::CFlow, invest::Invest, prec::Int=-1)
     return df_pv_cf
 end
 
-## Private functions for Cflow -------------------------------------------------
+## Private functions -----------------------------------------------------------
 
 function projectcycle(cf::CFlow,
                       mc::Int,
                       t::Int,
                       buckets::Buckets,
-                      fluct::Fluct,
                       invest::Invest,
+                      other::Other,
+                      fluct::Fluct,
                       discount::Vector{Float64},
                       dyn::Dynamic,
                       )
@@ -94,11 +96,12 @@ function projectcycle(cf::CFlow,
         bucketprojecteoc!(cf, bucket, fluct, invest, discount, mc, t, dyn)
     end
     if t == 1
-       cf.v[mc,t, DELTA_TP]  += cf.v[mc, t, TP_EOC]
+       cf.v[mc, t, DELTA_TP]  += cf.v[mc, t, TP_EOC]
     else
-       cf.v[mc,t, DELTA_TP] =  cf.v[mc, t, TP_EOC] - cf.v[mc, t-1, TP_EOC]
+       cf.v[mc, t, DELTA_TP] =  cf.v[mc, t, TP_EOC] - cf.v[mc, t-1, TP_EOC]
     end
-    cf.v[mc,t,EXPENSE] += dyn.expense(mc, t, invest, cf, dyn)
+    cf.v[mc, t, OTHER] += cfl(other, t) #dyn.expense(mc, t, invest, cf, dyn)
+    cf.v[mc, t, OTHER_EOC] += pveoc(other, t, discount)
     surplusprojecteoc!(cf, invest, mc, t, dyn)
 end
 
@@ -133,6 +136,8 @@ function assetsprojecteoc!(cf::CFlow,
     cf.v[mc,t,INVEST] += invest.mv_total_eop[mc, t * cf.tf.n_dt] - mv_boc
 end
 
+
+
 function bucketprojecteoc!(cf::CFlow,
                            bucket::Bucket,
                            fluct::Fluct,
@@ -141,14 +146,8 @@ function bucketprojecteoc!(cf::CFlow,
                            mc::Int,
                            t::Int,
                            dyn::Dynamic)
-    prob = Array(Float64, max(bucket.n_c, cf.tf.n_c), 3)
-    ## bucket.lx (initially) represents the value at BOP
-#    dynbonusrate!(bucket, mc, t, invest)
     bucket.bonus_rate = dyn.bonusrate(mc, t, bucket, invest, dyn)
-    prob[t:bucket.n_c, QX] =
-        fluct.fac[mc, t, QX] * bucket.prob_be[t:bucket.n_c, QX]
-    prob[t:bucket.n_c, SX] = dyn.probsx(mc, t, bucket, invest, fluct, dyn)
-    prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
+    prob = getprob(dyn, bucket, mc, t, invest, fluct)
     for X = (QX, SX, PX)
         cf.v[mc,t,X] += bucket.lx_boc * prob[t,X] * bucket.cond[t,X]
     end
@@ -162,10 +161,11 @@ function bucketprojecteoc!(cf::CFlow,
         cf.v[mc,t, DELTA_TP] -= prob[t,PX] * bucket.tp_be_init # completed later
         cf.v[mc,t,BONUS] += bucket.bonus_rate * bucket.tp_stat_init
     else
-        ## cf.v[mc,t, DELTA_TP] is calculated later
-        cf.v[mc,t,BONUS] +=  bucket.bonus_rate * bucket.tp_stat[t-1]
+        ## cf.v[mc,t, DELTA_TP] is calculated later in the calling function
+        cf.v[mc,t,BONUS] +=
+            bucket.lx_boc * bucket.bonus_rate * bucket.tp_stat[t-1]
     end
-    ## roll forward lx to the end of period: EOC
+    ## roll forward lx to the next cycle
     bucket.lx_boc = bucket.lx_boc * prob[t,PX]
 end
 
@@ -177,12 +177,13 @@ function surplusprojecteoc!(cf::CFlow,
                             dyn::Dynamic)
     cf.v[mc,t,ASSET_EOC] =
         invest.mv_total_eop[mc, t * cf.tf.n_dt]
-    for j in [QX, SX, PX, C_EOC, EXPENSE, BONUS]
+    for j in [QX, SX, PX, C_EOC, OTHER, BONUS]
         cf.v[mc,t,ASSET_EOC] += cf.v[mc, t, j]
     end
     cf.v[mc, t, DIVID] = dyn.dividend(mc, t, invest, cf, dyn)
     cf.v[mc, t, ASSET_EOC] += cf.v[mc, t, DIVID]
-    cf.v[mc, t, SURPLUS_EOC] = cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC]
+    cf.v[mc, t, SURPLUS_EOC] =
+        cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC] + cf.v[mc, t, OTHER_EOC]
 end
 
 function cfdisccycles(me::CFlow, ind::Vector{Int}, invest::Invest)

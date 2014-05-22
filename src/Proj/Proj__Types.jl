@@ -1,16 +1,16 @@
 ## column names for CFlow.v.  QX, SX, PX, PREM, C_BOC, C_EOC: 1:6
-export  DELTA_TP, BONUS, INVEST, EXPENSE, DIVID, TP_EOC,
-        ASSET_EOC, SURPLUS_EOC, CYCLE
+export  DELTA_TP, BONUS, INVEST, OTHER, DIVID, TP_EOC,
+        OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
 export Fluct
 export CFlow, cf, disccf, pvcf
-export Dynamic
+export Dynamic, getprob
 
-const DELTA_TP, BONUS, INVEST, EXPENSE, DIVID, TP_EOC,
-      ASSET_EOC, SURPLUS_EOC, CYCLE = 7:15
+const DELTA_TP, BONUS, INVEST, OTHER, DIVID, TP_EOC,
+      OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE = 7:16
 
 const col_CFLOW = [:QX, :SX, :PX, :PREM, :C_BOC, :C_EOC,
-                   :DELTA_TP, :BONUS, :INVEST, :EXPENSE, :DIVID, :TP_EOC,
-                   :ASSET_EOC, :SURPLUS_EOC, :CYCLE]
+                   :DELTA_TP, :BONUS, :INVEST, :OTHER, :DIVID, :TP_EOC, 
+                   :OTHER_EOC, :ASSET_EOC, :SURPLUS_EOC, :CYCLE]
 
 const col_FLUCT = [:QX, :SX, :C_BOC, :C_EOC]
 

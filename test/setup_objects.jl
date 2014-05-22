@@ -39,6 +39,8 @@ dyn = Dynamic(invest,
               0.03,   ## with respect to risk-neutral probabilities, approx only
               invest_det.c.yield_mkt_eoc[1,1], ## approx only
               invest_det.c.yield_rf_eoc[1,1])  ## approx only
+
+other = Other() ## No other liabilities
               
-cflow    = CFlow(buckets, fluct, invest, dyn)
+cflow    = CFlow(buckets, invest, other, fluct, dyn)
  

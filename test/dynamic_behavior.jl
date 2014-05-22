@@ -107,7 +107,10 @@ function Dynamic(invest::Invest,
                          cf::CFlow,
                          dyn::Dynamic)
         return -dyn.capital_dividend *
-               max(0, cf.v[mc, t, ASSET_EOC] + cf.v[mc, t, TP_EOC])
+               max(0,
+                   cf.v[mc, t, ASSET_EOC] +
+                   cf.v[mc, t, TP_EOC]+
+                   cf.v[mc, t, OTHER_EOC])
     end
 
     ## Dynamic expense ---------------------------------------------------------

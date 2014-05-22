@@ -36,6 +36,9 @@ include("LC/LC__Types.jl")
 include("LC/LC_LC.jl")
 include("LC/LC_Bucket.jl")
 
+include("Other/Other__Types.jl")
+include("Other/Other_Debt.jl")
+
 include("Proj/Proj__Types.jl")
 include("Proj/Proj_Fluct.jl")
 include("Proj/Proj_CFlow.jl")

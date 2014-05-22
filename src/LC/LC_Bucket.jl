@@ -100,7 +100,8 @@ function add!(me::Buckets,
         prob_be[:,X] =
             insertc(tf_cond, lc.all[i, :y_start], prob_be_tmp[:,X], true)
     end
-    prob_be[:,SX] .*= [ abs(x)>eps() ? 1 : 0 for x in cond[:,SX]]            
+    prob_be[:,SX] .*= [ abs(x)>eps() ? 1 : 0 for x in cond[:,SX]]
+    prob_be[:,PX] = 1 .- prob_be[:,QX] - prob_be[:,SX]
 
     prob_stat = getprob(lc, i, df_prod, df_qx, lc.all[i, :qx_name], age_range)
     tp_stat_tmp = 
@@ -112,9 +113,13 @@ function add!(me::Buckets,
     tp_stat = insertc(tf_cond, lc.all[i, :y_start], tp_stat_tmp, true)
     if lc.all[i, :y_start] < me.tf.init
         tp_stat_init = tp_stat_tmp[ me.tf.init-lc.all[i, :y_start]]
-        tp_be_init = tpeoc(prob_be, 
-                           discount_be,
-                           cond)
+        ## first row is not used for calculation, so values do not matter
+        ## but it forces tpeoc to calculate the provisions at the end of the
+        ## cycle prior to tf.init.
+        tp_be_init = tpeoc(vcat(zeros(Float64, 1, 3), prob_be), 
+                           vcat(0,discount_be),
+                           vcat(zeros(Float64, 1, N_COND), cond))
+
     else
         tp_stat_init = 0.0
         tp_be_init = 0.0

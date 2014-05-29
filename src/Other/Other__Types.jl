@@ -1,5 +1,5 @@
-export Other, cfl, pveoc
-export SubordDebt, paydebt
+export Other, cfl, pveoc, pvboc, paydebt
+export SubordDebt
 
 abstract Debt
 
@@ -37,3 +37,24 @@ function pveoc(me::Other, t::Int, discount::Vector{Float64})
     end
     return value
 end
+
+function pvboc(me::Other, t::Int, discount::Vector{Float64})
+    value = 0.0
+    if length(me.subord_debt) > 0
+        for debt in me.subord_debt
+            value += pvboc(debt, t, discount)
+        end
+    end
+    return value
+end
+
+function paydebt(me::Other, t::Int)
+    value = 0.0
+    if length(me.subord_debt) > 0
+        for debt in me.subord_debt
+            value += paydebt(debt, t)
+        end
+    end
+    return value
+end
+

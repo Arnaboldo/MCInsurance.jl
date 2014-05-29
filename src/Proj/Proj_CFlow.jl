@@ -47,6 +47,7 @@ function vinit!(me::CFlow,
                 invest::Invest,
                 other::Other,
                 discount::Vector{Float64})
+    me.v_0[1,1,CYCLE] = me.tf.init - 1
     me.v_0[1,1,TP_EOC] = 0.0
     for bkt in buckets.all
              me.v_0[1,1,TP_EOC] += bkt.tp_be_init
@@ -72,8 +73,19 @@ function dfv(me::CFlow, mc::Int, digits::Int=1)
     ## use showall for printing to screen
     dframe = DataFrame()
     for i = 1:size(me.v,3)
-        dframe[col_v[i]] =
+        dframe[col_V[i]] =
             round(reshape(me.v[mc,:,i], size(me.v,2)), digits)
+    end
+    dframe[:CYCLE] = int(dframe[:CYCLE])
+    dframe
+end
+
+function dfv0(me::CFlow, digits::Int=1)
+    ## use showall for printing to screen
+    dframe = DataFrame()
+    for i = 1:size(me.v_0,3)
+        dframe[col_V[i]] =
+            round(reshape(me.v_0[1,:,i], size(me.v_0,2)), digits)
     end
     dframe[:CYCLE] = int(dframe[:CYCLE])
     dframe

@@ -2,7 +2,7 @@
 export  DELTA_TP, BONUS, INVEST, OTHER, DIVID
 export TP_EOC, OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
 export Fluct
-export CFlow, dfcf, dfv, disccf, pvdfcf, vinit!
+export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit!
 export Dynamic, getprob
 
 const DELTA_TP, BONUS, INVEST, OTHER, DIVID = 7:11

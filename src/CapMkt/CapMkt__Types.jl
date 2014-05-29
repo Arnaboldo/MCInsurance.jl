@@ -11,3 +11,4 @@ type CapMkt
     id::Dict{Symbol, Int}          ## id (vector index) of process 
     n::Int                         ## number of processes
 end
+

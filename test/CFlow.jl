@@ -55,8 +55,12 @@ for mc = 1:n_mc
         ## Test that conditional cashflows are condensed correctluy ------------
         for j = 1:n_cf
             #print("j:  $j,   $(cflow.labels[j]) ")
-            @test_approx_eq_eps(tmp_cf[t,j], cflow.v[mc,t,j], tol)
+            @test_approx_eq_eps(tmp_cf[t,j], cflow.cf[mc,t,j], tol)
         end
+        ## for j = 1:cflow.n_v
+        ##     #print("j:  $j,   $(cflow.labels[j]) ")
+        ##     @test_approx_eq_eps(tmp_cf[t,j], cflow.v[mc,t,j], tol)
+        ## end
     end
     
 end

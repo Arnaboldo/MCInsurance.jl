@@ -1,17 +1,20 @@
 ## column names for CFlow.v.  QX, SX, PX, PREM, C_BOC, C_EOC: 1:6
-export  DELTA_TP, BONUS, INVEST, OTHER, DIVID, TP_EOC,
-        OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
+export  DELTA_TP, BONUS, INVEST, OTHER, DIVID
+export TP_EOC, OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
 export Fluct
-export CFlow, cf, disccf, pvcf
+export CFlow, dfcf, dfv, disccf, pvdfcf, vinit!
 export Dynamic, getprob
 
-const DELTA_TP, BONUS, INVEST, OTHER, DIVID, TP_EOC,
-      OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE = 7:16
+const DELTA_TP, BONUS, INVEST, OTHER, DIVID = 7:11
 
-const col_CFLOW = [:QX, :SX, :PX, :PREM, :C_BOC, :C_EOC,
-                   :DELTA_TP, :BONUS, :INVEST, :OTHER, :DIVID, :TP_EOC, 
-                   :OTHER_EOC, :ASSET_EOC, :SURPLUS_EOC, :CYCLE]
+const TP_EOC, OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE = 1:5
 
+const col_CF = [:QX, :SX, :PX, :PREM, :C_BOC, :C_EOC,
+                   :DELTA_TP, :BONUS, :INVEST, :OTHER, :DIVID]
+
+const col_V = [:TP_EOC, :OTHER_EOC, :ASSET_EOC, :SURPLUS_EOC, :CYCLE]
+
+ 
 const col_FLUCT = [:QX, :SX, :C_BOC, :C_EOC]
 
 
@@ -23,10 +26,13 @@ type Fluct
 end
 
 type CFlow
-    n::Int64                      ## # output quantities
-    n_mc::Int64                   ## # monte carlo scenarios
-    tf::TimeFrame                 ## time frame (from buckets)
-    v::Array{Float64,3}           ## values
+    n_mc::Int64                     ## # monte carlo scenarios
+    n_cf::Int64                     ## # output quantities cash-flows 
+    n_v::Int64                      ## # output quantities valuation
+    tf::TimeFrame                  ## time frame (from buckets)
+    cf::Array{Float64,3}           ## cash-flow values
+    v_0::Array{Float64,3}           ## initial cash flow and valuation values
+    v::Array{Float64,3}            ## valuation values
 end
 
 type Dynamic
@@ -40,4 +46,4 @@ type Dynamic
     capital_dividend::Float64
     # hook for customization
     hook::Any
-end
+end 

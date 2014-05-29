@@ -1,6 +1,6 @@
 export StochProcessInfo,
        Brownian, CIR, GeomBrownian, DetermShortRate, ManualShortRate, Vasicek,
-       ProcessIndex, ProcessShortRate, Process,
+       ProcessIndex, ProcessInterest, ProcessShortRate, Process,
        determbop, forwardbop, yieldeoc      
 
 type StochProcessInfo
@@ -17,7 +17,8 @@ end
 
 abstract Process
 abstract ProcessIndex <: Process
-abstract ProcessShortRate <: Process
+abstract ProcessInterest <: Process
+abstract ProcessShortRate <: ProcessInterest
 
 
 type Brownian <: ProcessIndex

@@ -15,7 +15,7 @@ function TimeFrame( init::Int,
 end
 
 
-## Interface functions for TimeFrame  ------------------------------------------
+## Interface functions ---------------------------------------------------------
 
 function ==(tf1::TimeFrame, tf2::TimeFrame)
     ==(tf1.init, tf2.init) &&
@@ -69,8 +69,8 @@ function insertc(tf::TimeFrame,
 end
 
 function insertp(tf::TimeFrame,
-                    init::Rational{Int},
-                    vec::Vector{Float64},
+                 init::Rational{Int},
+                 vec::Vector{Float64},
                  is_cashflow::Bool=false)
     if is_cashflow # cash flow relates to periods
         n_p = tf.n_p-1
@@ -93,5 +93,14 @@ function insertp(tf::TimeFrame,
                 zeros( Float64,
                       int((final-init)*tf.n_dt + 1 - vec_end))]
     end
+end
+
+## The following is used for interest rates
+function c2p(tf::TimeFrame, v_c::Vector{Float64})
+    v_p = Array(Float64,0)
+    for v in v_c
+        v_p = vcat(v_p, v * ones(Float64, tf.n_dt))/tf.n_dt
+        end
+    return v_p
 end
 

@@ -192,8 +192,7 @@ end
 ## Test that future contracts are not processed --------------------------------
 nf_lc_all = lc.all[lc.all[ :y_start] .<= tf.init,:]
 nf_lc = LC(nrow(nf_lc_all), lc.age_min, lc.age_max, nf_lc_all)
-nf_buckets = Buckets(nf_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest,
-                     discount_be)
+nf_buckets = Buckets(nf_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
 @test nf_buckets == buckets
 
 
@@ -201,11 +200,11 @@ nf_buckets = Buckets(nf_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest
 new_lc_all = lc.all[lc.all[ :y_start] .== tf.init,:]
 new_lc = LC(nrow(new_lc_all), lc.age_min, lc.age_max, new_lc_all)
 new_buckets_direct =
-    Buckets(new_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest,
-                     discount_be)
+    Buckets(new_lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
+    
 new_buckets = Buckets(tf)
 for i in 1:lc.n
     add!(new_buckets, 1, lc, i,df_lc_prod, df_lc_load,
-         df_lc_qx, df_lc_interest, discount_be, false)
+         df_lc_qx, df_lc_interest, false)
 end
 @test new_buckets_direct == new_buckets

@@ -13,17 +13,14 @@ function Buckets(lc::LC,
                  df_prod::DataFrame,
                  df_load::DataFrame,
                  df_qx::DataFrame,
-                 df_interest::DataFrame,
-                 discount_be::Vector{Float64})
+                 df_interest::DataFrame)
     buckets = Buckets(tf)
     buckets.n_c =
         max(maximum(lc.all[:,:dur] - (buckets.tf.init .- lc.all[:, :y_start ])),
             tf.n_c)
-    discount =  
-    
     for i = 1:lc.n
         add!(buckets,1, lc, i, df_prod, df_load, df_qx,
-             df_interest, discount_be, true)     
+             df_interest, true)     
     end
     buckets
 end
@@ -54,7 +51,6 @@ function add!(me::Buckets,
               df_load::DataFrame,    # cost information
               df_qx::DataFrame,      # mortality tables
               interest::DataFrame,   # technical interest rates
-              discount_be::Vector{Float64},
               existing::Bool = true) # default: add existing contract
 
     c_start = lc.all[i, :y_start]-me.tf.init+1 # inception cycle
@@ -67,12 +63,8 @@ function add!(me::Buckets,
     ## find bucket
     b = getind(me, cat)    
     ## prepare data for bucket
-    if b == 0
-        b_n_c = 0
-    else
-        b_n_c = me.all[b].n_c
-    end
-    dur = max(lc.all[i, :dur]- (me.tf.init-lc.all[i, :y_start]),  b_n_c)
+    dur = max(lc.all[i, :dur]- (me.tf.init-lc.all[i, :y_start]),
+              b == 0 ? 0 : me.all[b].n_c )
     n_c = max(dur, me.tf.n_c)
     tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
     ## Make sure that inflation is calculated with respect to me.tf.init 
@@ -85,8 +77,12 @@ function add!(me::Buckets,
 
     cond_cf = condcf(lc.all[i,:is], lc.all[i,:prem], df_prod, prof)
     cond = zeros(Float64, n_c, N_COND)
+    cond_nb = zeros(Float64, n_c, N_COND)
     for j = 1:N_COND
         cond[:,j] = insertc(tf_cond, lc.all[i, :y_start], cond_cf[:,j], true)
+    end
+    if lc.all[i, :y_start] == me.tf.init
+        cond_nb = deepcopy(cond)
     end
 
     # age_range refers to age_cycles from the inception of the contract
@@ -106,31 +102,25 @@ function add!(me::Buckets,
     prob_stat = getprob(lc, i, df_prod, df_qx, lc.all[i, :qx_name], age_range)
     tp_stat_tmp = 
         tpveceoc(prob_stat,
-                 exp(-convert(Array, interest[1:lc.all[i,:dur],
+                 exp(-cumsum(convert(Array,
+                                     interest[1:lc.all[i,:dur],
                                               df_prod[lc.all[i,:prod_id],
-                                                      :interest_name]])),
+                                                      :interest_name]]))),
                  cond_cf)
     tp_stat = insertc(tf_cond, lc.all[i, :y_start], tp_stat_tmp, true)
     if lc.all[i, :y_start] < me.tf.init
         tp_stat_init = tp_stat_tmp[ me.tf.init-lc.all[i, :y_start]]
-        ## first row is not used for calculation, so values do not matter
-        ## but it forces tpeoc to calculate the provisions at the end of the
-        ## cycle prior to tf.init.
-        tp_be_init = tpeoc(vcat(zeros(Float64, 1, 3), prob_be), 
-                           vcat(0,discount_be),
-                           vcat(zeros(Float64, 1, N_COND), cond))
-
     else
         tp_stat_init = 0.0
-        tp_be_init = 0.0
     end
     # create new bucket or merge into existing bucket 
     if b == 0 
         me.n += 1
-        push!(me.all, Bucket(1, n_c, dur, cat, cond, tp_stat, tp_stat_init,
-                             tp_be_init, prob_be, cond[:,SX], 1, 0.0, false))
+        push!(me.all, Bucket(1, n_c, dur, cat, cond, cond_nb,
+                             tp_stat, tp_stat_init,
+                             prob_be, cond[:,SX], 1, 0.0, false))
     else
-        merge!(me, b, n_c, cat, cond, tp_stat, tp_stat_init, tp_be_init, prob_be) 
+        merge!(me, b, n_c, cat, cond, cond_nb, tp_stat, tp_stat_init, prob_be) 
     end    
 end
 
@@ -172,10 +162,10 @@ function merge!(me::Buckets,
     me.all[b].n += 1
     for j = 1:N_COND       
         me.all[b].cond[:,j] += cond[:,j]
+        me.all[b].cond_nb[:,j] += cond_nb[:,j]
     end
     me.all[b].tp_stat += tp_stat
     me.all[b].tp_stat_init += tp_stat_init
-    me.all[b].tp_be_init += tp_be_init
     me.all[b].prob_be[:,SX] =
         (cond[:,SX] .* prob_be[:,SX] +
          me.all[b].sx_weights .* me.all[b].prob_be[:,SX] ) ./
@@ -188,11 +178,13 @@ function grow!(me::Bucket,
                n_c::Int,
                prob_be_qx::Vector{Float64})
     cond = zeros(Float64, n_c, N_COND)
+    cond_nb = zeros(Float64, n_c, N_COND)
     prob_be = zeros(Float64, n_c, 2)
     sx_weights = zeros(Float64, n_c)
     tp_stat = zeros(Float64, n_c)
     for j = 1:N_COND
         cond[1:me.n_c,j] = me.cond[:,j]
+        cond_nb[1:me.n_c,j] = me.cond_nb[:,j]
     end
     tp_stat[1:me.n_c] = me.tp_stat
     prob_be[:,QX] =  prob_be_qx
@@ -201,6 +193,7 @@ function grow!(me::Bucket,
 
     me.n_c = n_c
     me.cond = cond  
+    me.cond_nb = cond_nb  
     me.tp_stat = tp_stat
     me.prob_be = prob_be
     me.sx_weights = sx_weights
@@ -244,11 +237,9 @@ function getcat(lc::LC,
 
     load_name = df_prod[lc.all[i, :prod_id],:cost_be_name]
     [tf.init-lc.all[i, :ph_y_birth],                    # current age
-     if lc.all[i, :ph_gender] == "M" 1 else 2 end,      # gender
+     lc.all[i, :ph_gender] == "M"  ? 1 : 2,             # gender
      lc.all[i, :ph_qx_be_name],                         # qx_be table
      df_prod[lc.all[i,:prod_id],:interest_name],        # interest for pricing
      df_load[df_load[:name] .== load_name, :infl][1,1], # be cost inflation
      lc.all[i, :risk]]                                  # risk class  
 end
-
-

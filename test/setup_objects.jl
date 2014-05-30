@@ -19,8 +19,7 @@ discount_be = meandiscrf(invest.c, invest.c.yield_rf_eoc[1,1], 125)
 lc       = LC(df_lc_lc, df_lc_ph, df_lc_prod, df_lc_load,
               df_lc_qx, df_lc_interest, tf)
 
-buckets  = Buckets(lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest,
-                   discount_be)
+buckets  = Buckets(lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
 
 ## customize Bucket:
 type BucketHook

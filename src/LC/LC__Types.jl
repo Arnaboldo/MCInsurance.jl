@@ -37,10 +37,11 @@ type Bucket
     n_c::Int                    ## max projection cycles
     dur::Int                    ## max remaining duration 
     cat::Vector{Any}            ## age, gender, qx_be_name, risk
-    cond::Array{Float64,2}      ## conditional cash-flows
+    cond::Array{Float64,2}      ## conditional cash-flows (incl. new business)
+    cond_nb::Array{Float64,2}   ## conditional cash-flows for new business only
     tp_stat::Vector{Float64}    ## statutory technical provisions
     tp_stat_init::Float64       ## initial statutory technical provisions
-    tp_be_init::Float64         ## initial best estimate technical provisions
+#    tp_be_init::Float64         ## initial best estimate technical provisions
     prob_be::Array{Float64,2}   ## best estimate: QX, SX
     sx_weights::Vector{Float64} ## weights for est. average be SX
     lx_boc::Float64             ## current fraction of policy holders in-force

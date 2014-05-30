@@ -15,7 +15,7 @@ function pveoc(me::Debt, t::Int, discount::Vector{Float64})
     else
         cf_fut= ones(Float64, n_cycles-1) * me.nominal * (exp(me.interest) - 1)
         cf_fut[n_cycles-1] += me.nominal
-        return sum(cumprod(discount[2:n_cycles]) .* cf_fut)
+        return sum(discount[2:n_cycles] .* cf_fut)/discount[1]
     end
 end
 
@@ -36,7 +36,7 @@ function pvboc(me::Debt, t::Int, discount::Vector{Float64})
     else
         cf_fut= ones(Float64, n_cycles) * me.nominal * (exp(me.interest) - 1)
         cf_fut[n_cycles] += me.nominal
-        return sum(cumprod(discount[1:n_cycles]) .* cf_fut)
+        return sum(discount[1:n_cycles] .* cf_fut)
     end
 end
 

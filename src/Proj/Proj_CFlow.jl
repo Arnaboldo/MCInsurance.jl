@@ -18,12 +18,15 @@ function CFlow(buckets::Buckets,
     cflow = CFlow(buckets.tf, invest.cap_mkt.n_mc)
     yield_rf_init_c =
         invest.ig[invest.id[:cash]].proc.yield[1,1,1] * buckets.tf.n_dt
-    disc =  meandiscrf(invest.c,yield_rf_init_c, buckets.tf.n_c)
-    vinit!(cflow, buckets, invest, other, disc)
+    discount = meancumdiscrf(invest.c,yield_rf_init_c, buckets.n_c)
+    vinit!(cflow, buckets, invest, other, discount)
     for mc = 1:cflow.n_mc
         for t = 1:cflow.tf.n_c
-            disc = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)
-            projectcycle!(cflow, mc, t, buckets, invest, other, fluct, disc, dyn)
+            discount = meancumdiscrf(invest.c,
+                                     invest.c.yield_rf_eoc[mc,t],
+                                     buckets.n_c)
+            projectcycle!(cflow, mc, t, buckets, invest,
+                          other, fluct, discount, dyn)
         end
     end
     cflow
@@ -50,7 +53,14 @@ function vinit!(me::CFlow,
     me.v_0[1,1,CYCLE] = me.tf.init - 1
     me.v_0[1,1,TP_EOC] = 0.0
     for bkt in buckets.all
-             me.v_0[1,1,TP_EOC] += bkt.tp_be_init
+        ## first row is only used for dicount -> discount_1c, so prepending
+        ## 1 gives the correct discount_1c.
+        ## The length of the vector forces tpeoc to calculate the provisions
+        ## at the end of the cycle prior to tf.init.
+        me.v_0[1,1,TP_EOC]  += tpeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be), 
+                                     vcat(1.0, discount),
+                                     vcat(zeros(Float64, 1, N_COND),
+                                          bkt.cond - bkt.cond_nb))
     end
     me.v_0[1,1,OTHER_EOC] = pvboc(other,1,discount)
     me.v_0[1,1,ASSET_EOC] = invest.mv_total_init
@@ -143,7 +153,7 @@ function projectcycle!(me::CFlow,
     else
        me.cf[mc, t, DELTA_TP] =  me.v[mc, t, TP_EOC] - me.v[mc, t-1, TP_EOC]
     end
-    me.cf[mc, t, OTHER] += paydebt(other, t) #dyn.expense(mc, t, invest, me, dyn)
+    me.cf[mc, t, OTHER] += paydebt(other, t) 
     me.v[mc, t, OTHER_EOC] += pveoc(other, t, discount)
     surplusprojecteoc!(me, invest, mc, t, dyn)
 end

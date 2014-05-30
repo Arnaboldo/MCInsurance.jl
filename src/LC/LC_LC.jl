@@ -151,15 +151,16 @@ end
 
 ## Technical provisions
 function tpeoc (prob::Array{Float64,2},
-                tech_discount::Vector{Float64},
+                discount::Vector{Float64},
                 cond_cf::Array{Float64,2} )
+    discount_1c = discount ./ [1, discount[1:end-1]]
     dur = size(cond_cf,1)
     tp = 0.0
     if dur > 0
         for t in (dur-1):-1:1
             tp = tpprev(tp,
                         reshape(prob[t+1,:], size(prob,2)),
-                        tech_discount[t+1],
+                        discount_1c[t+1],
                         reshape(cond_cf[t+1,:], size(cond_cf,2)) )
         end
     end
@@ -167,15 +168,16 @@ function tpeoc (prob::Array{Float64,2},
 end
 
 function tpveceoc (prob::Array{Float64,2},
-                   tech_discount::Vector{Float64},
+                   discount::Vector{Float64},
                    cond_cf::Array{Float64,2} )
+    discount_1c = discount ./ [1, discount[1:end-1]]
     dur = size(cond_cf,1)
     tp = zeros(Float64, dur)
     tp[dur] = 0.0
     for t in (dur-1):-1:1
         tp[t] = tpprev(tp[t+1],
                        reshape(prob[t+1,:], size(prob,2)),
-                       tech_discount[t+1],
+                       discount_1c[t+1],
                        reshape(cond_cf[t+1,:], size(cond_cf,2)) )
     end
     return tp
@@ -183,13 +185,12 @@ end
 
 function tpprev(tp::Float64,
                 prob::Vector{Float64},
-                tech_discount::Float64,
+                discount_1c::Float64,
                 cond_cf::Vector{Float64})
     cond_cf[PREM] + cond_cf[C_BOC] +
-    tech_discount * (cond_cf[C_EOC] +  prob[QX] * cond_cf[QX]
-                     + prob[SX] * cond_cf[SX] + prob[PX] * (cond_cf[PX] + tp)) 
+    discount_1c * (cond_cf[C_EOC] +  prob[QX] * cond_cf[QX]
+                   + prob[SX] * cond_cf[SX] + prob[PX] * (cond_cf[PX] + tp)) 
 end
-
 
 
 ## combine all pertinent information into lc.all

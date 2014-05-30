@@ -198,7 +198,7 @@ for i = 1:lc.n
         end
          @test_approx_eq_eps(tmp_tp[tau],
                              tpeoc(prob[tau:lc.all[i,:dur],:],
-                                   exp(-r)[tau:lc.all[i,:dur]],
+                                   cumprod(exp(-r)[tau:lc.all[i,:dur]]),
                                    cond_cf[tau:lc.all[i,:dur],:]),
                              tol)
     end

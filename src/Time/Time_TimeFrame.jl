@@ -3,27 +3,24 @@
 function TimeFrame( init::Int,
                    final::Int,
                    n_p::Int )
-    n_c = final - init
-    n_dt = int(n_p // n_c)
-    dt = n_c / n_p
-    TimeFrame(init, final, n_p, n_c, n_dt, dt)
+  n_c = final - init
+  n_dt =  (n_c == 0 ? 0 : int(n_p // n_c))
+  dt = (n_p == 0 ? 0.0 : n_c / n_p)
+  TimeFrame(init, final, n_p, n_c, n_dt, dt)
 end
 
-function TimeFrame( init::Int,
-                   final::Int)
-    TimeFrame(init, final, final - init)
-end
+TimeFrame(init::Int, final::Int) = TimeFrame(init, final, final - init)
+TimeFrame() = TimeFrame(0, 0)
 
-
-## Interface functions ---------------------------------------------------------
+## Interface  ------------------------------------------------------------------
 
 function ==(tf1::TimeFrame, tf2::TimeFrame)
-    ==(tf1.init, tf2.init) &&
+  ==(tf1.init, tf2.init) &&
     ==(tf1.final, tf2.final) &&
-    ==(tf1.n_p, tf2.n_p) &&
-    ==(tf1.n_c, tf2.n_c) &&
-    ==(tf1.n_dt, tf2.n_dt) &&
-    ==(tf1.dt, tf2.dt)
+      ==(tf1.n_p, tf2.n_p) &&
+        ==(tf1.n_c, tf2.n_c) &&
+          ==(tf1.n_dt, tf2.n_dt) &&
+            ==(tf1.dt, tf2.dt)
 end
 
 function show(io::IO, me::TimeFrame)
@@ -50,57 +47,58 @@ function insertc(tf::TimeFrame,
                  init::Int,
                  vec::Vector{Float64},
                  is_cashflow::Bool=false)
-    if is_cashflow # cash flow relates to cycles
-        n_c = tf.n_c-1
-        final = tf.final-1
-    else  # otherwise we consider points in time
-        n_c = tf.n_c
-        final = tf.final
-    end
-        
-    if (init <= tf.init-length(vec)) |  ( init > final) 
-        return zeros(Float64, n_c+1)
-    else
-        vec_end = min( length(vec), final - init + 1 )
-        return [ zeros( Float64, max(0, init - tf.init) ),
-                vec[ max( 1, tf.init-init+1):vec_end ],
-                zeros( Float64, final - init + 1 - vec_end ) ]
-    end
+  if is_cashflow # cash flow relates to cycles
+    n_c = tf.n_c-1
+    final = tf.final-1
+  else  # otherwise we consider points in time
+    n_c = tf.n_c
+    final = tf.final
+  end
+
+  if (init <= tf.init-length(vec)) |  ( init > final)
+    return zeros(Float64, n_c+1)
+  else
+    vec_end = min( length(vec), final - init + 1 )
+    return [ zeros( Float64, max(0, init - tf.init) ),
+            vec[ max( 1, tf.init-init+1):vec_end ],
+            zeros( Float64, final - init + 1 - vec_end ) ]
+  end
 end
 
 function insertp(tf::TimeFrame,
                  init::Rational{Int},
                  vec::Vector{Float64},
                  is_cashflow::Bool=false)
-    if is_cashflow # cash flow relates to periods
-        n_p = tf.n_p-1
-        final = tf.final-1
-    else  # otherwise we consider points in time
-        n_p = tf.n_p
-        final = tf.final
-    end
+  if is_cashflow # cash flow relates to periods
+    n_p = tf.n_p-1
+    final = tf.final-1
+  else  # otherwise we consider points in time
+    n_p = tf.n_p
+    final = tf.final
+  end
 
-    if  ( init <= tf.init-length(vec)//tf.n_dt ) |
-        ( init > final) 
-        return zeros(Float64, n_p+1)
-    else
-        vec_end = min(length(vec),
-                      int((final - init)*tf.n_dt) + 1  )
-        return [zeros(Float64,
-                       int(max(0, (init-tf.init)*tf.n_dt)) ),
-                vec[ max( 1, (tf.init-init)*tf.
-                         n_dt+1):vec_end ],
-                zeros( Float64,
-                      int((final-init)*tf.n_dt + 1 - vec_end))]
-    end
+  if  ( init <= tf.init-length(vec)//tf.n_dt ) |
+      ( init > final)
+    return zeros(Float64, n_p+1)
+  else
+    vec_end = min(length(vec),
+                  int((final - init)*tf.n_dt) + 1  )
+    return [zeros(Float64,
+                  int(max(0, (init-tf.init)*tf.n_dt)) ),
+            vec[ max( 1, (tf.init-init)*tf.
+                     n_dt+1):vec_end ],
+            zeros( Float64,
+                  int((final-init)*tf.n_dt + 1 - vec_end))]
+  end
 end
 
 ## The following is used for interest rates
 function c2p(tf::TimeFrame, v_c::Vector{Float64})
-    v_p = Array(Float64,0)
-    for v in v_c
-        v_p = vcat(v_p, v * ones(Float64, tf.n_dt))/tf.n_dt
-        end
-    return v_p
+  v_p = Array(Float64,0)
+  for v in v_c
+    v_p = vcat(v_p, v * ones(Float64, tf.n_dt))/tf.n_dt
+  end
+  return v_p
 end
 
+## Private ---------------------------------------------------------------------

@@ -1,6 +1,6 @@
-tests = ["load_data",  
-         "dynamic_behavior",  
-         "setup_objects",  
+tests = ["load_data",
+         "dynamic_behavior",
+         "setup_objects",
          "TimeFrame",
          "StochProcess",
          "Invest",
@@ -9,7 +9,7 @@ tests = ["load_data",
          "Fluct",
          "CFlow"]
 for t in tests
-    println("* running $(t).jl ...")
-    include("$(t).jl")
+  println("* running $(t).jl ...")
+  include("$(t).jl")
 end
-    println("* end of test run")
+println("* end of test run")

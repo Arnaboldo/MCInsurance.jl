@@ -25,8 +25,8 @@ df_proj_fluct = readtable(joinpath(dirname(@__FILE__), "input/Proj_Fluct.csv"))
 df_lc_lc[:prod_name] = convert(DataArray{Symbol,1}, df_lc_lc[:prod_name])
 df_lc_load[:name] = convert(DataArray{Symbol,1}, df_lc_load[:name])
 for col in (:name, :cost_name, :cost_be_name, :qx_name, :interest_name)
-    df_lc_prod[col] = convert(DataArray{Symbol,1}, df_lc_prod[col])
+  df_lc_prod[col] = convert(DataArray{Symbol,1}, df_lc_prod[col])
 end
 for col in (:ph_gender, :ph_qx_be_name)
-    df_lc_ph[col] = convert(DataArray{Symbol,1}, df_lc_ph[col])
+  df_lc_ph[col] = convert(DataArray{Symbol,1}, df_lc_ph[col])
 end

@@ -1,10 +1,10 @@
 export N_COND, QX, SX, PX, PREM, C_BOC, C_EOC,
-       N_PROF, C_INIT_ABS, C_INIT_IS, C_ABS, C_IS, C_PREM, 
-       N_CAT, CAT_AGE, CAT_GENDER, CAT_QXBE, CAT_INTEREST, CAT_INFL, CAT_RISK,
-       L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL
-        
+N_PROF, C_INIT_ABS, C_INIT_IS, C_ABS, C_IS, C_PREM,
+N_CAT, CAT_AGE, CAT_GENDER, CAT_QXBE, CAT_INTEREST, CAT_INFL, CAT_RISK,
+L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL
+
 export LC,  lc!, loadings, getprobsx, getprob,
-       profile, condcf, price, tpeoc, tpveceoc, tpprev
+profile, condcf, price, tpgeoc, tpgveceoc, tpgprev
 export Bucket, Buckets, getcat, getind, add!, listcontracts
 
 ## Indices ---------------------------------------------------------------------
@@ -26,33 +26,33 @@ const CAT_AGE, CAT_GENDER, CAT_QXBE, CAT_INTEREST, CAT_INFL, CAT_RISK = 1:N_CAT
 ## Types -----------------------------------------------------------------------
 
 type LC
-    n::Int                      ## # contracts
-    age_min::Int                ## minimum age in qx-table
-    age_max::Int                ## maxumum age in qx-table
-    all::DataFrame              ## individual contract data
+  n::Int                      ## # contracts
+  age_min::Int                ## minimum age in qx-table
+  age_max::Int                ## maxumum age in qx-table
+  all::DataFrame              ## individual contract data
 end
 
 type Bucket
-    n::Int                      ## # contracts in bucket
-    n_c::Int                    ## max projection cycles
-    dur::Int                    ## max remaining duration 
-    cat::Vector{Any}            ## age, gender, qx_be_name, risk
-    cond::Array{Float64,2}      ## conditional cash-flows (incl. new business)
-    cond_nb::Array{Float64,2}   ## conditional cash-flows for new business only
-    tp_stat::Vector{Float64}    ## statutory technical provisions
-    tp_stat_init::Float64       ## initial statutory technical provisions
-#    tp_be_init::Float64         ## initial best estimate technical provisions
-    prob_be::Array{Float64,2}   ## best estimate: QX, SX
-    sx_weights::Vector{Float64} ## weights for est. average be SX
-    lx_boc::Float64             ## current fraction of policy holders in-force
-    bonus_rate::Float64         ## current bonus rate
-    hook::Any                   ## hook for attaching custom types 
+  n::Int                      ## # contracts in bucket
+  n_c::Int                    ## max projection cycles
+  dur::Int                    ## max remaining duration
+  cat::Vector{Any}            ## age, gender, qx_be_name, risk
+  cond::Array{Float64,2}      ## conditional cash-flows (incl. new business)
+  cond_nb::Array{Float64,2}   ## conditional cash-flows for new business only
+  tpg_price::Vector{Float64}  ## statutory technical provisions
+  tpg_price_init::Float64     ## initial statutory technical provisions
+  prob_be::Array{Float64,2}   ## best estimate: QX, SX
+  sx_weights::Vector{Float64} ## weights for est. average be SX
+  lx_boc::Float64             ## current fraction of policy holders in-force
+  lx_boc_next::Float64        ## next cycle fraction of policy holders in-force
+  bonus_rate::Float64         ## current bonus rate
+  hook::Any                   ## hook for attaching custom types
 end
 
 type Buckets
-    n::Int                      ## number of buckets
-    n_c::Int                    ## max projection cycles in  buckets
-    all::Array{Bucket,1}        ## Vector of buckets
-    tf::TimeFrame               ## Corresponding TimeFrame
+  n::Int                      ## number of buckets
+  n_c::Int                    ## max projection cycles in  buckets
+  all::Array{Bucket,1}        ## Vector of buckets
+  tf::TimeFrame               ## Corresponding TimeFrame
 end
 

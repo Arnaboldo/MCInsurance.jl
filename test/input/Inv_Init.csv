@@ -1,14 +1,14 @@
-ig_name,cpnt,asset_dur,asset_coupon,asset_amount
-riskfree_bonds,short_rate,1,0.02,4300.0
-riskfree_bonds,short_rate,2,0.025,8500.0
-riskfree_bonds,short_rate,5,0.03,13000.0
-riskfree_bonds,short_rate,1,0.025,21000.0
-riskfree_bonds,short_rate,3,0.04,43000.0
-riskfree_bonds,short_rate,3,0.035,39000.0
-riskfree_bonds,short_rate,1,0.02,13000.0
-riskfree_bonds,short_rate,7,0.025,8000.0
-stocks,US,NA,NA,43000.0
-stocks,EU,NA,NA,85000.0
-stocks,Asia,NA,NA,22000.0
-stocks,EU,NA,NA,22000.0
-cash,short_rate,NA,NA,10000.0
+ig_name,cpnt,asset_dur,asset_coupon,mv_init ,cp,lgd_rel,rating,sii_risk
+riskfree_bonds,short_rate,1,0.02,4300.0,bank 1,-0.5,AAA,int
+riskfree_bonds,short_rate,2,0.025,8500.0,bank 1,-0.5,AAA,int
+riskfree_bonds,short_rate,5,0.03,13000.0,bank 1,-0.5,AAA,int
+riskfree_bonds,short_rate,1,0.025,21000.0,bank 1,-0.5,AAA,int
+riskfree_bonds,short_rate,3,0.04,43000.0,bank 1,-0.5,AAA,int
+riskfree_bonds,short_rate,3,0.035,39000.0,bank 1,-0.5,AAA,int
+riskfree_bonds,short_rate,1,0.02,13000.0,bank 1,-0.5,AAA,int
+riskfree_bonds,short_rate,7,0.025,8000.0,bank 1,-0.5,AAA,int
+stocks,US,NA,NA,43000.0,na,0.0,na,eq_1
+stocks,EU,NA,NA,85000.0,na,0.0,na,eq_1
+stocks,Asia,NA,NA,22000.0,na,0.0,na,eq_2
+stocks,EU,NA,NA,22000.0,na,0.0,na,eq_1
+cash,short_rate,NA,NA,10000.0,bank 2,-0.8,A,cash

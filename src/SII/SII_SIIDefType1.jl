@@ -47,7 +47,7 @@ function SIIDefType1(tf::TimeFrame,
           warn("Rating not found: $(ig.counter_party[j, :rating])")
         end
       else
-        println("na:  $(ig.name)")
+#         println("na:  $(ig.name)")
       end
     end
   end

@@ -27,15 +27,12 @@ end
 function shock!(me::SIIMktEq,
                 buckets::Buckets,
                 other::Other,
-                capmkt_dfs::Any,
+                cap_mkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
-
-  capmkt_be = CapMkt([:sii_mkt_eq, me.tf, 1, capmkt_dfs]...)
-
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in me.sub_modules
-    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, cap_mkt_be, invest_dfs, buckets, other, dyn,
          (sii_eq, inv) -> mkteqshock!(inv, sii_eq, sm) )
   end
   return me
@@ -45,7 +42,7 @@ end
 
 function mkteqshock!(me::Invest, mkt_eq::SIIMktEq, sm::Symbol)
   for igr in me.ig
-    if igr.name == :stocks ## Fixme: Needs to be generalized
+    if igr.name == :stocks ## fixme: Needs to be generalized
       for i = 1:igr.n
         if igr.sii_risk[i] == sm
           igr.mv_init[i] *= (1 + mkt_eq.shocks[sm])
@@ -60,7 +57,7 @@ end
 function scr(me::SIIMktEq)
   ind = [ sm in me.balance[:SCEN] ? 1.0 : 0.0  for sm in me.sub_modules ]
   scr_vec_net =
-    bof(me, :be) .* ind - float64([bof(me, sm) for sm in me.sub_modules ])
+   float64([bof(me, sm) for sm in me.sub_modules ]) -  bof(me, :be) .* ind
   scr_vec_gross =
     scr_vec_net + fdb(me, :be) .* ind -
       float64([fdb(me, sm) for sm in me.sub_modules ])

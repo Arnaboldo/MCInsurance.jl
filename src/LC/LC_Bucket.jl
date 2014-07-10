@@ -25,6 +25,15 @@ function Buckets(lc::LC,
   buckets
 end
 
+function Buckets(tf::TimeFrame, all::Array{Bucket, 1})
+  buckets = Buckets(tf)
+  buckets.all = deepcopy(all)
+  buckets.n = length(all)
+  for bkt in all
+    buckets.n_c = max(buckets.n_c, bkt.n_c)
+  end
+end
+
 ## Interface  ------------------------------------------------------------------
 
 function ==(b1::Bucket, b2::Bucket)
@@ -118,7 +127,8 @@ function add!(me::Buckets,
     me.n += 1
     push!(me.all, Bucket(1, n_c, dur, cat, cond, cond_nb,
                          tpg_price, tpg_price_init,
-                         prob_be, cond[:,SX], 1.0, 1.0, 0.0, false))
+                         prob_be, cond[:,SX], 1.0, 1.0, 0.0,
+                         Dict{Symbol,Bool}(), false))
   else
     merge!(me, b, n_c, cat, cond, cond_nb, tpg_price, tpg_price_init, prob_be)
   end

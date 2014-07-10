@@ -36,16 +36,13 @@ end
 function shock!(me::SIIMktInt,
                 buckets::Buckets,
                 other::Other,
-                capmkt_dfs::Any,
+                cap_mkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Any)
 
-  ## Modular approach
-  capmkt_be = CapMkt([:sii_mkt_int, me.tf, 1, capmkt_dfs]...)
-
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in me.sub_modules
-    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, cap_mkt_be, invest_dfs, buckets, other, dyn,
          (sii_int, cpm) -> mktintshock!(cpm, sii_int, sm) )
   end
   return me
@@ -108,30 +105,15 @@ function scenup(me::SIIMktInt, interest::Array{Float64,3})
 end
 
 function scr(me::SIIMktInt)
-  ind = [ sm in me.balance[:SCEN] ? 1 : 0  for sm in me.sub_modules ]
+  ind = float64([ sm in me.balance[:SCEN] ? 1 : 0  for sm in me.sub_modules ])
   scr_vec_net =
-    float64(bof(me, :be) .* ind - [bof(me, sm) for sm in me.sub_modules ])
+    float64([bof(me, sm) for sm in me.sub_modules ]) - bof(me, :be) .* ind
   scr_vec_gross =
-    float64(scr_vec_net + fdb(me, :be) .* ind -
-              [fdb(me, sm) for sm in me.sub_modules ]
-            )
+    scr_vec_net + fdb(me, :be) .* ind -
+    float64([fdb(me, sm) for sm in me.sub_modules])
   scen_up = scr_vec_net[1] < scr_vec_net[2]
   scr_net = minimum([0.0, scr_vec_net])
   scr_gross =
     min(0.0, scr_net < scr_vec_net[1] ? scr_vec_gross[2] : scr_vec_gross[1])
   return scr_net, scr_gross, scen_up
 end
-
-# function scendiscount(scen_interest::Vector{Float64}, n_c::Int)
-#   n_scen_interest = length(scen_interest)
-#   if n_scen_interest >= n_c
-#     return exp(-cumsum(scen_interest))[1:n_c]
-#   else
-#     interest = Array(Float64, n_c)
-#     interest[1:n_scen_interest] = scen_interest
-#     interest[n_scen_interest+1:end] = scen_interest[end]
-#     return exp(-cumsum(interest))
-#   end
-# end
-
-

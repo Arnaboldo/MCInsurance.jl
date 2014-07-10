@@ -1,9 +1,4 @@
 export SII, scr
-export SIIMkt
-export SIIMktInt, scendown, scenup
-export SIIMktEq, mkteqshock!
-
-
 
 SII_DIGITS = 3
 abstract SIIModule
@@ -16,7 +11,6 @@ type SIIMktInt <: SIIModule
   shock_type::Symbol              ## indicates object type to be shocked
   sub_modules::Vector{Symbol}     ## all potential sub-modules
   balance::DataFrame              ## balance sheet for various shocks
-  #--------------------------
   spot_down::Array{Float64,3}
   spot_up::Array{Float64,3}
   spot_down_abs_max::Float64
@@ -28,7 +22,6 @@ type SIIMktEq <: SIIModule
   shock_type::Symbol              ## indicates object type to be shocked
   sub_modules::Vector{Symbol}     ## all potential sub-modules
   balance::DataFrame              ## balance sheet for various shocks
-  #--------------------------
   corr::Matrix{Float64}
   shocks::Dict{Symbol,Any}        ## shocks[i] is always Float64,
 end
@@ -38,7 +31,6 @@ type SIIMktSpread <: SIIModule
   shock_type::Symbol              ## indicates object type to be shocked
   sub_modules::Vector{Symbol}     ## all potential sub-modules
   balance::DataFrame              ## balance sheet for various shocks
-  #--------------------------
   shocks::Dict{Symbol,Any}        ## shocks[i] is always Float64,
 end
 
@@ -47,7 +39,6 @@ type SIIMktConc <: SIIModule
   shock_type::Symbol              ## indicates object type to be shocked
   sub_modules::Vector{Symbol}     ## all potential sub-modules
   balance::DataFrame              ## balance sheet for various shocks
-  #--------------------------
   shocks::Dict{Symbol,Any}        ## shocks[i] is always Float64,
 end
 
@@ -90,6 +81,73 @@ type SIIDef <: SIIModule
 
 end
 
+## SII life risk ---------------------------------------------------------------
+
+type SIILifeQX <: SIIModule
+  tf::TimeFrame                   ## shared time frame
+  shock_type::Symbol              ## indicates object type to be shocked
+  balance::DataFrame              ## balance sheet for various shocks
+  shock::Float64
+end
+
+type SIILifeSX <: SIIModule
+  tf::TimeFrame                   ## shared time frame
+  shock_type::Symbol              ## indicates object type to be shocked
+  sub_modules::Vector{Symbol}     ## all potential sub-modules
+  balance::DataFrame              ## balance sheet for various shocks
+  shock_down::Float64
+  shock_down_abs::Float64
+  shock_up::Float64
+  shock_mass::Float64
+  shock_mass_pension::Float64
+end
+
+type SIILifePX <: SIIModule
+  tf::TimeFrame                   ## shared time frame
+  shock_type::Symbol              ## indicates object type to be shocked
+  balance::DataFrame              ## balance sheet for various shocks
+  shock::Float64
+end
+
+type SIILifeCost <: SIIModule
+  tf::TimeFrame                   ## shared time frame
+  shock_type::Symbol              ## indicates object type to be shocked
+  balance::DataFrame              ## balance sheet for various shocks
+  shock_cost::Float64
+  shock_infl::Float64
+end
+
+type SIILifeCat <: SIIModule
+  tf::TimeFrame                   ## shared time frame
+  shock_type::Symbol              ## indicates object type to be shocked
+  balance::DataFrame              ## balance sheet for various shocks
+  shock::Float64
+end
+
+
+type SIILife <: SIIModule
+  tf::TimeFrame                   ## shared time frame
+  dim::Vector{Symbol}
+  corr::Matrix{Float64}
+  qx::SIILifeQX                   ## moratlity risk
+  sx::SIILifeSX                   ## surrender risk
+  px::SIILifePX                   ## longevity risk
+#   dm::SIILifeDM                   ## disabilitt/morbidity risk
+  cost::SIILifeCost               ## expense risk
+#   rev::SIILifeREV                 ## revision risk
+  cat::SIILifeCat                 ## catastrophe risk
+end
+
+## SII operational risk --------------------------------------------------------
+
+type SIIOp
+  tf::TimeFrame
+  prem_earned::Float64
+  prem_earned_prev::Float64
+  tp::Float64
+  cost_ul::Float64
+end
+
 ## SII all risks ---------------------------------------------------------------
 
 type SII <: SIIModule
@@ -109,5 +167,7 @@ type SII <: SIIModule
   corr::Matrix{Float64}
   mkt::SIIMkt                     ## SII module market risk
   def::SIIDef                     ## SII module default risk
+  life::SIILife                   ## SII module life risk
+  op::SIIOp                       ## SII module operational risk
 end
 

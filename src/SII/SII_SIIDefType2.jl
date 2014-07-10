@@ -23,15 +23,12 @@ end
 function shock!(me::SIIDefType2,
                 buckets::Buckets,
                 other::Other,
-                capmkt_dfs::Any,
+                cap_mkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
-
-  capmkt_be = CapMkt([:sii_mkt_eq, me.tf, 1, capmkt_dfs]...)
-
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in me.sub_modules
-    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, cap_mkt_be, invest_dfs, buckets, other, dyn,
          (type2, inv) -> defshock!(inv, type2, sm) )
   end
   return me
@@ -40,17 +37,7 @@ end
 ## Private ---------------------------------------------------------------------
 
 function defshock!(me::Invest, type2::SIIDefType2, sm::Symbol)
-#   for igr in me.ig
-#     if igr.name == :stocks ## Fixme: Needs to be generalized
-#       for i = 1:igr.n
-#         if igr.sii_risk[i] == sm
-#           igr.mv_init[i] *= (1 + mkt_eq.shocks[sm])
-#         end ## else: produce another be scenario which does not generate scr
-#       end
-#       igr.mv_total_init = sum(igr.mv_init)
-#     end
-#     me.mv_total_init = mvtotalinit(me.ig)
-#   end
+ # fixme: defshock not yet implemented
 end
 
 function scr(me::SIIDefType2)

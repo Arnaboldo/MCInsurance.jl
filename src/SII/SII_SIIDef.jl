@@ -34,7 +34,7 @@ function scr(me::SIIDef, sii::SII)
   scr_vec_gross = zeros(Float64, length(me.dim))
 
   shock!(me.type2,
-         sii.buckets_be, sii.other_be, sii.capmkt_dfs, sii.invest_dfs, sii.dyn)
+         sii.buckets_be, sii.other_be, sii.cap_mkt_be, sii.invest_dfs, sii.dyn)
   scr_vec_net[TYPE1], scr_vec_gross[TYPE1] = scr(me.type1)
   scr_vec_net[TYPE2], scr_vec_gross[TYPE2] = scr(me.type2)
 

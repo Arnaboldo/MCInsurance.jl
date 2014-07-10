@@ -8,7 +8,7 @@ profile, condcf, price, tpgeoc, tpgveceoc, tpgprev
 export Bucket, Buckets, getcat, getind, add!, listcontracts
 
 ## Indices ---------------------------------------------------------------------
-## Probabilities prob: QX, SX, PX
+## Probabilities prob: QX, SX, PXdummy
 ## Conditional Cashflows cond:
 const N_COND = 6
 const QX, SX, PX, PREM, C_BOC, C_EOC = 1:N_COND
@@ -39,13 +39,18 @@ type Bucket
   cat::Vector{Any}            ## age, gender, qx_be_name, risk
   cond::Array{Float64,2}      ## conditional cash-flows (incl. new business)
   cond_nb::Array{Float64,2}   ## conditional cash-flows for new business only
-  tpg_price::Vector{Float64}  ## statutory technical provisions
-  tpg_price_init::Float64     ## initial statutory technical provisions
+  tpg_price::Vector{Float64}  ## technical prov. based on pricing parameters
+  tpg_price_init::Float64     ## init. techn. prov. based on pricing parameters
   prob_be::Array{Float64,2}   ## best estimate: QX, SX
   sx_weights::Vector{Float64} ## weights for est. average be SX
   lx_boc::Float64             ## current fraction of policy holders in-force
   lx_boc_next::Float64        ## next cycle fraction of policy holders in-force
   bonus_rate::Float64         ## current bonus rate
+  ## for SII calculation
+  select::Dict{Symbol,Bool}   ## selection indicator for various scenarios
+                              ## which are defined via symbols
+                              ## selection marks do not affect ==
+  ## general hook
   hook::Any                   ## hook for attaching custom types
 end
 

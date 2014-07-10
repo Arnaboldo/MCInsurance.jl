@@ -41,9 +41,9 @@ function scr(me::SIIMkt, sii::SII)
   scr_vec_gross = zeros(Float64, length(me.dim))
 
   shock!(me.int,
-         sii.buckets_be, sii.other_be, sii.capmkt_dfs, sii.invest_dfs, sii.dyn)
+         sii.buckets_be, sii.other_be, sii.cap_mkt_be, sii.invest_dfs, sii.dyn)
   shock!(me.eq,
-         sii.buckets_be, sii.other_be, sii.capmkt_dfs, sii.invest_dfs, sii.dyn)
+         sii.buckets_be, sii.other_be, sii.cap_mkt_be, sii.invest_dfs, sii.dyn)
   scr_vec_net[INT],    scr_vec_gross[INT],   scen_up =  scr(me.int)
   scr_vec_net[EQ],     scr_vec_gross[EQ] =              scr(me.eq)
   scr_vec_net[SPREAD], scr_vec_gross[SPREAD] =          scr(me.spread)

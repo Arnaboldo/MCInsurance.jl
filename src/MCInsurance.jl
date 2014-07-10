@@ -56,5 +56,12 @@ include("SII/SII_SIIMktConc.jl")
 include("SII/SII_SIIDef.jl")
 include("SII/SII_SIIDefType1.jl")
 include("SII/SII_SIIDefType2.jl")
+include("SII/SII_SIILife.jl")
+include("SII/SII_SIILifeQX.jl")
+include("SII/SII_SIILifeSX.jl")
+include("SII/SII_SIILifePX.jl")
+include("SII/SII_SIILifeCost.jl")
+include("SII/SII_SIILifeCat.jl")
+include("SII/SII_SIIOp.jl")
 
 end # module

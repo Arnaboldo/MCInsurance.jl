@@ -1,4 +1,4 @@
-export SII, scr
+export SII, scr, bscr, adjtp, adjdt
 
 SII_DIGITS = 3
 abstract SIIModule
@@ -153,12 +153,12 @@ end
 type SII <: SIIModule
   tf::TimeFrame
   capmkt_dfs::Vector{DataFrame}
-  invest_dfs::Vector{DataFrame}
+  inv_dfs::Vector{DataFrame}
   dyn_dfs::Vector{DataFrame}
-  cap_mkt_be::CapMkt              ## deterministic best estimate capital market
-  invest_be::Invest
-  buckets_be::Buckets
-  other_be::Other                 ## without subordinated debt
+  capmkt_be::CapMkt              ## deterministic best estimate capital market
+  inv_be::Invest
+  bkts_be::Buckets
+  oth_be::Other                 ## without subordinated debt
   dyn::Dynamic                    ## initialized prior to any shock
   balance::DataFrame
 

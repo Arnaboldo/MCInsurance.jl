@@ -6,7 +6,8 @@ function CFlow(tf::TimeFrame, n_mc::Int)
   cf = zeros(Float64, n_mc, tf.n_c, n_cf )
   v_0 = zeros(Float64, 1, 1, n_v)
   v = zeros(Float64, n_mc, tf.n_c, n_v )
-  CFlow(n_mc, n_cf, n_v, tf, cf, v_0, v)
+  discount_init = Array(Float64,0)
+  CFlow(n_mc, n_cf, n_v, tf, cf, v_0, v, discount_init)
 end
 
 function CFlow(buckets::Buckets,
@@ -16,6 +17,8 @@ function CFlow(buckets::Buckets,
                dyn::Dynamic )
   cflow = CFlow(buckets.tf, invest.cap_mkt.n_mc)
   cflow.v_0 = vinit(invest, buckets, other)
+  cflow.discount_init =
+    meancumdiscrf(invest.c, invest.c.yield_rf_init, buckets.n_c)
   for mc = 1:cflow.n_mc
     for t = 1:cflow.tf.n_c
       discount = meancumdiscrf(invest.c,
@@ -34,10 +37,10 @@ end
 function ==(cflow1::CFlow, cflow2::CFlow)
   cflow1.n == cflow2.n &&
     cflow1.n_mc == cflow2.n_mc &&
-      cflow1.tf == cflow2.tf &&
-        cflow1.cf == cflow2.cf &&
-          cflow1.v_0 == cflow2.v_0 &&
-            cflow1.v == cflow2.v
+    cflow1.tf == cflow2.tf &&
+    cflow1.cf == cflow2.cf &&
+    cflow1.v_0 == cflow2.v_0 &&
+    cflow1.v == cflow2.v
 end
 
 
@@ -57,9 +60,9 @@ function vinit(invest::Invest,
     ## The length of the vector forces tpgeoc to calculate the provisions
     ## at the end of the cycle prior to tf.init.
     v_0[1,1,TPG_EOC]  += tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
-                                 vcat(1.0, discount),
-                                 vcat(zeros(Float64, 1, N_COND),
-                                      bkt.cond - bkt.cond_nb))
+                                vcat(1.0, discount),
+                                vcat(zeros(Float64, 1, N_COND),
+                                     bkt.cond )) #- bkt.cond_nb))
   end
   v_0[1,1,OTHER_EOC] = pvboc(other,1,discount)
   v_0[1,1,ASSET_EOC] = invest.mv_total_init
@@ -68,33 +71,42 @@ function vinit(invest::Invest,
   return v_0
 end
 
-function dfcf(me::CFlow, mc::Int, digits::Int=1)
+function dfcf(me::CFlow, mc::Int, prec::Int=-1)
   ## use showall for printing to screen
   dframe = DataFrame()
   for i = 1:size(me.cf,3)
-    dframe[col_CF[i]] =
-      round(reshape(me.cf[mc,:,i], size(me.cf,2)), digits)
+    if prec < 0
+      dframe[col_CF[i]] = reshape(me.cf[mc,:,i], size(me.cf,2))
+    else
+      dframe[col_CF[i]] = round(reshape(me.cf[mc,:,i], size(me.cf,2)), prec)
+    end
   end
   dframe
 end
 
-function dfv(me::CFlow, mc::Int, digits::Int=1)
+function dfv(me::CFlow, mc::Int, prec::Int=-1)
   ## use showall for printing to screen
   dframe = DataFrame()
   for i = 1:size(me.v,3)
-    dframe[col_V[i]] =
-      round(reshape(me.v[mc,:,i], size(me.v,2)), digits)
+    if prec < 0
+      dframe[col_V[i]] = reshape(me.v[mc,:,i], size(me.v,2))
+    else
+      dframe[col_V[i]] = round(reshape(me.v[mc,:,i], size(me.v,2)), prec)
+    end
   end
   dframe[:CYCLE] = int(dframe[:CYCLE])
   dframe
 end
 
-function dfv0(me::CFlow, digits::Int=1)
+function dfv0(me::CFlow, prec::Int=-1)
   ## use showall for printing to screen
   dframe = DataFrame()
   for i = 1:size(me.v_0,3)
-    dframe[col_V[i]] =
-      round(reshape(me.v_0[1,:,i], size(me.v_0,2)), digits)
+    if prec < 0
+      dframe[col_V[i]] = reshape(me.v_0[1,:,i], size(me.v_0,2))
+    else
+      dframe[col_V[i]] = round(reshape(me.v_0[1,:,i], size(me.v_0,2)), prec)
+    end
   end
   dframe[:CYCLE] = int(dframe[:CYCLE])
   dframe
@@ -126,6 +138,15 @@ function pvdfcf(me::CFlow, invest::Invest, prec::Int=-1)
   names!(df_pv_cf, names(disc_cf))
   return df_pv_cf
 end
+
+function balance(cfl::CFlow, scen::Symbol, prec::Int = -1)
+  bonus_eoc =  cfl.discount_init[1:cfl.tf.n_c] ⋅ dfcf(cfl,1)[:BONUS]
+  if prec >= 0
+    bonus_eoc = round(bonus_eoc, prec)
+  end
+  return hcat(dfv0(cfl, prec), DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
+end
+
 
 ## Private ---------------------------------------------------------------------
 
@@ -177,10 +198,10 @@ function bucketprojectboc!(me::CFlow,
 end
 
 function investeoc!(me::CFlow,
-                           invest::Invest,
-                           mc::Int,
-                           t::Int,
-                           dyn::Dynamic)
+                    invest::Invest,
+                    mc::Int,
+                    t::Int,
+                    dyn::Dynamic)
   mv_bop = (t == 1 ? me.v_0[1,1,ASSET_EOC] : me.v[mc,t-1,ASSET_EOC])
   mv_bop += me.cf[mc,t,PREM] + me.cf[mc,t,C_BOC]
   mv_boc = mv_bop
@@ -209,16 +230,16 @@ function bucketprojecteoc!(me::CFlow,
     bucket.lx_boc * fluct.fac[mc,t,fluct.d[C_EOC]] * bucket.cond[t,C_EOC]
   me.v[mc,t,TPG_EOC] +=
     bucket.lx_boc * prob[t,PX] * tpgeoc(prob[ t:bucket.n_c, :],
-                                       discount[t:bucket.n_c],
-                                       bucket.cond[ t:bucket.n_c, :])
+                                        discount[t:bucket.n_c],
+                                        bucket.cond[ t:bucket.n_c, :])
 end
 
 function bucketbonuseoc!(me::CFlow,
-                           bucket::Bucket,
-                           invest::Invest,
-                           mc::Int,
-                           t::Int,
-                           dyn::Dynamic)
+                         bucket::Bucket,
+                         invest::Invest,
+                         mc::Int,
+                         t::Int,
+                         dyn::Dynamic)
   bucket.bonus_rate = dyn.bonusrate(mc, t, bucket, invest, dyn)
   if t == 1
     me.cf[mc,t,BONUS] += bucket.bonus_rate * bucket.tpg_price_init
@@ -229,9 +250,9 @@ function bucketbonuseoc!(me::CFlow,
 end
 
 function assetspreeoc!(me::CFlow,
-                            invest::Invest,
-                            mc::Int,
-                            t::Int)
+                       invest::Invest,
+                       mc::Int,
+                       t::Int)
   me.v[mc,t,ASSET_EOC] = invest.mv_total_eop[mc, t * me.tf.n_dt]
   for j in [QX, SX, PX, C_EOC, OTHER, BONUS]
     me.v[mc,t,ASSET_EOC] += me.cf[mc, t, j]
@@ -239,10 +260,10 @@ function assetspreeoc!(me::CFlow,
 end
 
 function surpluseoc!(me::CFlow,
-                            invest::Invest,
-                            mc::Int,
-                            t::Int,
-                            dyn::Dynamic)
+                     invest::Invest,
+                     mc::Int,
+                     t::Int,
+                     dyn::Dynamic)
   me.cf[mc, t, DIVID] = dyn.dividend(mc, t, invest, me, dyn)
   me.v[mc, t, ASSET_EOC] += me.cf[mc, t, DIVID]
   me.v[mc, t, SURPLUS_EOC] =

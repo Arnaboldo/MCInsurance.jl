@@ -15,6 +15,11 @@ function SIILifeSX()
 end
 
 function SIILifeSX(tf::TimeFrame,
+                   bkts_be::Buckets, ## from SII
+                   oth_be::Other,
+                   capmkt_be::CapMkt,
+                   dyn::Dynamic,
+                   inv_dfs::Vector{DataFrame},
                    balance_be::DataFrame,
                    df_sii_life_general::DataFrame)
   me = SIILifeSX()
@@ -25,10 +30,10 @@ function SIILifeSX(tf::TimeFrame,
   me.shock_up = df_sii_life_general[1, :SX_UP]
   me.shock_mass = df_sii_life_general[1, :SX_M_OTH]
   me.shock_mass_pension = df_sii_life_general[1, :SX_M_PENS]
-
-
-  # ,SX_DOWN_ABS,SX_UP,SX_UP_ABS,SX_M_PENS,SX_M_OTH,]
-
+  ## identify those buckets that are subject to mortality / longevity risk:
+  ## bucket.select_qx = 1 / 0
+  testsx!(bkts_be, me, oth_be, capmkt_be, inv_dfs, dyn)
+  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
   return  me
 end
 
@@ -38,13 +43,13 @@ end
 function shock!(me::SIILifeSX,
                 buckets::Buckets,
                 other::Other,
-                cap_mkt_be::CapMkt,
+                capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Any)
 
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in me.sub_modules
-    add!(me, sm, cap_mkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
          (sii_sx, bkts) -> sxshock!(bkts, sii_sx, sm) )
   end
   return me
@@ -60,9 +65,9 @@ function sxshock!(me::Buckets, sx::SIILifeSX, sm::Symbol)
 end
 
 function sxshockfunction(sx::SIILifeSX, sm::Symbol)
-    if sm == :SX_DOWN
+  if sm == :SX_DOWN
     shockfunc(sxprob) =
-      max( (1 + sx.shock_down) * sxprob, sxprob .- sx.shock_down_abs)
+      max( (1 + sx.shock_down) * sxprob, sxprob .+ sx.shock_down_abs)
   elseif sm == :SX_UP
     shockfunc(sxprob) =  min( (1 + sx.shock_up) * sxprob, 1)
   else ## sm in [:mass, :mass_pension]
@@ -89,7 +94,6 @@ end
 
 function scr(me::SIILifeSX)
   ind = float64([ sm in me.balance[:SCEN] ? 1 : 0  for sm in me.sub_modules ])
-
   scr_vec_net =
     float64([bof(me, sm) for sm in me.sub_modules ]) - bof(me, :be) .* ind
   scr_vec_gross =
@@ -100,3 +104,43 @@ function scr(me::SIILifeSX)
   scr_gross = scr_vec_gross[scr_net_index]
   return min(0,scr_net), min(0,scr_gross)
 end
+
+## identify those buckets that are subject to mortality risk (fast version)
+function testsx!(me::Buckets,
+                 sx::SIILifeSX,
+                 oth_be::Other,
+                 capmkt_be::CapMkt,
+                 invest_dfs::Any,
+                 dyn::Dynamic)
+  ## This function does not properly take into account second order
+  ## effects due to the effect of boni.  Nevertheless for most portfolios the
+  ## result should be the same as the result from an exact calculation.
+  ## speed: ~ buckets.n
+
+  invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
+  discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, me.n_c)
+
+  for bkt in me.all
+    tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
+                     vcat(1.0, discount),
+                     vcat(zeros(Float64, 1, N_COND), bkt.cond)
+                     )
+    merge!(bkt.select, [:SX_PENSION => false]) ## fixme: pension not implemented
+    for sm in sx.sub_modules
+      bkt_test = deepcopy(bkt)
+      merge!(bkt_test.select, [sm => true])
+      sxshock!(bkt_test, sx, sxshockfunction(sx, sm), sm)
+      tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_be),
+                          vcat(1.0, discount),
+                          vcat(zeros(Float64, 1, N_COND), bkt_test.cond)
+                          )
+      if tpg_shock < tpg_be
+        merge!(bkt.select, [sm => true])
+      else
+        merge!(bkt.select, [sm => false])
+      end
+    end
+  end
+end
+
+

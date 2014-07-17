@@ -12,6 +12,11 @@ function SIIMkt()
 end
 
 function SIIMkt(tf::TimeFrame,
+                bkts_be::Buckets,
+                oth_be::Other,
+                capmkt_be::CapMkt,
+                dyn::Dynamic,
+                inv_dfs::Vector{DataFrame},
                 balance::DataFrame,
                 df_sii_mkt_general::DataFrame,
                 df_sii_mkt_corr_up::DataFrame,
@@ -21,12 +26,13 @@ function SIIMkt(tf::TimeFrame,
                 df_sii_mkt_spread_fbonds::DataFrame)
   me = SIIMkt()
   me.tf = tf
-
   me.corr_up = array(df_sii_mkt_corr_up)
   me.corr_down = array(df_sii_mkt_corr_down)
 
-  me.int =    SIIMktInt(me.tf, balance, df_sii_mkt_general, df_sii_mkt_interest)
-  me.eq =     SIIMktEq(me.tf, balance, df_sii_mkt_general, df_sii_mkt_eq_corr)
+  me.int =    SIIMktInt(me.tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
+                        balance, df_sii_mkt_general, df_sii_mkt_interest)
+  me.eq =     SIIMktEq(me.tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
+                       balance, df_sii_mkt_general, df_sii_mkt_eq_corr)
   # me.spread =
   # me.conc =
   return me
@@ -34,16 +40,12 @@ end
 
 ## Interface -------------------------------------------------------------------
 
-function scr(me::SIIMkt, sii::SII)
+function scr(me::SIIMkt)
   for (i,ind) in enumerate(me.dim)  eval(:($ind = $i)) end
 
   scr_vec_net = zeros(Float64, length(me.dim))
   scr_vec_gross = zeros(Float64, length(me.dim))
 
-  shock!(me.int,
-         sii.buckets_be, sii.other_be, sii.cap_mkt_be, sii.invest_dfs, sii.dyn)
-  shock!(me.eq,
-         sii.buckets_be, sii.other_be, sii.cap_mkt_be, sii.invest_dfs, sii.dyn)
   scr_vec_net[INT],    scr_vec_gross[INT],   scen_up =  scr(me.int)
   scr_vec_net[EQ],     scr_vec_gross[EQ] =              scr(me.eq)
   scr_vec_net[SPREAD], scr_vec_gross[SPREAD] =          scr(me.spread)

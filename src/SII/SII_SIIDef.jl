@@ -9,6 +9,11 @@ function SIIDef()
 end
 
 function SIIDef(tf::TimeFrame,
+                bkts_be::Buckets,
+                oth_be::Other,
+                capmkt_be::CapMkt,
+                dyn::Dynamic,
+                inv_dfs::Vector{DataFrame},
                 balance::DataFrame,
                 invest_be::Invest,
                 sp_cqs::Dict{UTF8String,Int64},
@@ -20,21 +25,20 @@ function SIIDef(tf::TimeFrame,
   me.corr = array(df_sii_def_corr)
 
   me.type1 =  SIIDefType1(me.tf, invest_be, sp_cqs, df_sii_def_type1_prob)
-  me.type2 =  SIIDefType2(me.tf, balance)
+  me.type2 =  SIIDefType2(me.tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
+                          balance)
 
   return me
 end
 
 ## Interface -------------------------------------------------------------------
 
-function scr(me::SIIDef, sii::SII)
+function scr(me::SIIDef)
   for (i,ind) in enumerate(me.dim)  eval(:($ind = $i)) end
 
   scr_vec_net = zeros(Float64, length(me.dim))
   scr_vec_gross = zeros(Float64, length(me.dim))
 
-  shock!(me.type2,
-         sii.buckets_be, sii.other_be, sii.cap_mkt_be, sii.invest_dfs, sii.dyn)
   scr_vec_net[TYPE1], scr_vec_gross[TYPE1] = scr(me.type1)
   scr_vec_net[TYPE2], scr_vec_gross[TYPE2] = scr(me.type2)
 

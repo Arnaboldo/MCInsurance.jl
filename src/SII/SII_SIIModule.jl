@@ -1,6 +1,7 @@
 ## Private ---------------------------------------------------------------------
 
-## calculate balance sheet
+## calculate shocked balance sheet
+
 function balance(me::SIIModule,
                  scen::Symbol,     # name of scenario
                  capmkt::CapMkt,
@@ -21,12 +22,14 @@ function balance(me::SIIModule,
     if me.shock_type == :Invest   shock!!(me, inv) end
     if me.shock_type == :Buckets  shock!!(me, bkts) end
   end
-  cfl = CFlow(bkts, inv, oth, fluct, dyn)
-  discount = meancumdiscrf(inv.c, inv.c.yield_rf_init, bkts.n_c)
-  bonus_eoc =  dot(discount[1:capmkt.tf.n_c], dfcf(cfl,1)[:BONUS])
 
-  return hcat(dfv0(cfl, SII_DIGITS),
-              DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
+  cfl = CFlow(bkts, inv, oth, fluct, dyn)
+
+  return balance(cfl, scen)
+#   bonus_eoc =  dot(cfl.discount_init[1:capmkt.tf.n_c], dfcf(cfl,1)[:BONUS])
+
+#   return hcat(dfv0(cfl, SII_DIGITS),
+#               DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
 end
 
 ## add scenario

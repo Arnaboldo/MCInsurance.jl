@@ -9,12 +9,18 @@ end
 
 
 function SIILifeCat(tf::TimeFrame,
-                   balance_be::DataFrame,
-                   df_sii_life_general::DataFrame)
+                    bkts_be::Buckets,
+                    oth_be::Other,
+                    capmkt_be::CapMkt,
+                    dyn::Dynamic,
+                    inv_dfs::Vector{DataFrame},
+                    balance_be::DataFrame,
+                    df_sii_life_general::DataFrame)
   me = SIILifeCat()
   me.tf = tf
   me.balance =  deepcopy(balance_be)
   me.shock = df_sii_life_general[1,:CAT]
+  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
   return me
 end
 
@@ -22,12 +28,12 @@ end
 
 function shock!(me::SIILifeCat,
                 buckets::Buckets,
-                other_be::Other,
-                cap_mkt_be::CapMkt,
+                oth_be::Other,
+                capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
   me.balance = me.balance[me.balance[:SCEN] .== :be, :]
-  add!(me, :CAT, cap_mkt_be, invest_dfs, buckets, other_be, dyn,
+  add!(me, :CAT, capmkt_be, invest_dfs, buckets, oth_be, dyn,
        (sii_cat, bkts) -> catshock!(bkts, sii_cat) )
   return me
 end

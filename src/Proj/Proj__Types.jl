@@ -2,7 +2,7 @@
 export  DELTA_TPG, BONUS, INVEST, OTHER, DIVID
 export TPG_EOC, OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
 export Fluct
-export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit
+export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit, balance
 export Dynamic, getprob
 
 const DELTA_TPG, BONUS, INVEST, OTHER, DIVID = 7:11
@@ -30,10 +30,11 @@ type CFlow
   n_mc::Int64                     ## # monte carlo scenarios
   n_cf::Int64                     ## # output quantities cash-flows
   n_v::Int64                      ## # output quantities valuation
-  tf::TimeFrame                  ## time frame (from buckets)
-  cf::Array{Float64,3}           ## cash-flow values
+  tf::TimeFrame                   ## time frame (from buckets)
+  cf::Array{Float64,3}            ## cash-flow values
   v_0::Array{Float64,3}           ## initial cash flow and valuation values
-  v::Array{Float64,3}            ## valuation values
+  v::Array{Float64,3}             ## valuation values
+  discount_init::Array{Float64,1} ## discount rates at beginning of projection
 end
 
 type Dynamic

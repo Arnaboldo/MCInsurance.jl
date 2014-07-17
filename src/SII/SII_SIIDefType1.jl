@@ -23,8 +23,8 @@ function SIIDefType1(tf::TimeFrame,
   cqs = array(df_sii_def_type1_prob[:cqs])
   prob = array(df_sii_def_type1_prob[:prob])
 
-  me.tlgd = Array(Float64, length(cqs))
-  me.slgd = Array(Float64, length(cqs))
+  me.tlgd = zeros(Float64, length(cqs))
+  me.slgd = zeros(Float64, length(cqs))
   me.u = Array(Float64, length(cqs), length(cqs))
   me.v = Array(Float64, length(cqs))
 

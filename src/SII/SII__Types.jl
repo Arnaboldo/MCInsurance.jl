@@ -88,6 +88,7 @@ type SIILifeQX <: SIIModule
   shock_type::Symbol              ## indicates object type to be shocked
   balance::DataFrame              ## balance sheet for various shocks
   shock::Float64
+  bkt_select::Vector{Bool}         ## buckets selected for shocks
 end
 
 type SIILifeSX <: SIIModule
@@ -100,6 +101,7 @@ type SIILifeSX <: SIIModule
   shock_up::Float64
   shock_mass::Float64
   shock_mass_pension::Float64
+  bkt_select::Dict{Symbol, Vector{Bool}}  ## buckets selected for shocks
 end
 
 type SIILifePX <: SIIModule
@@ -107,6 +109,7 @@ type SIILifePX <: SIIModule
   shock_type::Symbol              ## indicates object type to be shocked
   balance::DataFrame              ## balance sheet for various shocks
   shock::Float64
+  bkt_select::Vector{Bool}         ## buckets selected for shocks
 end
 
 type SIILifeCost <: SIIModule
@@ -122,6 +125,7 @@ type SIILifeCat <: SIIModule
   shock_type::Symbol              ## indicates object type to be shocked
   balance::DataFrame              ## balance sheet for various shocks
   shock::Float64
+  bkt_select::Vector{Bool}         ## buckets selected for shocks
 end
 
 

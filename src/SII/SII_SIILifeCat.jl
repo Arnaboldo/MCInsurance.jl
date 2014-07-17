@@ -4,7 +4,8 @@ function SIILifeCat()
   shock_type = :Buckets
   balance = DataFrame()
   shock = 0.0
-  return SIILifeCat(tf, shock_type, balance, shock)
+  bkt_select = Array(Bool,0)
+  return SIILifeCat(tf, shock_type, balance, shock, bkt_select)
 end
 
 
@@ -20,11 +21,20 @@ function SIILifeCat(tf::TimeFrame,
   me.tf = tf
   me.balance =  deepcopy(balance_be)
   me.shock = df_sii_life_general[1,:CAT]
+  select!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
   shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
   return me
 end
 
 ## Interface -------------------------------------------------------------------
+
+function scr(me::SIILifeCat)
+  scr_net =  bof(me, :CAT) - bof(me, :be)
+  scr_gross =  scr_net + fdb(me, :be) - fdb(me, :CAT)
+  return scr_net, scr_gross
+end
+
+## Private ---------------------------------------------------------------------
 
 function shock!(me::SIILifeCat,
                 buckets::Buckets,
@@ -38,26 +48,48 @@ function shock!(me::SIILifeCat,
   return me
 end
 
-## Private ---------------------------------------------------------------------
-
-
 function catshock!(bkt::Bucket,  cat::SIILifeCat)
-  if bkt.select[:QX] ## mortality character hence cat shock
     bkt.prob_be[1,QX] = min(1, bkt.prob_be[1,QX] .+ cat.shock)
     bkt.prob_be[1,SX] = min(1 .- bkt.prob_be[1,QX], bkt.prob_be[1,SX])
     bkt.prob_be[1,PX] =  1.0 .- bkt.prob_be[1,QX] - bkt.prob_be[1,SX]
-  end
 end
-
 
 function catshock!(me::Buckets, cat::SIILifeCat)
-  for bkt in me.all
-    catshock!(bkt, cat)
+  for (b,bkt) in enumerate(me.all)
+    if cat.bkt_select[b]
+      catshock!(bkt, cat)
+    end
   end
 end
 
-function scr(me::SIILifeCat)
-  scr_net =  bof(me, :CAT) - bof(me, :be)
-  scr_gross =  scr_net + fdb(me, :be) - fdb(me, :CAT)
-  return scr_net, scr_gross
+## identify those buckets that are subject to mortality risk (fast version)
+function select!(me::SIILifeCat,
+                 bkts::Buckets,
+                 oth_be::Other,
+                 capmkt_be::CapMkt,
+                 invest_dfs::Any,
+                 dyn::Dynamic)
+  ## This function does not properly take into account second order
+  ## effects due to the effect of boni.  Nevertheless for most portfolios the
+  ## result should be the same as the result from testqx!.
+  ## speed: ~ buckets.n
+
+  me.bkt_select = Array(Bool, bkts.n)
+
+  invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
+  discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, bkts.n_c)
+
+  for (b, bkt) in enumerate(bkts.all)
+    tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
+                     vcat(1.0, discount),
+                     vcat(zeros(Float64, 1, N_COND), bkt.cond)
+                     )
+    bkt_test = deepcopy(bkt)
+    catshock!(bkt_test, me)
+    tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_be),
+                        vcat(1.0, discount),
+                        vcat(zeros(Float64, 1, N_COND), bkt_test.cond)
+                        )
+    me.bkt_select[b] = (tpg_shock < tpg_be)
+  end
 end

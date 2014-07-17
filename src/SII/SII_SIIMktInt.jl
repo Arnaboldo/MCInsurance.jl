@@ -39,6 +39,22 @@ end
 
 ## Interface -------------------------------------------------------------------
 
+function scr(me::SIIMktInt)
+  ind = float64([ sm in me.balance[:SCEN] ? 1 : 0  for sm in me.sub_modules ])
+  scr_vec_net =
+    float64([bof(me, sm) for sm in me.sub_modules ]) - bof(me, :be) .* ind
+  scr_vec_gross =
+    scr_vec_net + fdb(me, :be) .* ind -
+    float64([fdb(me, sm) for sm in me.sub_modules])
+  scen_up = scr_vec_net[1] < scr_vec_net[2]
+  scr_net = minimum([0.0, scr_vec_net])
+  scr_gross =
+    min(0.0, scr_net < scr_vec_net[1] ? scr_vec_gross[2] : scr_vec_gross[1])
+  return scr_net, scr_gross, scen_up
+end
+
+## Private ---------------------------------------------------------------------
+
 function shock!(me::SIIMktInt,
                 buckets::Buckets,
                 other::Other,
@@ -53,9 +69,6 @@ function shock!(me::SIIMktInt,
   end
   return me
 end
-
-
-## Private ---------------------------------------------------------------------
 
 function mktintshock!(me::CapMkt, sii_mkt_int::SIIMktInt, sm::Symbol)
   if sm == :spot_down
@@ -125,16 +138,3 @@ function scenup(me::SIIMktInt, interest::Array{Float64,3})
   return forw_shocked
 end
 
-function scr(me::SIIMktInt)
-  ind = float64([ sm in me.balance[:SCEN] ? 1 : 0  for sm in me.sub_modules ])
-  scr_vec_net =
-    float64([bof(me, sm) for sm in me.sub_modules ]) - bof(me, :be) .* ind
-  scr_vec_gross =
-    scr_vec_net + fdb(me, :be) .* ind -
-    float64([fdb(me, sm) for sm in me.sub_modules])
-  scen_up = scr_vec_net[1] < scr_vec_net[2]
-  scr_net = minimum([0.0, scr_vec_net])
-  scr_gross =
-    min(0.0, scr_net < scr_vec_net[1] ? scr_vec_gross[2] : scr_vec_gross[1])
-  return scr_net, scr_gross, scen_up
-end

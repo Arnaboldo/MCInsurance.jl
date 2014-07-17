@@ -20,6 +20,13 @@ end
 
 ## Interface -------------------------------------------------------------------
 
+function scr(me::SIIMktConc)
+  warn("SII concentration risk has not yet been implemented")
+   return 0.0, 0.0
+end
+
+## Private ---------------------------------------------------------------------
+
 function shock!(me::SIIMktConc,
                 buckets::Buckets,
                 other::Other,
@@ -34,13 +41,7 @@ function shock!(me::SIIMktConc,
   return me
 end
 
-## Private ---------------------------------------------------------------------
-
 function mktconcshock!(me::Invest, mkt_eq::SIIMktConc, sm::Symbol)
   # fixme: mktconcshock not yet implemented
 end
 
-function scr(me::SIIMktConc)
-  warn("SII concentration risk has not yet been implemented")
-   return 0.0, 0.0
-end

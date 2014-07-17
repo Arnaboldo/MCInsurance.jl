@@ -34,7 +34,6 @@ function SIIDefType1(tf::TimeFrame,
       (1-prob[i]) * prob[i] * (1-prob[j]) * prob[j] /
         (1.25 * (prob[i] + prob[j]) - prob[i] * prob[j])
   end
-
   for ig in invest_be.ig
     for j = 1:nrow(ig.counter_party)
       if ig.counter_party[j, :cp] != "na"
@@ -47,7 +46,6 @@ function SIIDefType1(tf::TimeFrame,
           warn("Rating not found: $(ig.counter_party[j, :rating])")
         end
       else
-#         println("na:  $(ig.name)")
       end
     end
   end
@@ -56,10 +54,6 @@ function SIIDefType1(tf::TimeFrame,
 end
 
 ## Interface -------------------------------------------------------------------
-
-
-## Private ---------------------------------------------------------------------
-
 
 function scr(me::SIIDefType1)
   var = (me.tlgd' * me.u * me.tlgd)[1] + dot(me.v, me.slgd)
@@ -74,3 +68,7 @@ function scr(me::SIIDefType1)
   scr_gross = scr_net
   return scr_net, scr_gross
 end
+
+## Private ---------------------------------------------------------------------
+
+

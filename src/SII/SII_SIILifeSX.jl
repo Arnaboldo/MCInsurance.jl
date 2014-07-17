@@ -9,9 +9,11 @@ function SIILifeSX()
   shock_up = 0.0
   shock_mass = 0.0
   shock_mass_pension = 0.0
+  bkt_select = Dict{Symbol, Vector{Bool}}()
   return SIILifeSX(tf, shock_type, sub_modules, balance,
                    shock_down, shock_down_abs, shock_up,
-                   shock_mass, shock_mass_pension)
+                   shock_mass, shock_mass_pension,
+                   bkt_select)
 end
 
 function SIILifeSX(tf::TimeFrame,
@@ -30,15 +32,29 @@ function SIILifeSX(tf::TimeFrame,
   me.shock_up = df_sii_life_general[1, :SX_UP]
   me.shock_mass = df_sii_life_general[1, :SX_M_OTH]
   me.shock_mass_pension = df_sii_life_general[1, :SX_M_PENS]
-  ## identify those buckets that are subject to mortality / longevity risk:
-  ## bucket.select_qx = 1 / 0
-  testsx!(bkts_be, me, oth_be, capmkt_be, inv_dfs, dyn)
+  ## select bukckets for each shock:
+  select!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
   shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
   return  me
 end
 
 
 ## Interface -------------------------------------------------------------------
+
+function scr(me::SIILifeSX)
+  ind = float64([ sm in me.balance[:SCEN] ? 1 : 0  for sm in me.sub_modules ])
+  scr_vec_net =
+    float64([bof(me, sm) for sm in me.sub_modules ]) - bof(me, :be) .* ind
+  scr_vec_gross =
+    scr_vec_net + fdb(me, :be) .* ind -
+    float64([fdb(me, sm) for sm in me.sub_modules])
+
+  scr_net, scr_net_index = findmin(scr_vec_net)
+  scr_gross = scr_vec_gross[scr_net_index]
+  return min(0,scr_net), min(0,scr_gross)
+end
+
+## Private ---------------------------------------------------------------------
 
 function shock!(me::SIILifeSX,
                 buckets::Buckets,
@@ -55,12 +71,11 @@ function shock!(me::SIILifeSX,
   return me
 end
 
-
-## Private ---------------------------------------------------------------------
-
 function sxshock!(me::Buckets, sx::SIILifeSX, sm::Symbol)
-  for bkt in me.all
-    sxshock!(bkt, sx, sxshockfunction(sx, sm), sm)
+  for (b,bkt) in enumerate(me.all)
+    if sx.bkt_select[sm][b]
+      sxshock!(bkt, b, sx, sxshockfunction(sx, sm), sm)
+    end
   end
 end
 
@@ -76,11 +91,11 @@ function sxshockfunction(sx::SIILifeSX, sm::Symbol)
   return shockfunc
 end
 
-function sxshock!(bkt::Bucket, sx::SIILifeSX, shockfunc::Function, sm::Symbol)
-  if bkt.select[sm]
+function sxshock!(bkt::Bucket, b::Int,
+                  sx::SIILifeSX, shockfunc::Function, sm::Symbol)
     bkt.prob_be[:,SX] = shockfunc( bkt.prob_be[:,SX])
     if sm == :SX_MASS
-      if bkt.select[:SX_PENSION]
+      if sx.bkt_select[:SX_PENSION][b]
         bkt.prob_be[1,SX] = sx.shock_mass_pension
       else
         bkt.prob_be[1,SX] = sx.shock_mass
@@ -88,26 +103,11 @@ function sxshock!(bkt::Bucket, sx::SIILifeSX, shockfunc::Function, sm::Symbol)
     end
     bkt.prob_be[:,QX] = min(1 .- bkt.prob_be[:,SX], bkt.prob_be[:,QX])
     bkt.prob_be[:,PX] =  1.0 .- bkt.prob_be[:,QX] - bkt.prob_be[:,SX]
-  end
-end
-
-
-function scr(me::SIILifeSX)
-  ind = float64([ sm in me.balance[:SCEN] ? 1 : 0  for sm in me.sub_modules ])
-  scr_vec_net =
-    float64([bof(me, sm) for sm in me.sub_modules ]) - bof(me, :be) .* ind
-  scr_vec_gross =
-    scr_vec_net + fdb(me, :be) .* ind -
-    float64([fdb(me, sm) for sm in me.sub_modules])
-
-  scr_net, scr_net_index = findmin(scr_vec_net)
-  scr_gross = scr_vec_gross[scr_net_index]
-  return min(0,scr_net), min(0,scr_gross)
 end
 
 ## identify those buckets that are subject to mortality risk (fast version)
-function testsx!(me::Buckets,
-                 sx::SIILifeSX,
+function select!(me::SIILifeSX,
+                 bkts::Buckets,
                  oth_be::Other,
                  capmkt_be::CapMkt,
                  invest_dfs::Any,
@@ -118,29 +118,68 @@ function testsx!(me::Buckets,
   ## speed: ~ buckets.n
 
   invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
-  discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, me.n_c)
+  discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, bkts.n_c)
 
-  for bkt in me.all
+  for sm in me.sub_modules
+    merge!(me.bkt_select, [sm => fill(false, bkts.n)])
+  end
+  merge!(me.bkt_select, [:SX_PENSION => fill(false, bkts.n)])
+
+  for (b, bkt) in enumerate(bkts.all)
     tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
                      vcat(1.0, discount),
                      vcat(zeros(Float64, 1, N_COND), bkt.cond)
                      )
-    merge!(bkt.select, [:SX_PENSION => false]) ## fixme: pension not implemented
-    for sm in sx.sub_modules
+    ## fixme: currently :SX_PENSION contracts are not implemented.
+    for sm in me.sub_modules
       bkt_test = deepcopy(bkt)
-      merge!(bkt_test.select, [sm => true])
-      sxshock!(bkt_test, sx, sxshockfunction(sx, sm), sm)
+      sxshock!(bkt_test, b, me, sxshockfunction(me, sm), sm)
       tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_be),
                           vcat(1.0, discount),
                           vcat(zeros(Float64, 1, N_COND), bkt_test.cond)
                           )
-      if tpg_shock < tpg_be
-        merge!(bkt.select, [sm => true])
-      else
-        merge!(bkt.select, [sm => false])
-      end
+      me.bkt_select[sm][b] = (tpg_shock < tpg_be)
     end
   end
 end
+
+# ## identify those buckets that are subject to mortality risk (fast version)
+# function testsx!(me::Buckets,
+#                  sx::SIILifeSX,
+#                  oth_be::Other,
+#                  capmkt_be::CapMkt,
+#                  invest_dfs::Any,
+#                  dyn::Dynamic)
+#   ## This function does not properly take into account second order
+#   ## effects due to the effect of boni.  Nevertheless for most portfolios the
+#   ## result should be the same as the result from an exact calculation.
+#   ## speed: ~ buckets.n
+
+#   invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
+#   discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, me.n_c)
+
+#   for bkt in me.all
+#     tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
+#                      vcat(1.0, discount),
+#                      vcat(zeros(Float64, 1, N_COND), bkt.cond)
+#                      )
+#     merge!(bkt.select, [:SX_PENSION => false]) ## fixme: pension not implemented
+#     for sm in sx.sub_modules
+#       bkt_test = deepcopy(bkt)
+#       merge!(bkt_test.select, [sm => true])
+#       sxshock!(bkt_test, sx, sxshockfunction(sx, sm), sm)
+#       tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_be),
+#                           vcat(1.0, discount),
+#                           vcat(zeros(Float64, 1, N_COND), bkt_test.cond)
+#                           )
+#       if tpg_shock < tpg_be
+#         merge!(bkt.select, [sm => true])
+#       else
+#         merge!(bkt.select, [sm => false])
+#       end
+#     end
+#   end
+# end
+
 
 

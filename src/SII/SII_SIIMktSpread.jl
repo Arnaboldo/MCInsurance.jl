@@ -21,6 +21,13 @@ end
 
 ## Interface -------------------------------------------------------------------
 
+function scr(me::SIIMktSpread)
+  warn("SII spread risk has not yet been implemented")
+   return 0.0, 0.0
+end
+
+## Private ---------------------------------------------------------------------
+
 function shock!(me::SIIMktSpread,
                 buckets::Buckets,
                 other::Other,
@@ -35,13 +42,7 @@ function shock!(me::SIIMktSpread,
   return me
 end
 
-## Private ---------------------------------------------------------------------
-
 function mktshock!(me::Invest, mkt_eq::SIIMktSpread, sm::Symbol)
   # fixme: mktschock for spread risk not yet implemented
 end
 
-function scr(me::SIIMktSpread)
-  warn("SII spread risk has not yet been implemented")
-   return 0.0, 0.0
-end

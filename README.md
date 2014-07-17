@@ -1,5 +1,7 @@
 # MCInsurance
 
+[![Build Status](https://travis-ci.org/mkriele/MCInsurance.jl.png)](https://travis-ci.org/mkriele/MCInsurance.jl)
+
 This Julia package provides multi-period Monte Carlo simulations for life insurance.
 
 The primary application is the preparation of examples for a planned co-authored book on market consistent risk management in insurance.<a name="f1back"></a>[^1](#f1)
@@ -82,8 +84,6 @@ The book is in an early project phase.  We plan to offer it to a scientific publ
 We assume that the reader is familiar with mathematics at a level of a typical undergraduate math degree.
 
 -------------------------------------------------------------------------------
-
-[![Build Status](https://travis-ci.org/mkriele/MCInsurance.jl.png)](https://travis-ci.org/mkriele/MCInsurance.jl)
 
 <a name="f1"></a>^1:  While other applications are also intended,  the code may not be suitable for a production environment without further testing. [back](#f1back)
 

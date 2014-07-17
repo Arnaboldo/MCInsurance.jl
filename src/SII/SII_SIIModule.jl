@@ -26,10 +26,6 @@ function balance(me::SIIModule,
   cfl = CFlow(bkts, inv, oth, fluct, dyn)
 
   return balance(cfl, scen)
-#   bonus_eoc =  dot(cfl.discount_init[1:capmkt.tf.n_c], dfcf(cfl,1)[:BONUS])
-
-#   return hcat(dfv0(cfl, SII_DIGITS),
-#               DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
 end
 
 ## add scenario

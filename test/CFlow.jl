@@ -17,7 +17,7 @@ for mc = 1:n_mc
     lx_boc = 1
     for t = 1:tf.n_c
       tst_discount =
-        meancumdiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], buckets.n_c)
+        meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], t, buckets.n_c)
 
       yield = 0.0
       for t_p in ((t-1) * tf.n_dt+1):(t * tf.n_dt)
@@ -37,7 +37,7 @@ for mc = 1:n_mc
 
       tmp_tpg[t] +=  lx_boc * prob_b[t,PX] *
         tpgeoc(prob_b[t:buckets.all[b].n_c,:],
-               tst_discount[t:buckets.all[b].n_c],
+               tst_discount[1:buckets.all[b].n_c-t+1],
                buckets.all[b].cond[t:buckets.all[b].n_c,:])
       # accumulate cashflows
       tmp_cf[t,QX] += lx_boc * prob_b[t,QX] * buckets.all[b].cond[t,QX]

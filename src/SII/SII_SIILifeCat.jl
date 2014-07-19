@@ -77,7 +77,7 @@ function select!(me::SIILifeCat,
   me.bkt_select = Array(Bool, bkts.n)
 
   invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
-  discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, bkts.n_c)
+  discount = meandiscrf(invest.c,invest.c.yield_rf_init, 1, bkts.n_c)
 
   for (b, bkt) in enumerate(bkts.all)
     tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),

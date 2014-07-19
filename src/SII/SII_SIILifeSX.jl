@@ -118,7 +118,7 @@ function select!(me::SIILifeSX,
   ## speed: ~ buckets.n
 
   invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
-  discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, bkts.n_c)
+  discount = meandiscrf(invest.c, invest.c.yield_rf_init, 1, bkts.n_c)
 
   for sm in me.sub_modules
     merge!(me.bkt_select, [sm => fill(false, bkts.n)])
@@ -142,44 +142,3 @@ function select!(me::SIILifeSX,
     end
   end
 end
-
-# ## identify those buckets that are subject to mortality risk (fast version)
-# function testsx!(me::Buckets,
-#                  sx::SIILifeSX,
-#                  oth_be::Other,
-#                  capmkt_be::CapMkt,
-#                  invest_dfs::Any,
-#                  dyn::Dynamic)
-#   ## This function does not properly take into account second order
-#   ## effects due to the effect of boni.  Nevertheless for most portfolios the
-#   ## result should be the same as the result from an exact calculation.
-#   ## speed: ~ buckets.n
-
-#   invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
-#   discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, me.n_c)
-
-#   for bkt in me.all
-#     tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
-#                      vcat(1.0, discount),
-#                      vcat(zeros(Float64, 1, N_COND), bkt.cond)
-#                      )
-#     merge!(bkt.select, [:SX_PENSION => false]) ## fixme: pension not implemented
-#     for sm in sx.sub_modules
-#       bkt_test = deepcopy(bkt)
-#       merge!(bkt_test.select, [sm => true])
-#       sxshock!(bkt_test, sx, sxshockfunction(sx, sm), sm)
-#       tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_be),
-#                           vcat(1.0, discount),
-#                           vcat(zeros(Float64, 1, N_COND), bkt_test.cond)
-#                           )
-#       if tpg_shock < tpg_be
-#         merge!(bkt.select, [sm => true])
-#       else
-#         merge!(bkt.select, [sm => false])
-#       end
-#     end
-#   end
-# end
-
-
-

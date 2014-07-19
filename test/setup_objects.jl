@@ -14,8 +14,6 @@ invest = Invest(:invest_rn, cap_mkt, df_general,
 invest_det = Invest(:invest_det, cap_mkt_det,
                     df_general, df_inv_inv, df_inv_init, df_inv_asset)
 
-discount_be = meandiscrf(invest.c, invest.c.yield_rf_eoc[1,1], 125)
-
 
 lc  = LC(df_lc_lc, df_lc_ph, df_lc_prod, df_lc_load,
          df_lc_qx, df_lc_interest, tf)

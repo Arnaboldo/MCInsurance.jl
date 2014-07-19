@@ -49,19 +49,21 @@ end
 
 function yieldeoc(me::ManualShortRate,
                   n_mc::Int,
-                  tf::TimeFrame,
+                  n_c::Int,
+                  n_dt::Int,
                   init_c::Float64)
+  n_p = n_c * n_dt
   ## This function calculates the yield retrospectively at eoc
-  yield_eoc = zeros(Float64, n_mc, tf.n_c + 1, 1)
-  ind = rand(DiscreteUniform(1,me.n_mc), n_mc)
+  yield_eoc = zeros(Float64, n_mc, n_c + 1, 1)
+  ind = rand(DiscreteUniform(1, me.n_mc), n_mc)
   for mc = 1:n_mc
-    for t = 1:(tf.n_c)
-      for d = 1:tf.n_dt
-        yield_eoc[mc,t] += me.yield[ind[mc], tf.n_dt*(t-1) + d, 1]
+    for t = 1:(n_c)
+      for d = 1:n_dt
+        yield_eoc[mc, t] += me.yield[ind[mc], n_dt * (t - 1) + d, 1]
       end
     end
-    ## for cycle tf.n_c+1 we only have the initial period yield
-    yield_c[mc,tf.n_c+1] = tf.n_dt * me.yield[ind[mc], tf.n_p + 1, 1]
+    ## for cycle n_c+1 we only have the initial period yield
+    yield_c[mc, n_c + 1] = n_dt * me.yield[ind[mc], n_p + 1, 1]
   end
   return (yield_c .+ (init_c .- yield_c[:,1]))
 end

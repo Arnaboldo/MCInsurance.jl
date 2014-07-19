@@ -32,17 +32,19 @@ end
 
 function yieldeoc(me::DetermShortRate,
                   n_mc::Int,
-                  tf::TimeFrame, ## in general different from CapMkt.tf
+                  n_c::Int,
+                  n_dt::Int,
                   init_c::Float64)
   ## This function calculates the yield retrospectively at eoc
-  while length(me.yield_input) < tf.n_p  + tf.n_dt
+  n_p = n_c * n_dt
+  while length(me.yield_input) < n_p  + n_dt
     me.yield_input = vcat(me.yield_input, me.yield_input[end])
   end
-  yield_c = zeros(Float64, n_mc, tf.n_c + 1, 1)
+  yield_c = zeros(Float64, n_mc, n_c + 1, 1)
   for mc = 1:n_mc
-    for t = 1:(tf.n_c + 1)
-      for d = 1:tf.n_dt
-        yield_c[mc,t] += me.yield_input[tf.n_dt*(t-1) + d]
+    for t = 1:(n_c + 1)
+      for d = 1:n_dt
+        yield_c[mc,t] += me.yield_input[n_dt*(t-1) + d]
       end
     end
   end

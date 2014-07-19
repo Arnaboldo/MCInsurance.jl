@@ -18,14 +18,11 @@ function CFlow(buckets::Buckets,
   cflow = CFlow(buckets.tf, invest.cap_mkt.n_mc)
   cflow.v_0 = vinit(invest, buckets, other)
   cflow.discount_init =
-    meancumdiscrf(invest.c, invest.c.yield_rf_init, buckets.n_c)
+    meandiscrf(invest.c, invest.c.yield_rf_init, 1, buckets.n_c)
   for mc = 1:cflow.n_mc
     for t = 1:cflow.tf.n_c
-      discount = meancumdiscrf(invest.c,
-                               invest.c.yield_rf_eoc[mc,t],
-                               buckets.n_c)
-      projectcycle!(cflow, mc, t, buckets, invest,
-                    other, fluct, discount, dyn)
+      discount = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], t, buckets.n_c)
+      projectcycle!(cflow, mc, t, buckets, invest, other, fluct, discount, dyn)
     end
   end
   cflow
@@ -50,7 +47,7 @@ function vinit(invest::Invest,
   # Returns the initial balance sheet *without* accounting for
   # the value of future discretionary benefits.
   # They are implicitly included in SURPLUS_EOC
-  discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, buckets.n_c)
+  discount = meandiscrf(invest.c,invest.c.yield_rf_init, 1, buckets.n_c)
   v_0 = zeros(Float64, 1, 1, length(col_V))
   v_0[1,1,CYCLE] = buckets.tf.init - 1
   v_0[1,1,TPG_EOC] = 0.0
@@ -139,7 +136,7 @@ function pvdfcf(me::CFlow, invest::Invest, prec::Int=-1)
   return df_pv_cf
 end
 
-function balance(cfl::CFlow, scen::Symbol, prec::Int = -1)
+function balance_det_init(cfl::CFlow, scen::Symbol, prec::Int = -1)
   bonus_eoc =  cfl.discount_init[1:cfl.tf.n_c] ⋅ dfcf(cfl,1)[:BONUS]
   if prec >= 0
     bonus_eoc = round(bonus_eoc, prec)
@@ -147,6 +144,13 @@ function balance(cfl::CFlow, scen::Symbol, prec::Int = -1)
   return hcat(dfv0(cfl, prec), DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
 end
 
+function balance_det(cfl::CFlow, scen::Symbol, prec::Int = -1)
+  bonus_eoc =  cfl.discount_init[1:cfl.tf.n_c] ⋅ dfcf(cfl,1)[:BONUS]
+  if prec >= 0
+    bonus_eoc = round(bonus_eoc, prec)
+  end
+  return hcat(dfv0(cfl, prec), DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
+end
 
 ## Private ---------------------------------------------------------------------
 
@@ -230,7 +234,7 @@ function bucketprojecteoc!(me::CFlow,
     bucket.lx_boc * fluct.fac[mc,t,fluct.d[C_EOC]] * bucket.cond[t,C_EOC]
   me.v[mc,t,TPG_EOC] +=
     bucket.lx_boc * prob[t,PX] * tpgeoc(prob[ t:bucket.n_c, :],
-                                        discount[t:bucket.n_c],
+                                        discount[1:(bucket.n_c+1-t)],
                                         bucket.cond[ t:bucket.n_c, :])
 end
 

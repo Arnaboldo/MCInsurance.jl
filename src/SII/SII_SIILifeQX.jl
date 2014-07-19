@@ -79,7 +79,7 @@ function select!(me::SIILifeQX,
   me.bkt_select = Array(Bool, bkts.n)
 
   invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
-  discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, bkts.n_c)
+  discount = meandiscrf(invest.c, invest.c.yield_rf_init, 1, bkts.n_c)
 
   for (b, bkt) in enumerate(bkts.all)
     tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
@@ -95,61 +95,4 @@ function select!(me::SIILifeQX,
     me.bkt_select[b] = (tpg_shock < tpg_be)
   end
 end
-
-
-
-# ## identify those buckets that are subject to mortality risk (fast version)
-# function testqx!(me::Buckets,
-#                  siiqx::SIILifeQX,
-#                  oth_be::Other,
-#                  capmkt_be::CapMkt,
-#                  invest_dfs::Any,
-#                  dyn::Dynamic)
-#   ## This function does not properly take into account second order
-#   ## effects due to the effect of boni.  Nevertheless for most portfolios the
-#   ## result should be the same as the result from testqx!.
-#   ## speed: ~ buckets.n
-
-#   invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
-#   discount = meancumdiscrf(invest.c,invest.c.yield_rf_init, me.n_c)
-
-#   for (b, bkt) in enumerate(me.all)
-#     tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
-#                      vcat(1.0, discount),
-#                      vcat(zeros(Float64, 1, N_COND), bkt.cond)
-#                      )
-#     bkt_test = deepcopy(bkt)
-#     merge!(bkt_test.select, [:QX => true])
-#     qxshock!(bkt_test, siiqx)
-#     tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_be),
-#                         vcat(1.0, discount),
-#                         vcat(zeros(Float64, 1, N_COND), bkt_test.cond)
-#                         )
-#     me.all[b].select[:QX] = (tpg_shock < tpg_be)
-#   end
-# end
-
-
-# ## identify those buckets that are subject to mortality risk (exact version)
-# function exacttestqx!(me::Buckets,
-#                       siiqx::SIILifeQX,
-#                       oth_be::Other,
-#                       capmkt_be::CapMkt,
-#                       invest_dfs::Any,
-#                       dyn::Dynamic)
-#   ## This function is exact but it can be very slow because for
-#   ## each bucket we project the whole portfolio of all buckets.
-#   ## speed: ~ buckets.n * buckets.n
-#   tp_be = siiqx.balance[1,:TPG_EOC] + siiqx.balance[1,:BONUS_EOC]
-#   bkts_test = deepcopy(me)
-#   for (b, bkt) in enumerate(bkts_test.all)
-#     merge!(me.all[b].select, [:QX => true])
-#     balance_shock =
-#       balance(siiqx, :test, capmkt_be, invest_dfs, bkts_test, oth_be, dyn,
-#               (sii_qx, bkts) -> qxshock!(bkts, sii_qx))
-#     tp_shock = balance_shock[1,:TPG_EOC] + balance_shock[1,:BONUS_EOC]
-#     bkt = deepcopy(me.all[b]) ## reverse the shock
-#     me.all[b].select[:QX] = (tp_shock < tp_be ? 1 : 0)
-#   end
-# end
 

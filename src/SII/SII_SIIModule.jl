@@ -2,7 +2,7 @@
 
 ## calculate shocked balance sheet
 
-function balance(me::SIIModule,
+function balance_det_init(me::SIIModule,
                  scen::Symbol,     # name of scenario
                  capmkt::CapMkt,
                  invest_dfs::Any,
@@ -25,7 +25,7 @@ function balance(me::SIIModule,
 
   cfl = CFlow(bkts, inv, oth, fluct, dyn)
 
-  return balance(cfl, scen)
+  return balance_det_init(cfl, scen)
 end
 
 ## add scenario
@@ -38,7 +38,7 @@ function add!(me::SIIModule,
               dyn::Dynamic,
               shock!!::Any)
   append!(me.balance,
-          balance(me,  scen, capmkt, invest_dfs,  buckets, oth, dyn, shock!!))
+          balance_det_init(me,  scen, capmkt, invest_dfs,  buckets, oth, dyn, shock!!))
 end
 
 ## basic own funds

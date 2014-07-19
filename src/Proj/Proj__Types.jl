@@ -2,7 +2,8 @@
 export  DELTA_TPG, BONUS, INVEST, OTHER, DIVID
 export TPG_EOC, OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
 export Fluct
-export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit, balance
+export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit, balance_det_init
+export balance_det
 export Dynamic, getprob
 
 const DELTA_TPG, BONUS, INVEST, OTHER, DIVID = 7:11

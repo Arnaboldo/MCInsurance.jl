@@ -38,7 +38,6 @@ function ManualShortRate(name::Symbol,
   ManualShortRate( name, cpnt, param, tf)
 end
 
-
 ## Interface  ------------------------------------------------------------------
 function show(io::IO, me::ManualShortRate)
   println(io,"Type       : $(string(typeof(me)))")
@@ -46,27 +45,30 @@ function show(io::IO, me::ManualShortRate)
   println(io,"(n_mc n_p) : ($(me.n_mc) $(me.n_p))")
 end
 
-
 function yieldeoc(me::ManualShortRate,
+                  t::Int,
+                  init_c::Float64,
                   n_mc::Int,
                   n_c::Int,
-                  n_dt::Int,
-                  init_c::Float64)
+                  n_dt::Int)
   n_p = n_c * n_dt
   ## This function calculates the yield retrospectively at eoc
-  yield_eoc = zeros(Float64, n_mc, n_c + 1, 1)
-  ind = rand(DiscreteUniform(1, me.n_mc), n_mc)
+  yield_c = zeros(Float64, n_mc, n_c + 1, 1)
+  ind = Array(Int, n_mc, n_p )
+  ind = rand!(DiscreteUniform(1, me.n_mc), ind)
+
+  yield_c[:, 1, 1] = mean(yield_c[:,1,1])
   for mc = 1:n_mc
-    for t = 1:(n_c)
+    for τ = 2:(n_c + 1)
       for d = 1:n_dt
-        yield_eoc[mc, t] += me.yield[ind[mc], n_dt * (t - 1) + d, 1]
+        yield_c[mc, τ, 1] +=
+          me.yield[ind[mc,τ], t - 1 + n_dt * (τ - 1) + d, 1]
       end
     end
-    ## for cycle n_c+1 we only have the initial period yield
-    yield_c[mc, n_c + 1] = n_dt * me.yield[ind[mc], n_p + 1, 1]
   end
-  return (yield_c .+ (init_c .- yield_c[:,1]))
+  return yield_c .+ (init_c .- mean(yield_c[:,1,1]))
 end
+
 
 ## deterministic yields for noise=0, relative to beginning of pd.
 ## we simply take the average for each time step

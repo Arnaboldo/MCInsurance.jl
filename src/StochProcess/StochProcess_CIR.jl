@@ -19,7 +19,7 @@ function CIR (name::Symbol,
   cycle2period!(proc, tf)
   for mc = 1:n_mc
     proc.yield[mc,:,1] =
-      yieldbop(proc, proc.init, n_p, vec(proc.noise[mc,:]))
+      yieldbop(proc, 1, proc.init, n_p, vec(proc.noise[mc,:]))
   end
   proc
 end
@@ -98,6 +98,7 @@ function cycle2period!(me::CIR, tf::TimeFrame)
 end
 
 function yieldbop(me::CIR,
+                  t_init::Int, # initial period, not used
                   init::Float64,
                   n_p::Int,
                   noise_vec::Vector{Float64})

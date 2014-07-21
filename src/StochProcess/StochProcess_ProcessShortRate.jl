@@ -4,12 +4,12 @@
 ##  -  DetermShortRate
 ##  -  ManualShortRate
 function yieldeoc(me::ProcessShortRate,
+                  t::Int,
+                  yield_init_c::Float64,
                   n_mc::Int,
                   n_c::Int,
-                  n_dt::Int,
-                  yield_init_c::Float64)
+                  n_dt::Int)
   n_p = n_c * n_dt
-  dt = n_c / n_p
   ## This function calculates the yield retrospectively at eoc
   yield_mc = Array(Float64, 1, n_p + n_dt + 1, 1)
   yield_c = zeros(Float64, n_mc, n_c + 1, 1)
@@ -26,7 +26,7 @@ function yieldeoc(me::ProcessShortRate,
   ## Assumption: interest rate will not change for the rest of the cycle
   for mc = 1:n_mc
     yield_mc[1, :, 1] =
-      yieldbop(me, yield_init_c * dt, n_p + n_dt, vec(noise[mc, :]))
+      yieldbop(me, t, yield_init_c / n_dt, n_p + n_dt, vec(noise[mc, :]))
     for t = 1:(n_c + 1)
       for d = 1:n_dt
         yield_c[mc, t] += yield_mc[1, n_dt * (t - 1) + d, 1]

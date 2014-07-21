@@ -34,10 +34,11 @@ function MktC(info::Vector{InvestInfo},
   for t = 1:cap_mkt.tf.n_c, k = 1:n_mean_grid
     mean_disc_rf[:,t,k] =
       mean(exp(-cumsum(yieldeoc(cap_mkt.proc[ind_cash],
+                                t,
+                                yield_grid_rf[t,k],
                                 n_mean_mc,
                                 n_mean_c,
-                                cap_mkt.tf.n_dt,
-                                yield_grid_rf[t,k]),
+                                cap_mkt.tf.n_dt),
                        2)[:,1:n_mean_c]),
            1)
   end

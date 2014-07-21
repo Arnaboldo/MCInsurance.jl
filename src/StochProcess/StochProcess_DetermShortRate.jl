@@ -31,24 +31,26 @@ function show(io::IO, me::DetermShortRate)
 end
 
 function yieldeoc(me::DetermShortRate,
+                  t::Int,
+                  init_c::Float64,
                   n_mc::Int,
                   n_c::Int,
-                  n_dt::Int,
-                  init_c::Float64)
+                  n_dt::Int)
   ## This function calculates the yield retrospectively at eoc
   n_p = n_c * n_dt
-  while length(me.yield_input) < n_p  + n_dt
-    me.yield_input = vcat(me.yield_input, me.yield_input[end])
+  yield_input = deepcopy(me.yield_input)
+  while length(yield_input) < n_p  + t * n_dt
+    yield_input = vcat(yield_input, yield_input[end])
   end
   yield_c = zeros(Float64, n_mc, n_c + 1, 1)
   for mc = 1:n_mc
-    for t = 1:(n_c + 1)
+    for τ = 1:(n_c + 1)
       for d = 1:n_dt
-        yield_c[mc,t] += me.yield_input[n_dt*(t-1) + d]
+        yield_c[mc, τ, 1] += yield_input[(t-1) + n_dt * (τ-1)  + d]
       end
     end
   end
-  return (yield_c .+ (init_c - yield_c[1,1]))
+  return yield_c[:,:,1] .+ (init_c - mean(yield_c[:,1,1]))
 end
 
 

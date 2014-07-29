@@ -140,10 +140,10 @@ function price(is::Float64,
 
   num =
     prof[1, C_INIT_ABS] + prof[1, C_INIT_IS] * is +
-      sum(lx_boc .* v .* (prof[:, C_ABS] + is * (prof[:,C_IS] +
-                                                   prob[:,PX] .* prof[:,PX] +
-                                                     prob[:,QX] .* prof[:,QX]
-                                                 ) ))
+    sum(lx_boc .* v .* (prof[:, C_ABS] + is * (prof[:,C_IS] +
+                                                 prob[:,PX] .* prof[:,PX] +
+                                                 prob[:,QX] .* prof[:,QX]
+                                               ) ))
   denom =  sum(lx_boc .*
                (prof[:,PREM] .* (v_boc - v .* prof[:, C_PREM]) -
                   v .* prob[:,SX] .* prof[:,SX] .* cumsum(prof[:,PREM])
@@ -153,45 +153,106 @@ end
 
 ## Technical provisions
 function tpgeoc (prob::Array{Float64,2},
-                discount::Vector{Float64},
-                cond_cf::Array{Float64,2} )
+                 discount::Vector{Float64},
+                 cond_cf::Array{Float64,2} )
   discount_1c = discount ./ [1, discount[1:end-1]]
   dur = size(cond_cf,1)
   tpg = 0.0
   if dur > 0
     for t in (dur-1):-1:1
       tpg = tpgprev(tpg,
-                  reshape(prob[t+1,:], size(prob,2)),
-                  discount_1c[t+1],
-                  reshape(cond_cf[t+1,:], size(cond_cf,2)) )
+                    reshape(prob[t+1,:], size(prob,2)),
+                    discount_1c[t+1],
+                    reshape(cond_cf[t+1,:], size(cond_cf,2)) )
     end
   end
   return tpg
 end
 
+function tpgeoc (prob::Array{Float64,2},
+                 discount::Vector{Float64},
+                 cond_cf::Array{Float64,2},
+                 inv_cost::InvestCost,
+                 portion_c::Vector{Float64})
+  discount_1c = discount ./ [1, discount[1:end-1]]
+  dur = size(cond_cf,1)
+  tpg = 0.0
+  if dur > 0
+    for t in (dur-1):-1:1
+      ## absolute invstment costs are already going concern for the decreasing
+      ## volume of the contract portfolio but not yet for individual
+      ## buckets.
+      tpg = tpgprev(tpg,
+                    reshape(prob[t+1,:], size(prob,2)),
+                    discount_1c[t+1],
+                    reshape(cond_cf[t+1,:], size(cond_cf,2)),
+                    inv_cost.rel_c[t+1],
+                    portion_c[t+1] * inv_cost.abs_c[t+1])
+    end
+  end
+  return tpg
+end
+
+
 function tpgveceoc (prob::Array{Float64,2},
-                   discount::Vector{Float64},
-                   cond_cf::Array{Float64,2} )
+                    discount::Vector{Float64},
+                    cond_cf::Array{Float64,2} )
   discount_1c = discount ./ [1, discount[1:end-1]]
   dur = size(cond_cf,1)
   tpg = zeros(Float64, dur)
   tpg[dur] = 0.0
   for t in (dur-1):-1:1
     tpg[t] = tpgprev(tpg[t+1],
-                   reshape(prob[t+1,:], size(prob,2)),
-                   discount_1c[t+1],
-                   reshape(cond_cf[t+1,:], size(cond_cf,2)) )
+                     reshape(prob[t+1,:], size(prob,2)),
+                     discount_1c[t+1],
+                     reshape(cond_cf[t+1,:], size(cond_cf,2)) )
   end
   return tpg
 end
 
+function tpgveceoc (prob::Array{Float64,2},
+                    discount::Vector{Float64},
+                    cond_cf::Array{Float64,2},
+                    inv_cost::InvestCost,
+                    portion_c::Vector{Float64})
+
+  discount_1c = discount ./ [1, discount[1:end-1]]
+  dur = size(cond_cf,1)
+  tpg = zeros(Float64, dur)
+  tpg[dur] = 0.0
+  for t in (dur-1):-1:1
+    tpg[t] = tpgprev(tpg[t+1],
+                     reshape(prob[t+1,:], size(prob,2)),
+                     discount_1c[t+1],
+                     reshape(cond_cf[t+1,:], size(cond_cf,2)) ,
+                     inv_cost.rel_c[t+1],
+                     portion_c[t+1] * inv_cost.abs_c[t+1])
+  end
+  return tpg
+end
+
+
+
+
 function tpgprev(tpg::Float64,
-                prob::Vector{Float64},
-                discount_1c::Float64,
-                cond_cf::Vector{Float64})
+                 prob::Vector{Float64},
+                 discount_1c::Float64,
+                 cond_cf::Vector{Float64})
   cond_cf[PREM] + cond_cf[C_BOC] +
     discount_1c * (cond_cf[C_EOC] +  prob[QX] * cond_cf[QX]
                    + prob[SX] * cond_cf[SX] + prob[PX] * (cond_cf[PX] + tpg))
+end
+
+function tpgprev(tpg::Float64,
+                 prob::Vector{Float64},
+                 discount_1c::Float64,
+                 cond_cf::Vector{Float64},
+                 inv_cost_rel::Float64,
+                 inv_cost_abs::Float64,)
+  (cond_cf[PREM] + cond_cf[C_BOC] +
+     discount_1c * (cond_cf[C_EOC] +  inv_cost_abs + prob[QX] * cond_cf[QX] +
+                      prob[SX] * cond_cf[SX] + prob[PX] * (cond_cf[PX] + tpg))) /
+    (1 - discount_1c * inv_cost_rel)
 end
 
 

@@ -1,7 +1,7 @@
 # Constructors -----------------------------------------------------------------
 function SIILifeCost()
   tf = TimeFrame()
-  shock_type = :Buckets
+  shock_type = :InvestBuckets
   balance = DataFrame()
   shock_cost = 0.0
   shock_infl = 0.0
@@ -36,20 +36,28 @@ function shock!(me::SIILifeCost,
                 dyn::Dynamic)
   me.balance = me.balance[me.balance[:SCEN] .== :be, :]
   add!(me, :COST, capmkt_be, invest_dfs, buckets, oth_be, dyn,
-       (sii_cost, bkts) -> costshock!(bkts, sii_cost) )
+       (sii_cost, inv, bkts) -> costshock!!(inv, bkts, sii_cost) )
   return me
 end
 
 ## Private ---------------------------------------------------------------------
 
-function costshock!(me::Buckets, cost::SIILifeCost)
-  shock_boc = (1+cost.shock_cost) * exp([0:me.n_c-1] * cost.shock_infl)
+function costshock!!(inv::Invest, bkts::Buckets, cost::SIILifeCost)
+  n_p = inv.cap_mkt.tf.n_p
+  n_c = inv.cap_mkt.tf.n_c
+  shock_boc = (1 + cost.shock_cost) * exp([0:n_c-1] * cost.shock_infl)
   shock_eoc = shock_boc * exp(cost.shock_infl)
-  for bkt in me.all
-    bkt.cond[:,C_BOC] .*= shock_boc[1:bkt.n_c]
-    bkt.cond[:,C_EOC] .*= shock_eoc[1:bkt.n_c]
-    bkt.cond_nb[:,C_BOC] .*= shock_boc[1:bkt.n_c]
-    bkt.cond_nb[:,C_EOC] .*= shock_eoc[1:bkt.n_c]
+  shock_eop =
+    (1 + cost.shock_cost * n_c/n_p) * exp([1:n_p]* cost.shock_infl * n_c/n_p)
+  for inv_group in inv.ig
+    inv_group.cost.abs .*= shock_eop
+    inv_group.cost.rel .*= shock_eop
+  end
+  for bkt in bkts.all
+    bkt.cond[:,C_BOC] .*= shock_boc[1:n_c]
+    bkt.cond[:,C_EOC] .*= shock_eoc[1:n_c]
+    bkt.cond_nb[:,C_BOC] .*= shock_boc[1:n_c]
+    bkt.cond_nb[:,C_EOC] .*= shock_eoc[1:n_c]
   end
 end
 

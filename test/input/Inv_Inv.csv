@@ -1,4 +1,4 @@
-ig_name,ig_type,proc_name,ig_target
-riskfree_bonds,IGRiskfreeBonds,ShortRate,0.5
-stocks,IGStocks,Stocks,0.3
-cash,IGCash,ShortRate,0.2
+ig_name,ig_type,proc_name,ig_target,cost_norm_rel_c,cost_norm_abs_c,cost_infl_rel_c,cost_infl_abs_c
+riskfree_bonds,IGRiskfreeBonds,ShortRate,0.5,0.0,0.0,0.0,0.0
+stocks,IGStocks,Stocks,0.3,0.0,0.0,0.0,0.0
+cash,IGCash,ShortRate,0.2,0.0,0.0,0.0,0.0

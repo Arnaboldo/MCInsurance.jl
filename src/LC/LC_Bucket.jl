@@ -4,7 +4,7 @@
 
 # Buckets: Minimal constructor (empty list)
 function Buckets(tf::TimeFrame)
-  Buckets( 0, 0, Array(Bucket,0), tf)
+  Buckets( 0, 0, Array(Bucket,0), tf, Array(Float64, 0), Array(Float64, tf.n_p))
 end
 
 # Buckets: Standard constructor
@@ -13,24 +13,48 @@ function Buckets(lc::LC,
                  df_prod::DataFrame,
                  df_load::DataFrame,
                  df_qx::DataFrame,
-                 df_interest::DataFrame)
-  buckets = Buckets(tf)
-  buckets.n_c =
-    max(maximum(lc.all[:,:dur] - (buckets.tf.init .- lc.all[:, :y_start ])),
-        tf.n_c)
+                 df_interest::DataFrame,
+                 going_concern::Bool = false)
+  bkts = Buckets(tf)
+  bkts.n_c =
+    max(maximum(lc.all[:,:dur] - (bkts.tf.init .- lc.all[:, :y_start])), tf.n_c)
   for i = 1:lc.n
-    add!(buckets,1, lc, i, df_prod, df_load, df_qx,
-         df_interest, true)
+    add!(bkts,1, lc, i, df_prod, df_load, df_qx, df_interest, true)
   end
-  buckets
+
+  ## calculate bkts.portion_c in any case
+  bkts.gc_c = zeros(Float64, bkts.n_c)
+  for bkt in bkts.all
+    bkt.portion_c = zeros(Float64, bkt.n_c)
+    bkt.portion_c[1:bkt.dur] += cumprod(bkt.prob_be[1:bkt.dur,PX]) * bkt.n
+    bkts.gc_c[1:bkt.dur] .+= bkt.portion_c[1:bkt.dur]
+  end
+  for bkt in bkts.all
+    bkt.portion_c ./= max(eps(), bkts.gc_c[1:bkt.n_c])
+  end
+  if going_concern
+    bkts.gc_c /= bkts.gc_c[1]
+    ## factor for vectors with respect to periods until end of projection
+    bkts.gc_p = zeros(Float64, tf.n_p)
+    for t = 1:(tf.n_c-1)
+      bkts.gc_p[(t-1) * tf.n_dt + 1:t * tf.n_dt] .+=
+      linspace(bkts.gc_c[t], bkts.gc_c[t+1], tf.n_dt)
+    end
+    bkts.gc_p[(tf.n_c-1) * tf.n_dt + 1:tf.n_c * tf.n_dt] .+=
+    linspace(bkts.gc_c[tf.n_c], 0.0, tf.n_dt)
+  else
+    bkts.gc_c = ones(Float64, bkts.n_c)
+    bkts.gc_p = ones(Float64, tf.n_p)
+  end
+  return bkts
 end
 
 function Buckets(tf::TimeFrame, all::Array{Bucket, 1})
-  buckets = Buckets(tf)
-  buckets.all = deepcopy(all)
-  buckets.n = length(all)
+  bkts = Buckets(tf)
+  bkts.all = deepcopy(all)
+  bkts.n = length(all)
   for bkt in all
-    buckets.n_c = max(buckets.n_c, bkt.n_c)
+    bkts.n_c = max(bkts.n_c, bkt.n_c)
   end
 end
 
@@ -73,7 +97,7 @@ function add!(me::Buckets,
   b = getind(me, cat)
   ## prepare data for bucket
   dur = max(lc.all[i, :dur]- (me.tf.init-lc.all[i, :y_start]),
-            b == 0 ? 0 : me.all[b].n_c )
+            b == 0 ? 0 : me.all[b].dur )
   n_c = max(dur, me.tf.n_c)
   tf_cond = TimeFrame(me.tf.init, me.tf.init+n_c )
   ## Make sure that inflation is calculated with respect to me.tf.init
@@ -128,7 +152,9 @@ function add!(me::Buckets,
     push!(me.all, Bucket(1, n_c, dur, cat, cond, cond_nb,
                          tpg_price, tpg_price_init,
                          prob_be, cond[:,SX], 1.0, 1.0, 0.0,
-                         Dict{Symbol,Bool}(), false))
+                         ones(Float64, n_c),
+                         Dict{Symbol,Bool}(),
+                         false))
   else
     merge!(me, b, n_c, cat, cond, cond_nb, tpg_price, tpg_price_init, prob_be)
   end

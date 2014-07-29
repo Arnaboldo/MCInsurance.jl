@@ -7,20 +7,23 @@ function balance_det_init(me::SIIModule,
                  capmkt::CapMkt,
                  invest_dfs::Any,
                  buckets::Buckets,
-                 oth::Other,
+                 other::Other,
                  dyn::Dynamic,
                  shock!!::Any)
 
   fluct = Fluct(capmkt.tf, capmkt.n_mc, 1.0)
   cpm = deepcopy(capmkt)
   bkts = deepcopy(buckets)
+  oth = deepcopy(other)
   if (shock!! == nothing)
-    inv = Invest([:sii_inv, cpm, invest_dfs]...)
+    inv = Invest([:sii_inv, cpm, invest_dfs]..., bkts.n_c)
   else
     if me.shock_type == :CapMkt   shock!!(me, cpm) end
-    inv = Invest([:sii_inv, cpm, invest_dfs]...)
+    inv = Invest([:sii_inv, cpm, invest_dfs]..., bkts.n_c
+                 )
     if me.shock_type == :Invest   shock!!(me, inv) end
     if me.shock_type == :Buckets  shock!!(me, bkts) end
+    if me.shock_type == :InvestBuckets  shock!!(me, inv, bkts) end
   end
 
   cfl = CFlow(bkts, inv, oth, fluct, dyn)

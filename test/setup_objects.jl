@@ -9,16 +9,18 @@ tf =  TimeFrame(df_general[1, :tf_y_start], df_general[1, :tf_y_end],
 cap_mkt  = CapMkt(:cap_mkt_rn, tf, n_mc, df_capmkt_1, df_capmkt_2)
 cap_mkt_det  = CapMkt(:cap_mkt_det, tf, 1, df_capmkt_1, df_capmkt_2)
 
-invest = Invest(:invest_rn, cap_mkt, df_general,
-                df_inv_inv, df_inv_init, df_inv_asset)
-invest_det = Invest(:invest_det, cap_mkt_det,
-                    df_general, df_inv_inv, df_inv_init, df_inv_asset)
 
 
 lc  = LC(df_lc_lc, df_lc_ph, df_lc_prod, df_lc_load,
          df_lc_qx, df_lc_interest, tf)
 
 buckets  = Buckets(lc, tf, df_lc_prod, df_lc_load, df_lc_qx, df_lc_interest)
+
+invest = Invest(:invest_rn, cap_mkt, df_general,
+                df_inv_inv, df_inv_init, df_inv_asset, buckets.n_c)
+invest_det = Invest(:invest_det, cap_mkt_det,
+                    df_general, df_inv_inv, df_inv_init, df_inv_asset, buckets.n_c)
+
 
 ## customize Bucket:
 type BucketHook

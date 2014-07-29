@@ -1,9 +1,15 @@
 ## Constructors ----------------------------------------------------------------
 ## Minimal constructor
 function IGCash(name::Symbol,
+                tf::TimeFrame,
                 proc::ProcessShortRate,
                 inv_init::DataFrame,
-                n::Int
+                n::Int,
+                cost_norm_rel::Vector{Float64},
+                cost_norm_abs::Vector{Float64},
+                cost_infl_rel::Vector{Float64},
+                cost_infl_abs::Vector{Float64},
+                n_c::Int = tf.n_c
                 )
   asset =         convert(Array{Symbol,1}, [inv_init[1,:cpnt]])
   mv_init =       zeros(Float64,  n )
@@ -14,6 +20,8 @@ function IGCash(name::Symbol,
   rating =        fill!(Array(Symbol, n ), :na)
   sii_risk =      fill!(Array(Symbol, n ), :na)
 
+  cost =  InvestCost(tf, cost_norm_rel, cost_norm_abs,
+                     cost_infl_rel, cost_infl_abs, n_c)
 
   mv_total_init = 0
   for k = 1:nrow(inv_init)
@@ -21,12 +29,11 @@ function IGCash(name::Symbol,
   end
   counter_party = counterparty(inv_init)
 
+  sii_risk[1] =  inv_init[1, :sii_risk]
 
-   sii_risk[1] =  inv_init[1, :sii_risk]
-
-  IGCash(name, proc, asset, n,
+  IGCash(name, tf, proc, asset, n,
          mv_init, mv_total_init, mv_eop, mv_total_eop, cash_eop,
-         mv_alloc_bop, counter_party, sii_risk)
+         mv_alloc_bop, counter_party, sii_risk, cost)
 end
 
 

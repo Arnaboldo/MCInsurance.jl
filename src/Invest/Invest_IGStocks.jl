@@ -1,10 +1,16 @@
 ## Constructors --------------------------------------------------
 
 ## Minimal constructor
-function IGStocks( name::Symbol,
+function IGStocks(name::Symbol,
+                  tf::TimeFrame,
                   proc::ProcessIndex,
                   inv_init::DataFrame,
-                  n::Int
+                  n::Int,
+                  cost_norm_rel::Vector{Float64},
+                  cost_norm_abs::Vector{Float64},
+                  cost_infl_rel::Vector{Float64},
+                  cost_infl_abs::Vector{Float64},
+                  n_c::Int = tf.n_c
                   )
   asset = proc.cpnt
   mv_init =       zeros(Float64, n )
@@ -14,6 +20,10 @@ function IGStocks( name::Symbol,
   mv_alloc_bop =  zeros(Float64, n )
   sii_risk =      array(inv_init[:, :sii_risk])
   amount_bop =    zeros(Float64, n )
+
+  cost =
+    InvestCost(tf, cost_norm_rel, cost_norm_abs,
+               cost_infl_rel, cost_infl_abs, n_c)
 
   amount_init = zeros(Float64, n)
   for j=1:n, k=1:nrow(inv_init)
@@ -27,9 +37,9 @@ function IGStocks( name::Symbol,
   counter_party = counterparty(inv_init)
 
 
-  IGStocks(name, proc, asset, n,
+  IGStocks(name, tf, proc, asset, n,
            mv_init, mv_total_init, mv_eop, mv_total_eop,
-           cash_eop, mv_alloc_bop, counter_party, sii_risk, amount_bop )
+           cash_eop, mv_alloc_bop, counter_party, sii_risk, cost, amount_bop )
 end
 
 ## Interface -------------------------------------------------------------------

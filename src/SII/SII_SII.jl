@@ -11,11 +11,15 @@ function SII(buckets::Buckets,
   capmkt_be = CapMkt([:be, tf, 1, capmkt_dfs]...)
   bkts_be = deepcopy(buckets)
   oth_be = deepcopy(other)
-  for so in oth_be.debt_subord # SII liabiities ignore subordinated debt
-    so.nominal = 0.0
-    so.interest = 0.0
-  end
-  invest_be = Invest([:be, capmkt_be, invest_dfs]...)
+#   for so in oth_be.debt_subord # SII liabiities ignore subordinated debt
+#     so.t_init = 1
+#     so.t_final = 1
+#     so.nominal = 0.0
+#     so.interest = 0.0
+#   end
+  oth_be.debt_subord = Array(Debt, 0)
+  oth_be.finance_subord = emptyfinance()
+  invest_be = Invest([:be, capmkt_be, invest_dfs]..., bkts_be.n_c)
   ## initialize dyn prior to any shock so that shock impacts dynamic rules
   dyn = Dynamic([invest_be, buckets, oth_be, dyn_dfs]...)
 

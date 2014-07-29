@@ -8,7 +8,8 @@ function Invest(name::Symbol,
                 ig_target::Vector{Float64},
                 n_mean_mc::Int,
                 n_mean_c::Int,
-                n_mean_grid::Int
+                n_mean_grid::Int,
+                n_c::Int = cap_mkt.tf.n_c
                 )
   n_ig =            length(info)
   ig =              Array(IG, n_ig)
@@ -49,9 +50,16 @@ function Invest(name::Symbol,
     end
     asset_target[i] /= max(eps(), sum(asset_target[i]))
     ig[i] = eval(info[i].ig_type)(info[i].ig_name,
+                                  info[i].tf,
                                   cap_mkt.proc[ind_proc],
                                   info[i].inv_init,
-                                  n )
+                                  n,
+                                  info[i].cost_rel,
+                                  info[i].cost_abs,
+                                  info[i].cost_infl_rel,
+                                  info[i].cost_infl_abs,
+                                  n_c
+                                  )
   end
 
   mv_total_init = mvtotalinit(ig)
@@ -76,18 +84,23 @@ function Invest(name::Symbol,
                 df_general::DataFrame,
                 df_inv::DataFrame,
                 df_inv_inv_init::DataFrame,
-                df_inv_target::DataFrame)
+                df_inv_target::DataFrame,
+                n_c::Int = cap_mkt.tf.n_c
+               )
   invest_info = Array(InvestInfo, nrow(df_inv))
   ig_target = Array(Float64, nrow(df_inv))
   for i = 1:nrow(df_inv)
     invest_info[i] = InvestInfo(symbol(df_inv[i, :ig_name]),
-                                df_inv, df_inv_inv_init, df_inv_target)
+                                cap_mkt.tf,
+                                df_inv, df_inv_inv_init, df_inv_target
+                                )
     ig_target[i] = df_inv[i,:ig_target]
   end
   Invest(name, cap_mkt, invest_info, ig_target,
          df_general[1, :n_mean_mc],
          df_general[1, :n_mean_c],
-         df_general[1, :n_mean_grid], )
+         df_general[1, :n_mean_grid],
+         n_c)
 end
 
 
@@ -118,6 +131,8 @@ function project!(me::Invest,
   mv_bop = mv_total_bop * me.alloc.ig_target
   me.mv_total_eop[mc,t] = 0
   for i = 1:me.n
+    me.ig[i].cost.total[t] =
+      me.ig[i].cost.abs[t] + me.ig[i].cost.rel[t] * mv_bop[i]
     me.ig[i].mv_alloc_bop = mv_bop[i] * me.alloc.asset_target[i]
     project!(me.ig[i], mc, t)
     me.mv_total_eop[mc,t] += me.ig[i].mv_total_eop[mc,t]
@@ -126,6 +141,22 @@ function project!(me::Invest,
 end
 
 
+function costs(me::Invest, cycle::Int)
+  inv_costs = 0.0
+  for d = 1:me.cap_mkt.tf.n_dt
+    for inv_group in me.ig
+      inv_costs += inv_group.cost.total[me.cap_mkt.tf.n_dt*(cycle-1) + d]
+    end
+  end
+  return inv_costs
+end
+
+function goingconcern!(me::Invest,
+                       gc_p::Vector{Float64})
+  for i = 1:me.n
+    me.ig[i].cost.abs .*= gc_p
+  end
+end
 
 
 ## Private ---------------------------------------------------------------------

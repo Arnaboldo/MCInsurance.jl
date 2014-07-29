@@ -1,6 +1,6 @@
 export IGStocks, IGRiskfreeBonds, IGCash, Invest, InvestAlloc, project!
 export InvestInfo
-export meandiscrf
+export meandiscrf, goingconcern!, prepend_c
 
 ## Investment Groups: IG #########################################
 ## Investment groups may differ from asset groups as one
@@ -8,12 +8,29 @@ export meandiscrf
 ## example would be a ShortRate that drives both investments in
 ## bonds and in cash.
 
-abstract IG
 
+type InvestCost
+#   norm_rel_c::Vector{Float64}       ## costs relative to investment volumen (mv)
+#   norm_abs_c::Vector{Float64}       ## absolute costs per period
+#   norm_rel::Vector{Float64}         ## costs relative to investment volumen (mv)
+#   norm_abs::Vector{Float64}         ## absolute costs per period
+#   infl_rel_c::Vector{Float64}       ## inflation for relative costs
+#   infl_abs_c::Vector{Float64}       ## inflation for absolute costs
+#   infl_rel::Vector{Float64}         ## inflation for relative costs
+#   infl_abs::Vector{Float64}         ## inflation for absolute costs
+  rel_c::Vector{Float64}            ## relative costs per cycle incl. inflation
+  abs_c::Vector{Float64}            ## absolute costs per cycle incl. inflation
+  rel::Vector{Float64}              ## relative costs per period incl. inflation
+  abs::Vector{Float64}              ## absolute costs per period incl. inflation
+  total::Vector{Float64}            ## total costs per period
+end
+
+abstract IG
 
 type IGStocks <: IG
   ## constructor
   name::Symbol                      ## name of investment group
+  tf::TimeFrame                     ## same as capital market
   proc::ProcessIndex                ## stochastic process
   asset::Vector{Any}                ## assets in IG ( = proc.cpnt)
   n::Int                            ## # assets incl. durations
@@ -26,6 +43,7 @@ type IGStocks <: IG
   mv_alloc_bop::Vector{Float64}     ## market value beg. of pd.
   counter_party::DataFrame
   sii_risk::Vector{Symbol}
+  cost::InvestCost                  ## investment costs
   ## internal
   amount_bop::Array{Float64,1}      ## number of shares
 end
@@ -33,6 +51,7 @@ end
 type IGRiskfreeBonds <: IG
   ## constructor
   name::Symbol                      ## name of investment group
+  tf::TimeFrame                     ## same as capital market
   proc::ProcessShortRate            ## stochastic process
   asset::Vector{Any}                ## assets in IG ( = duration in periods)
   n::Int                            ## # assets incl. durations
@@ -45,6 +64,7 @@ type IGRiskfreeBonds <: IG
   mv_alloc_bop::Vector{Float64}     ## market value beg. of pd.
   counter_party::DataFrame
   sii_risk::Vector{Symbol}
+  cost::InvestCost                  ## investment costs
   ## internal
   riskfree_bop::Vector{Float64}     ## riskfree int. curve
   amount_init::Vector{Float64}      ## initial nominal values
@@ -60,6 +80,7 @@ end
 type IGCash <: IG
   ## constructor
   name::Symbol                      ## name investment group
+  tf::TimeFrame                     ## same as capital market
   proc::ProcessShortRate            ## stochastic process
   asset::Vector{Any}                ## assets in IG ( = proc.cpnt)
   n::Int                            ## # assets incl. durations
@@ -72,17 +93,23 @@ type IGCash <: IG
   mv_alloc_bop::Vector{Float64}     ## market value bop
   counter_party::DataFrame
   sii_risk::Vector{Symbol}
+  cost::InvestCost                  ## investment costs
   ## internal
 end
 
 type InvestInfo   ## information for setting up Invest -------------------------
   ig_name::Symbol                      ## name of investment group
   ig_type::Symbol                      ## type of investment
+  tf::TimeFrame                        ## same as capital market
   proc_name::Symbol                    ## name of associated stochastic process
   inv_init::DataFrame                  ## initial portfolio
   asset::Vector{Any}                   ## identifies assets in asset_xxx below
   asset_target::Vector{Float64}        ## asset allocation within ig
   asset_mkt_benchmark::Vector{Float64} ## percentage of market benchmark
+  cost_rel::Vector{Float64}            ## relative investment costs
+  cost_abs::Vector{Float64}            ## absolute investment costs
+  cost_infl_rel::Vector{Float64}       ## inflation for rel investment costs
+  cost_infl_abs::Vector{Float64}       ## inflation for abs investment costs
 end
 
 type MktC         ## mkt indicators per cycle (not period!) --------------------
@@ -90,7 +117,7 @@ type MktC         ## mkt indicators per cycle (not period!) --------------------
   yield_rf_init::Float64               ## initial cash yield per cycle
   yield_rf_eoc::Array{Float64,2}       ## cash yield per cycle
   yield_grid_rf::Array{Float64,2}      ## grid for interpolation
-  mean_disc_rf::Array{Float64, 3}  ## expected cumul. riskfree discount
+  mean_disc_rf::Array{Float64, 3}      ## expected cumul. riskfree discount
 end
 
 type InvestAlloc  ## asset allocation ------------------------------------------

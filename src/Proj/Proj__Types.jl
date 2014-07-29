@@ -2,8 +2,8 @@
 export  DELTA_TPG, BONUS, INVEST, OTHER, DIVID
 export TPG_EOC, OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
 export Fluct
-export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit, balance_det_init
-export balance_det
+export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit
+export balance_det_init, balance_det
 export Dynamic, getprob
 
 const DELTA_TPG, BONUS, INVEST, OTHER, DIVID = 7:11
@@ -26,6 +26,7 @@ type Fluct
   fac::Array{Float64,3}         ## factors representing fluctuation
   d::Dict{Int,Int}              ## convenience to access factors
 end
+
 
 type CFlow
   n_mc::Int64                     ## # monte carlo scenarios

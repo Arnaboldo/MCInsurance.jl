@@ -93,16 +93,16 @@ end
 
 function sxshock!(bkt::Bucket, b::Int,
                   sx::SIILifeSX, shockfunc::Function, sm::Symbol)
-    bkt.prob_be[:,SX] = shockfunc( bkt.prob_be[:,SX])
-    if sm == :SX_MASS
-      if sx.bkt_select[:SX_PENSION][b]
-        bkt.prob_be[1,SX] = sx.shock_mass_pension
-      else
-        bkt.prob_be[1,SX] = sx.shock_mass
-      end
+  bkt.prob_be[:,SX] = shockfunc( bkt.prob_be[:,SX])
+  if sm == :SX_MASS
+    if sx.bkt_select[:SX_PENSION][b]
+      bkt.prob_be[1,SX] = sx.shock_mass_pension
+    else
+      bkt.prob_be[1,SX] = sx.shock_mass
     end
-    bkt.prob_be[:,QX] = min(1 .- bkt.prob_be[:,SX], bkt.prob_be[:,QX])
-    bkt.prob_be[:,PX] =  1.0 .- bkt.prob_be[:,QX] - bkt.prob_be[:,SX]
+  end
+  bkt.prob_be[:,QX] = min(1 .- bkt.prob_be[:,SX], bkt.prob_be[:,QX])
+  bkt.prob_be[:,PX] =  1.0 .- bkt.prob_be[:,QX] - bkt.prob_be[:,SX]
 end
 
 ## identify those buckets that are subject to mortality risk (fast version)
@@ -117,7 +117,7 @@ function select!(me::SIILifeSX,
   ## result should be the same as the result from an exact calculation.
   ## speed: ~ buckets.n
 
-  invest = Invest([:sii_inv, capmkt_be, invest_dfs]...)
+  invest = Invest([:sii_inv, capmkt_be, invest_dfs]..., bkts.n_c)
   discount = meandiscrf(invest.c, invest.c.yield_rf_init, 1, bkts.n_c)
 
   for sm in me.sub_modules
@@ -128,16 +128,18 @@ function select!(me::SIILifeSX,
   for (b, bkt) in enumerate(bkts.all)
     tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
                      vcat(1.0, discount),
-                     vcat(zeros(Float64, 1, N_COND), bkt.cond)
-                     )
+                     vcat(zeros(Float64, 1, N_COND), bkt.cond),
+                     prepend_c(invest.ig[invest.id[:cash]].cost, [0.0, 0.0]),
+                     vcat(0, bkt.portion_c))
     ## fixme: currently :SX_PENSION contracts are not implemented.
     for sm in me.sub_modules
       bkt_test = deepcopy(bkt)
       sxshock!(bkt_test, b, me, sxshockfunction(me, sm), sm)
       tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_be),
                           vcat(1.0, discount),
-                          vcat(zeros(Float64, 1, N_COND), bkt_test.cond)
-                          )
+                          vcat(zeros(Float64, 1, N_COND), bkt_test.cond),
+                          prepend_c(invest.ig[invest.id[:cash]].cost, [0.0, 0.0]),
+                          vcat(0, bkt.portion_c))
       me.bkt_select[sm][b] = (tpg_shock < tpg_be)
     end
   end

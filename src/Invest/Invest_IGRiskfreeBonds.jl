@@ -1,9 +1,16 @@
 ## Constructors ----------------------------------------------------------------
 ## Minimal constructor
 function IGRiskfreeBonds(name::Symbol,
+                         tf::TimeFrame,
                          proc::ProcessShortRate,
                          inv_init::DataFrame,
-                         n::Int   )
+                         n::Int,
+                         cost_norm_rel::Vector{Float64},
+                         cost_norm_abs::Vector{Float64},
+                         cost_infl_rel::Vector{Float64},
+                         cost_infl_abs::Vector{Float64},
+                         n_c::Int = tf.n_c
+                         )
   asset = [1:n]
 
   mv_init =          zeros(Float64, n )
@@ -23,6 +30,11 @@ function IGRiskfreeBonds(name::Symbol,
   mv_normbond_init = zeros(Float64, n )
   mv_normbond_curr = zeros(Float64, n )
 
+  cost =
+    InvestCost(tf, cost_norm_rel, cost_norm_abs,
+               cost_infl_rel, cost_infl_abs, n_c)
+
+
   for j=1:n, k=1:nrow(inv_init)
     if inv_init[k, :asset_dur] == j  ## duration
       coupon_init[j] += inv_init[k, :asset_coupon] * inv_init[k, :mv_init]
@@ -39,7 +51,7 @@ function IGRiskfreeBonds(name::Symbol,
       sum(exp( -riskfree_bop[1:j] .* [1:j]))
     mv_normbond_init[j] =
       coupon_init[j] * mv_normcf_init[j] +
-        exp( - riskfree_bop[j] * j )
+      exp( - riskfree_bop[j] * j )
   end
   mv_init = amount_init .* mv_normbond_init
   # At beginning of first period we have not yet generated cash:
@@ -48,9 +60,9 @@ function IGRiskfreeBonds(name::Symbol,
   counter_party = counterparty(inv_init)
 
 
-  IGRiskfreeBonds(name, proc, asset, n,
+  IGRiskfreeBonds(name, tf, proc, asset, n,
                   mv_init, mv_total_init, mv_eop, mv_total_eop,
-                  cash_eop, mv_alloc_bop, counter_party, sii_risk,
+                  cash_eop, mv_alloc_bop, counter_party, sii_risk, cost,
                   riskfree_bop,
                   amount_init, amount_curr,
                   coupon_init, coupon_curr,
@@ -103,7 +115,7 @@ function mvnormbond!(me::IGRiskfreeBonds)
   for j = 1:me.n
     me.mv_normbond_curr[j] =
       me.coupon_curr[j] * me.mv_normcf_curr[j] +
-        exp( - j * me.riskfree_bop[j] )
+      exp( - j * me.riskfree_bop[j] )
   end
 end
 

@@ -10,24 +10,23 @@ function CFlow(tf::TimeFrame, n_mc::Int)
   CFlow(n_mc, n_cf, n_v, tf, cf, v_0, v, discount_init)
 end
 
-function CFlow(buckets::Buckets,
-               invest::Invest,
-               other::Other,
-               fluct::Fluct,
-               dyn::Dynamic )
-  cflow = CFlow(buckets.tf, invest.cap_mkt.n_mc)
-  cflow.v_0 = vinit(invest, buckets, other)
+function CFlow(bkts::Buckets,
+                 invest::Invest,
+                 other::Other,
+                 fluct::Fluct,
+                 dyn::Dynamic)
+  cflow = CFlow(bkts.tf, invest.cap_mkt.n_mc)
+  cflow.v_0 = vinit(invest, bkts, other)
   cflow.discount_init =
-    meandiscrf(invest.c, invest.c.yield_rf_init, 1, buckets.n_c)
+    meandiscrf(invest.c, invest.c.yield_rf_init, 1, bkts.n_c)
   for mc = 1:cflow.n_mc
     for t = 1:cflow.tf.n_c
-      discount = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], t, buckets.n_c)
-      projectcycle!(cflow, mc, t, buckets, invest, other, fluct, discount, dyn)
+      discount = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], t, bkts.n_c)
+      projectcycle!(cflow, mc, t, bkts, invest, other, fluct, discount, dyn)
     end
   end
   cflow
 end
-
 
 ## Interface -------------------------------------------------------------------
 
@@ -38,34 +37,6 @@ function ==(cflow1::CFlow, cflow2::CFlow)
     cflow1.cf == cflow2.cf &&
     cflow1.v_0 == cflow2.v_0 &&
     cflow1.v == cflow2.v
-end
-
-
-function vinit(invest::Invest,
-               buckets::Buckets,
-               other::Other)
-  # Returns the initial balance sheet *without* accounting for
-  # the value of future discretionary benefits.
-  # They are implicitly included in SURPLUS_EOC
-  discount = meandiscrf(invest.c,invest.c.yield_rf_init, 1, buckets.n_c)
-  v_0 = zeros(Float64, 1, 1, length(col_V))
-  v_0[1,1,CYCLE] = buckets.tf.init - 1
-  v_0[1,1,TPG_EOC] = 0.0
-  for bkt in buckets.all
-    ## the first row is only used in discount -> discount_1c, so prepending
-    ## 1 gives the correct discount_1c.
-    ## The length of the vector forces tpgeoc to calculate the provisions
-    ## at the end of the cycle prior to tf.init.
-    v_0[1,1,TPG_EOC]  += tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
-                                vcat(1.0, discount),
-                                vcat(zeros(Float64, 1, N_COND),
-                                     bkt.cond )) #- bkt.cond_nb))
-  end
-  v_0[1,1,OTHER_EOC] = pvboc(other,1,discount)
-  v_0[1,1,ASSET_EOC] = invest.mv_total_init
-  v_0[1,1,SURPLUS_EOC] =
-    v_0[1,1,ASSET_EOC] + v_0[1,1,TPG_EOC] + v_0[1,1,OTHER_EOC]
-  return v_0
 end
 
 function dfcf(me::CFlow, mc::Int, prec::Int=-1)
@@ -154,6 +125,35 @@ end
 
 ## Private ---------------------------------------------------------------------
 
+function vinit(invest::Invest,
+               buckets::Buckets,
+               other::Other)
+  # Returns the initial balance sheet *without* accounting for
+  # the value of future discretionary benefits.
+  # They are implicitly included in SURPLUS_EOC
+  discount = meandiscrf(invest.c,invest.c.yield_rf_init, 1, buckets.n_c)
+  v_0 = zeros(Float64, 1, 1, length(col_V))
+  v_0[1,1,CYCLE] = buckets.tf.init - 1
+  v_0[1,1,TPG_EOC] = 0.0
+  for bkt in buckets.all
+    ## the first row is only used in discount -> discount_1c, so prepending
+    ## 1 gives the correct discount_1c.
+    ## The length of the vector forces tpgeoc to calculate the provisions
+    ## at the end of the cycle prior to tf.init.
+    v_0[1,1,TPG_EOC]  +=
+      tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
+             vcat(1.0, discount),
+             vcat(zeros(Float64, 1, N_COND), bkt.cond), #- bkt.cond_nb
+             prepend_c(invest.ig[invest.id[:cash]].cost, [0.0, 0.0]),
+             vcat(0, bkt.portion_c))
+  end
+  v_0[1,1,OTHER_EOC] = pvboc(other,1,discount)
+  v_0[1,1,ASSET_EOC] = invest.mv_total_init
+  v_0[1,1,SURPLUS_EOC] =
+    v_0[1,1,ASSET_EOC] + v_0[1,1,TPG_EOC] + v_0[1,1,OTHER_EOC]
+  return v_0
+end
+
 function projectcycle!(me::CFlow,
                        mc::Int,
                        t::Int,
@@ -162,17 +162,19 @@ function projectcycle!(me::CFlow,
                        other::Other,
                        fluct::Fluct,
                        discount::Vector{Float64},
-                       dyn::Dynamic,
+                       dyn::Dynamic
                        )
   me.v[mc,t,CYCLE] = me.tf.init - 1 + t
   for bkt in buckets.all
     bucketprojectboc!(me, bkt, fluct, mc, t)
   end
-  investeoc!(me, invest, mc, t, dyn)
+  new_debt = getdebt!(other, t)
+  investeoc!(me, invest, mc, t, new_debt, dyn)
+  me.cf[mc,t,C_EOC] +=  costs(invest,t)
   me.cf[mc, t, OTHER] += paydebt(other, t)
   me.v[mc, t, OTHER_EOC] += pveoc(other, t, discount)
-  for bucket in buckets.all
-    bucketprojecteoc!(me, bucket, fluct, invest, discount, mc, t, dyn)
+  for bkt in buckets.all
+    bucketprojecteoc!(me, bkt, fluct, invest, discount, mc, t, dyn)
   end
   if t == 1
     me.cf[mc, t, DELTA_TPG] = me.v[mc, t, TPG_EOC] - me.v_0[1, 1, TPG_EOC]
@@ -205,8 +207,10 @@ function investeoc!(me::CFlow,
                     invest::Invest,
                     mc::Int,
                     t::Int,
+                    new_debt::Float64,
                     dyn::Dynamic)
   mv_bop = (t == 1 ? me.v_0[1,1,ASSET_EOC] : me.v[mc,t-1,ASSET_EOC])
+  mv_bop -= new_debt  ## new debt is negative but increases assets
   mv_bop += me.cf[mc,t,PREM] + me.cf[mc,t,C_BOC]
   mv_boc = mv_bop
   for t_p in ((t-1) * me.tf.n_dt+1):(t * me.tf.n_dt)
@@ -218,38 +222,39 @@ function investeoc!(me::CFlow,
 end
 
 function bucketprojecteoc!(me::CFlow,
-                           bucket::Bucket,
+                           bkt::Bucket,
                            fluct::Fluct,
                            invest::Invest,
                            discount::Vector{Float64},
                            mc::Int,
                            t::Int,
                            dyn::Dynamic)
-  prob = getprob(dyn, bucket, mc, t, invest, fluct)
-  bucket.lx_boc_next = bucket.lx_boc * prob[t,PX]
+  prob = getprob(dyn, bkt, mc, t, invest, fluct)
+  bkt.lx_boc_next = bkt.lx_boc * prob[t,PX]
   for X = (QX, SX, PX)
-    me.cf[mc,t,X] += bucket.lx_boc * prob[t,X] * bucket.cond[t,X]
+    me.cf[mc,t,X] += bkt.lx_boc * prob[t,X] * bkt.cond[t,X]
   end
   me.cf[mc,t,C_EOC] +=
-    bucket.lx_boc * fluct.fac[mc,t,fluct.d[C_EOC]] * bucket.cond[t,C_EOC]
+    bkt.lx_boc * fluct.fac[mc,t,fluct.d[C_EOC]] * bkt.cond[t,C_EOC]
   me.v[mc,t,TPG_EOC] +=
-    bucket.lx_boc * prob[t,PX] * tpgeoc(prob[ t:bucket.n_c, :],
-                                        discount[1:(bucket.n_c+1-t)],
-                                        bucket.cond[ t:bucket.n_c, :])
+    bkt.lx_boc * prob[t,PX] * tpgeoc(prob[ t:bkt.n_c, :],
+                                        discount[1:(bkt.n_c+1-t)],
+                                        bkt.cond[ t:bkt.n_c, :],
+                                        invest.ig[invest.id[:cash]].cost,
+                                        bkt.portion_c)
 end
 
 function bucketbonuseoc!(me::CFlow,
-                         bucket::Bucket,
+                         bkt::Bucket,
                          invest::Invest,
                          mc::Int,
                          t::Int,
                          dyn::Dynamic)
-  bucket.bonus_rate = dyn.bonusrate(mc, t, bucket, invest, dyn)
+  bkt.bonus_rate = dyn.bonusrate(mc, t, bkt, invest, dyn)
   if t == 1
-    me.cf[mc,t,BONUS] += bucket.bonus_rate * bucket.tpg_price_init
+    me.cf[mc,t,BONUS] += bkt.bonus_rate * bkt.tpg_price_init
   else
-    me.cf[mc,t,BONUS] +=
-      bucket.lx_boc * bucket.bonus_rate * bucket.tpg_price[t-1]
+    me.cf[mc,t,BONUS] +=  bkt.lx_boc * bkt.bonus_rate * bkt.tpg_price[t-1]
   end
 end
 

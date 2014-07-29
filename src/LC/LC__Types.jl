@@ -46,6 +46,7 @@ type Bucket
   lx_boc::Float64             ## current fraction of policy holders in-force
   lx_boc_next::Float64        ## next cycle fraction of policy holders in-force
   bonus_rate::Float64         ## current bonus rate
+  portion_c::Vector{Float64}  ## Factor per cycle, portion wrt whole portfolio
   ## for SII calculation
   select::Dict{Symbol,Bool}   ## selection indicator for various scenarios
                               ## which are defined via symbols
@@ -59,5 +60,7 @@ type Buckets
   n_c::Int                    ## max projection cycles in  buckets
   all::Array{Bucket,1}        ## Vector of buckets
   tf::TimeFrame               ## Corresponding TimeFrame
+  gc_c::Vector{Float64}       ## going concern: scaling factors per cycle
+  gc_p::Vector{Float64}       ## going concern: scaling factors per period
 end
 

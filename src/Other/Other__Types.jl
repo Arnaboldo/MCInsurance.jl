@@ -1,4 +1,4 @@
-export Other, pveoc, pvboc, paydebt, plandebt!, getdebt!
+export Other, pveoc, pvboc, paydebt, plandebt!, getdebt
 export Debt, goingconcern!
 
 type  Debt
@@ -10,9 +10,9 @@ end
 
 type Other
   debt_subord::Vector{Debt}
+#   debt_subord_plan::Vector{Debt}
   debt_regular::Vector{Debt}
-  finance_subord::DataFrame
-  finance_regular::DataFrame
+#   debt_regular_plan::Vector{Debt}
 end
 
 

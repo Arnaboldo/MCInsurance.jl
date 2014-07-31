@@ -20,9 +20,10 @@ function CFlow(bkts::Buckets,
   cflow.discount_init =
     meandiscrf(invest.c, invest.c.yield_rf_init, 1, bkts.n_c)
   for mc = 1:cflow.n_mc
+    other_mc = deepcopy(other)
     for t = 1:cflow.tf.n_c
       discount = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], t, bkts.n_c)
-      projectcycle!(cflow, mc, t, bkts, invest, other, fluct, discount, dyn)
+      projectcycle!(cflow, mc, t, bkts, invest, other_mc, fluct, discount, dyn)
     end
   end
   cflow
@@ -168,7 +169,7 @@ function projectcycle!(me::CFlow,
   for bkt in buckets.all
     bucketprojectboc!(me, bkt, fluct, mc, t)
   end
-  new_debt = getdebt!(other, t)
+  new_debt = getdebt(other, t)
   investeoc!(me, invest, mc, t, new_debt, dyn)
   me.cf[mc,t,C_EOC] +=  costs(invest,t)
   me.cf[mc, t, OTHER] += paydebt(other, t)

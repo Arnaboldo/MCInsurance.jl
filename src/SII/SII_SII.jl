@@ -18,7 +18,6 @@ function SII(buckets::Buckets,
 #     so.interest = 0.0
 #   end
   oth_be.debt_subord = Array(Debt, 0)
-  oth_be.finance_subord = emptyfinance()
   invest_be = Invest([:be, capmkt_be, invest_dfs]..., bkts_be.n_c)
   ## initialize dyn prior to any shock so that shock impacts dynamic rules
   dyn = Dynamic([invest_be, buckets, oth_be, dyn_dfs]...)

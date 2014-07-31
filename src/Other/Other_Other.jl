@@ -1,8 +1,6 @@
 ## Constructors ----------------------------------------------------------------
 function Other()
-  finance_subord = emptyfinance()
-  finance_regular = emptyfinance()
-  Other(Array(Debt, 0), Array(Debt, 0), finance_subord, finance_regular)
+  Other(Array(Debt, 0), Array(Debt, 0))
 end
 
 ## Interface  ------------------------------------------------------------------
@@ -32,42 +30,33 @@ function paydebt(me::Other, t::Int)
   return value
 end
 
-function getdebt!(me::Other, t::Int)
+function getdebt(me::Other, t::Int)
   v = 0.0
-  v += getdebt!(me.debt_subord, t, me.finance_subord)
-  v += getdebt!(me.debt_regular, t, me.finance_regular)
+  v += getdebt(me.debt_subord, t)
+  v += getdebt(me.debt_regular, t)
   return v
 end
 
 ## Private ---------------------------------------------------------------------
 
-function goingconcern!!(debt_vec::Vector{Debt},   ## changed
-                        finance::DataFrame,      ## changed
-                        gc_c::Vector{Float64})
-  gc = Array(Debt, 0)
-  for debt in debt_vec
-    push!(gc,
-          Debt(debt.t_init, max(1, debt.t_init), debt.nominal, debt.interest))
-
-    if debt.t_final > 1
-      for t = max(2,debt.t_init):debt.t_final
-        plandebt!(finance,
-                  t,
-                  t,
-                  gc_c[t] * debt.nominal,
-                  debt.interest)
-      end
+function goingconcern(me::Vector{Debt}, gc_c::Vector{Float64})
+  new_debt_vec = Array(Debt, 0)
+  for debt in me
+    t0 = max(1, debt.t_init)
+    diff_nom =
+      vcat(-diff(gc_c[t0:debt.t_final]), gc_c[debt.t_final]) * debt.nominal
+    for t = max(1, debt.t_init):debt.t_final
+      push!(new_debt_vec, Debt(debt.t_init,
+                               t,
+                               diff_nom[t],
+                               debt.interest))
     end
   end
-  debt_vec = deepcopy(gc)
+  return(new_debt_vec)
 end
 
 function goingconcern!(me::Other, gc_c::Vector{Float64})
-  goingconcern!!(me.debt_subord, me.finance_subord, gc_c)
-  goingconcern!!(me.debt_regular, me.finance_regular, gc_c)
+  me.debt_subord = goingconcern(me.debt_subord, gc_c)
+  me.debt_regular = goingconcern(me.debt_regular, gc_c)
 end
 
-function emptyfinance()
-  return DataFrame([Int, Int, Float64, Float64],
-                             [:t_init, :t_final, :nominal, :interest], 0)
-end

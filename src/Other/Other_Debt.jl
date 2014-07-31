@@ -30,12 +30,20 @@ function pvboc(me::Debt, t::Int, discount::Vector{Float64})
 end
 
 function pvboc(me::Vector{Debt}, t::Int, discount::Vector{Float64})
-  if length(me) > 0
-    return mapreduce(x -> pvboc(x, t, discount), +, me)
-  else
-    return 0.0
+  pv_boc = 0.0
+  for debt in me
+    pv_boc += pvboc(debt, t, discount)
+    ## index of discount reflects paymebt BOC rather than EOC.
+    ## Example: t_init = t+1 => no discount
+    if debt.t_init == t
+      pv_boc -= debt.nominal
+    elseif debt.t_init > t
+      pv_boc -= discount[debt.t_init - t] * debt.nominal
+    end
   end
+  return pv_boc
 end
+
 
 function pveoc(me::Debt, t::Int, discount::Vector{Float64})
   ##                             t                                     t_final
@@ -59,16 +67,21 @@ function pveoc(me::Debt, t::Int, discount::Vector{Float64})
 end
 
 function pveoc(me::Vector{Debt}, t::Int, discount::Vector{Float64})
-  if length(me) > 0
-    return mapreduce(x -> pveoc(x, t, discount), +, me)
-  else
-    return 0.0
+  pv_eoc = 0.0
+  for debt in me
+    pv_eoc += pveoc(debt, t, discount)
+    ## index of discount reflects paymebt BOC rather than EOC.
+    ## Example: t_init = t+1 => no discount
+    if debt.t_init > t
+      pv_eoc -= discount[debt.t_init - t] * debt.nominal / discount[1]
+    end
   end
+  return pv_eoc
 end
 
 function paydebt(me::Debt, t::Int)
   payment = 0.0
-  if t <= me.t_final && t >= me.t_init
+  if me.t_init <= t <= me.t_final
     payment += me.nominal * me.interest
   end
   if t == me.t_final
@@ -77,30 +90,16 @@ function paydebt(me::Debt, t::Int)
   return payment
 end
 
-function getdebt!(me::Vector{Debt}, t::Int, finance::DataFrame)
-  new_finance = finance[finance[:t_init] .== t, :]
-  new_debt_nominal = 0.0
-  for i = 1:nrow(new_finance)
-    new_debt =  Debt(t,
-                     new_finance[i, :t_final],
-                     new_finance[i, :nominal],
-                     new_finance[i, :interest])
-    push!(me, new_debt)
-    new_debt_nominal += new_finance[i, :nominal]
+function getdebt(me::Vector{Debt}, t::Int)
+  debt_nominal = 0.0
+  for debt in me
+    if t == debt.t_init
+      debt_nominal += debt.nominal
+    end
   end
-  return new_debt_nominal
+  return debt_nominal
 end
 
-function plandebt!(me::DataFrame,
-                   t_init::Int,
-                   t_final::Int,
-                   nominal::Float64,
-                   interest::Float64)
-  append!(me, DataFrame(t_init = t_init,
-                       t_final = t_final,
-                       nominal = nominal,
-                       interest = interest))
-end
 
 ## Private ---------------------------------------------------------------------
 

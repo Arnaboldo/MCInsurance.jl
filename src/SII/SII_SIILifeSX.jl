@@ -18,7 +18,8 @@ end
 
 function SIILifeSX(tf::TimeFrame,
                    bkts_be::Buckets, ## from SII
-                   oth_be::Other,
+                   asset_other::AssetOther,
+                   liab_other::LiabOther,
                    capmkt_be::CapMkt,
                    dyn::Dynamic,
                    inv_dfs::Vector{DataFrame},
@@ -33,8 +34,8 @@ function SIILifeSX(tf::TimeFrame,
   me.shock_mass = df_sii_life_general[1, :SX_M_OTH]
   me.shock_mass_pension = df_sii_life_general[1, :SX_M_PENS]
   ## select bukckets for each shock:
-  select!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
-  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
+  select!(me, bkts_be, liab_other, capmkt_be, inv_dfs, dyn)
+  shock!(me, bkts_be, asset_other, liab_other, capmkt_be, inv_dfs, dyn)
   return  me
 end
 
@@ -58,14 +59,15 @@ end
 
 function shock!(me::SIILifeSX,
                 buckets::Buckets,
-                other::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Any)
 
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in me.sub_modules
-    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, capmkt_be, invest_dfs, buckets, asset_other, liab_other, dyn,
          (sii_sx, bkts) -> sxshock!(bkts, sii_sx, sm) )
   end
   return me
@@ -108,7 +110,7 @@ end
 ## identify those buckets that are subject to mortality risk (fast version)
 function select!(me::SIILifeSX,
                  bkts::Buckets,
-                 oth_be::Other,
+                 liab_oth_be::LiabOther,
                  capmkt_be::CapMkt,
                  invest_dfs::Any,
                  dyn::Dynamic)

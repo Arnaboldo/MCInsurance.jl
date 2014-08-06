@@ -1,4 +1,4 @@
-export Other, pveoc, pvboc, paydebt, plandebt!, getdebt
+export LiabOther, pveoc, pvboc, paydebt, plandebt!, getdebt
 export Debt, goingconcern!
 
 type  Debt
@@ -8,7 +8,7 @@ type  Debt
   interest::Float64
 end
 
-type Other
+type LiabOther
   debt_subord::Vector{Debt}
 #   debt_subord_plan::Vector{Debt}
   debt_regular::Vector{Debt}

@@ -1,19 +1,20 @@
 ## column names for CFlow.v.  QX, SX, PX, PREM, C_BOC, C_EOC: 1:6
-export  DELTA_TPG, BONUS, INVEST, OTHER, DIVID
-export TPG_EOC, OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE
+export  DELTA_TPG, BONUS, INVEST, L_OTHER, PROFIT, TAX, DIVID
+export TPG_EOC, L_OTHER_EOC, INVEST_EOC, SURPLUS_EOC, CYCLE
 export Fluct
 export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit
 export balance_det_init, balance_det
 export Dynamic, getprob
 
-const DELTA_TPG, BONUS, INVEST, OTHER, DIVID = 7:11
+const DELTA_TPG, BONUS, INVEST, L_OTHER, PROFIT, TAX, TAX_CREDIT, DIVID,  = 7:14
 
-const TPG_EOC, OTHER_EOC, ASSET_EOC, SURPLUS_EOC, CYCLE = 1:5
+const TPG_EOC, L_OTHER_EOC, INVEST_EOC, SURPLUS_EOC, CYCLE = 1:5
 
 const col_CF = [:QX, :SX, :PX, :PREM, :C_BOC, :C_EOC,
-                :DELTA_TPG, :BONUS, :INVEST, :OTHER, :DIVID]
+                :DELTA_TPG, :BONUS, :INVEST, :L_OTHER,
+                :PROFIT, :TAX, :TAX_CREDIT, :DIVID]
 
-const col_V = [:TPG_EOC, :OTHER_EOC, :ASSET_EOC,
+const col_V = [:TPG_EOC, :L_OTHER_EOC, :INVEST_EOC,
                :SURPLUS_EOC, :CYCLE]
 const col_V_TYPES = [Float64, Float64, Float64, Float64, Int]
 
@@ -36,6 +37,9 @@ type CFlow
   cf::Array{Float64,3}            ## cash-flow values
   v_0::Array{Float64,3}           ## initial cash flow and valuation values
   v::Array{Float64,3}             ## valuation values
+  model_new_tax_credit::Bool      ## true: model arsing tax credit
+  tax_credit_init::Float64        ## initial tax credit
+  tax_credit::Array{Float64,2}    ## nominal values necessary for projection
   discount_init::Array{Float64,1} ## discount rates at beginning of projection
 end
 
@@ -45,6 +49,7 @@ type Dynamic
   bonusrate::Function
   dividend::Function
   expense::Function
+  taxprofit::Function
   update!::Function # updates the structure based on current projection values
   # often used constants
   bonus_factor::Float64

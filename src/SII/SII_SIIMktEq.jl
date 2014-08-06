@@ -12,7 +12,8 @@ end
 
 function SIIMktEq(tf::TimeFrame,
                   bkts_be::Buckets,
-                  oth_be::Other,
+                  asset_other::AssetOther,
+                  liab_other::LiabOther,
                   capmkt_be::CapMkt,
                   dyn::Dynamic,
                   inv_dfs::Vector{DataFrame},
@@ -24,7 +25,7 @@ function SIIMktEq(tf::TimeFrame,
   me.balance =  deepcopy(balance_be)
   me.corr = array(df_sii_mkt_eq_corr)
   me.shocks = [eq => df_sii_mkt_general[1,eq] for eq in me.sub_modules]
-  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
+  shock!(me, bkts_be, asset_other, liab_other, capmkt_be, inv_dfs, dyn)
   return me
 end
 
@@ -47,13 +48,14 @@ end
 
 function shock!(me::SIIMktEq,
                 buckets::Buckets,
-                other::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in me.sub_modules
-    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, capmkt_be, invest_dfs, buckets, asset_other, liab_other, dyn,
          (sii_eq, inv) -> mkteqshock!(inv, sii_eq, sm) )
   end
   return me

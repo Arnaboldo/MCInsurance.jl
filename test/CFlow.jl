@@ -72,7 +72,7 @@ for mc = 1:n_mc
   for b = 1:buckets.n
     for t = 1:tf.n_c
       @test_approx_eq_eps(cflow.v[mc,t,SURPLUS_EOC],
-                          cflow.v[mc,t,ASSET_EOC] + cflow.v[mc,t,TPG_EOC],
+                          cflow.v[mc,t,INVEST_EOC] + cflow.v[mc,t,TPG_EOC],
                           tol)
     end
   end

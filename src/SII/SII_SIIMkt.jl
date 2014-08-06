@@ -13,7 +13,8 @@ end
 
 function SIIMkt(tf::TimeFrame,
                 bkts_be::Buckets,
-                oth_be::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 dyn::Dynamic,
                 inv_dfs::Vector{DataFrame},
@@ -29,9 +30,11 @@ function SIIMkt(tf::TimeFrame,
   me.corr_up = array(df_sii_mkt_corr_up)
   me.corr_down = array(df_sii_mkt_corr_down)
 
-  me.int =    SIIMktInt(me.tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
+  me.int =    SIIMktInt(me.tf, bkts_be, asset_other, liab_other, capmkt_be,
+                        dyn, inv_dfs,
                         balance, df_sii_mkt_general, df_sii_mkt_interest)
-  me.eq =     SIIMktEq(me.tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
+  me.eq =     SIIMktEq(me.tf, bkts_be, asset_other, liab_other, capmkt_be,
+                       dyn, inv_dfs,
                        balance, df_sii_mkt_general, df_sii_mkt_eq_corr)
   # me.spread =
   # me.conc =

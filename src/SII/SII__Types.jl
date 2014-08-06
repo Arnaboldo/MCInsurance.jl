@@ -5,7 +5,6 @@ abstract SIIModule
 
 
 ## SII market risk -------------------------------------------------------------
-
 type SIIMktInt <: SIIModule
   tf::TimeFrame                   ## shared time frame
   shock_type::Symbol              ## indicates object type to be shocked
@@ -42,7 +41,6 @@ type SIIMktConc <: SIIModule
   shocks::Dict{Symbol,Any}        ## shocks[i] is always Float64,
 end
 
-
 type SIIMkt <: SIIModule
   tf::TimeFrame                   ## shared time frame
   dim::Vector{Symbol}
@@ -55,7 +53,6 @@ type SIIMkt <: SIIModule
 end
 
 ## SII default risk ------------------------------------------------------------
-
 type SIIDefType1 <: SIIModule
   tf::TimeFrame                   ## shared time frame
   tlgd::Vector{Float64}
@@ -78,11 +75,9 @@ type SIIDef <: SIIModule
   corr::Matrix{Float64}           ## correlation matrix for default risk
   type1::SIIDefType1              ## type 1: rated, factor based
   type2::SIIDefType2              ## type 2: unrated, scenario based
-
 end
 
 ## SII life risk ---------------------------------------------------------------
-
 type SIILifeQX <: SIIModule
   tf::TimeFrame                   ## shared time frame
   shock_type::Symbol              ## indicates object type to be shocked
@@ -128,7 +123,6 @@ type SIILifeCat <: SIIModule
   bkt_select::Vector{Bool}         ## buckets selected for shocks
 end
 
-
 type SIILife <: SIIModule
   tf::TimeFrame                   ## shared time frame
   dim::Vector{Symbol}
@@ -143,7 +137,6 @@ type SIILife <: SIIModule
 end
 
 ## SII operational risk --------------------------------------------------------
-
 type SIIOp
   tf::TimeFrame
   prem_earned::Float64
@@ -152,6 +145,17 @@ type SIIOp
   cost_ul::Float64
 end
 
+##  Adjustment for deferred taxes ----------------------------------------------
+type SIIDT <: SIIModule
+  tf::TimeFrame                   ## shared time frame
+  shock_type::Symbol              ## indicates object type to be shocked
+  balance::DataFrame              ## balance sheet for various shocks
+  bscr::Float64
+  adj_tp::Float64
+  scr_op::Float64
+end
+
+
 ## SII all risks ---------------------------------------------------------------
 
 type SII <: SIIModule
@@ -159,19 +163,27 @@ type SII <: SIIModule
   capmkt_dfs::Vector{DataFrame}
   inv_dfs::Vector{DataFrame}
   dyn_dfs::Vector{DataFrame}
-  capmkt_be::CapMkt              ## deterministic best estimate capital market
+  capmkt_be::CapMkt               ## deterministic best estimate capital market
   inv_be::Invest
   bkts_be::Buckets
-  oth_be::Other                 ## without subordinated debt
+  asset_oth_be::AssetOther        ##
+  liab_oth_be::LiabOther          ## without subordinated debt
   dyn::Dynamic                    ## initialized prior to any shock
   balance::DataFrame
 
-  sp_cqs::Dict{UTF8String,Int64}
+  sp_cqs::Dict{UTF8String,Int64}  ## rating translation: Standard Poor's to CQS
   dim::Vector{Symbol}
   corr::Matrix{Float64}
   mkt::SIIMkt                     ## SII module market risk
   def::SIIDef                     ## SII module default risk
   life::SIILife                   ## SII module life risk
   op::SIIOp                       ## SII module operational risk
+  dt::SIIDT                       ## module for calc of deferred tax adjustment
+  bscr_net::Float64
+  bscr::Float64
+  scr_op::Float64
+  adj_tp::Float64
+  adj_dt::Float64
+  scr::Float64
 end
 

@@ -5,7 +5,8 @@ function Dynamic()
   capital_dividend = 0.0
   hook = false
   Dynamic(defaultprobsx, defaultalloc!, defaultbonusrate, defaultdividend,
-          defaultexpense, defaultupdate!, bonus_factor, capital_dividend, hook)
+          defaultexpense, defaulttaxprofit, defaultupdate!,
+          bonus_factor, capital_dividend, hook)
 end
 
 function Dynamic(df_general::DataFrame)
@@ -26,6 +27,8 @@ defaultbonusrate(mc::Int, t::Int, bkt::Bucket, invest::Invest, dyn::Dynamic) = 0
 defaultdividend(mc::Int, t::Int, invest::Invest, cf::CFlow, dyn::Dynamic) = 0
 
 defaultexpense(mc::Int, t::Int, invest::Invest, cf::CFlow, dyn::Dynamic) = 0
+
+defaulttaxprofit(mc::Int, t::Int, cf::CFlow, dyn::Dynamic) = 0
 
 function getprob(dyn::Dynamic, bkt::Bucket, mc::Int, t::Int,
                  invest::Invest, fluct::Fluct)

@@ -13,7 +13,8 @@ include("StochProcess/StochProcess__Types.jl")
 include("CapMkt/CapMkt__Types.jl")
 include("Invest/Invest__Types.jl")
 include("LC/LC__Types.jl")
-include("Other/Other__Types.jl")
+include("AssetOther/AssetOther__Types.jl")
+include("LiabOther/LiabOther__Types.jl")
 include("Proj/Proj__Types.jl")
 include("SII/SII__Types.jl")
 
@@ -43,8 +44,10 @@ include("Invest/Invest_MktC.jl")
 include("LC/LC_LC.jl")
 include("LC/LC_Bucket.jl")
 
-include("Other/Other_Debt.jl")
-include("Other/Other_Other.jl")
+include("AssetOther/AssetOther_AssetOther.jl")
+
+include("LiabOther/LiabOther_Debt.jl")
+include("LiabOther/LiabOther_LiabOther.jl")
 
 include("Proj/Proj_Fluct.jl")
 include("Proj/Proj_CFlow.jl")
@@ -67,5 +70,6 @@ include("SII/SII_SIILifePX.jl")
 include("SII/SII_SIILifeCost.jl")
 include("SII/SII_SIILifeCat.jl")
 include("SII/SII_SIIOp.jl")
+include("SII/SII_SIIDT.jl")
 
 end # module

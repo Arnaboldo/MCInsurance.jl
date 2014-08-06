@@ -14,7 +14,8 @@ end
 
 function SIILife(tf::TimeFrame,
                  bkts_be::Buckets,
-                 oth_be::Other,
+                 asset_other::AssetOther,
+                 liab_other::LiabOther,
                  capmkt_be::CapMkt,
                  dyn::Dynamic,
                  inv_dfs::Vector{DataFrame},
@@ -28,16 +29,16 @@ function SIILife(tf::TimeFrame,
   ## is a field in the SII object that calls SIILife.
   ## Order is important because me.px depends on the change
   ## of bkts.be made by the constructor of me.qx
-  me.qx = SIILifeQX(tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
-                    balance_be, df_sii_life_general)
-  me.sx = SIILifeSX(tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
-                    balance_be, df_sii_life_general)
-  me.px = SIILifePX(tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
-                    balance_be, df_sii_life_general)
-  me.cost = SIILifeCost(tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
-                        balance_be, df_sii_life_general)
-  me.cat = SIILifeCat(tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
-                      balance_be, df_sii_life_general)
+  me.qx = SIILifeQX(tf, bkts_be, asset_other, liab_other, capmkt_be,
+                    dyn, inv_dfs, balance_be, df_sii_life_general)
+  me.sx = SIILifeSX(tf, bkts_be, asset_other, liab_other, capmkt_be,
+                    dyn, inv_dfs, balance_be, df_sii_life_general)
+  me.px = SIILifePX(tf, bkts_be, asset_other, liab_other, capmkt_be,
+                    dyn, inv_dfs, balance_be, df_sii_life_general)
+  me.cost = SIILifeCost(tf, bkts_be, asset_other, liab_other, capmkt_be,
+                        dyn, inv_dfs, balance_be, df_sii_life_general)
+  me.cat = SIILifeCat(tf, bkts_be, asset_other, liab_other, capmkt_be,
+                      dyn, inv_dfs, balance_be, df_sii_life_general)
   return me
 end
 

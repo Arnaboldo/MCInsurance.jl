@@ -11,7 +11,8 @@ end
 
 function SIIDefType2(tf::TimeFrame,
                      bkts_be::Buckets,
-                     oth_be::Other,
+                     asset_other::AssetOther,
+                     liab_other::LiabOther,
                      capmkt_be::CapMkt,
                      dyn::Dynamic,
                      inv_dfs::Vector{DataFrame},
@@ -20,7 +21,7 @@ function SIIDefType2(tf::TimeFrame,
   me.tf = tf
   me.balance =  deepcopy(balance_be)
   #  me.shocks = [def => df_sii_def_general[1,def] for def in me.sub_modules]
-  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
+  shock!(me, bkts_be, asset_other, liab_other, capmkt_be, inv_dfs, dyn)
 
   return me
 end
@@ -45,13 +46,14 @@ end
 
 function shock!(me::SIIDefType2,
                 buckets::Buckets,
-                other::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in me.sub_modules
-    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, capmkt_be, invest_dfs, buckets, asset_other, liab_other, dyn,
          (type2, inv) -> defshock!(inv, type2, sm) )
   end
   return me

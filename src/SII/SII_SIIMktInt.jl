@@ -14,7 +14,8 @@ end
 
 function SIIMktInt(tf::TimeFrame,
                    bkts_be::Buckets,
-                   oth_be::Other,
+                   asset_other::AssetOther,
+                   liab_other::LiabOther,
                    capmkt_be::CapMkt,
                    dyn::Dynamic,
                    inv_dfs::Vector{DataFrame},
@@ -32,7 +33,7 @@ function SIIMktInt(tf::TimeFrame,
             1, (nrow(df_sii_mkt_interest)-1) * tf.n_dt, 1)
   me.spot_down_abs_max = df_sii_mkt_general[1,:spot_down_abs_max]/tf.n_dt
   me.spot_up_abs_min = df_sii_mkt_general[1,:spot_up_abs_min]/tf.n_dt
-  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
+  shock!(me, bkts_be, asset_other, liab_other, capmkt_be, inv_dfs, dyn)
   return  me
 end
 
@@ -57,14 +58,15 @@ end
 
 function shock!(me::SIIMktInt,
                 buckets::Buckets,
-                other::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Any)
 
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in me.sub_modules
-    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, capmkt_be, invest_dfs, buckets, asset_other, liab_other, dyn,
          (sii_int, cpm) -> mktintshock!(cpm, sii_int, sm) )
   end
   return me

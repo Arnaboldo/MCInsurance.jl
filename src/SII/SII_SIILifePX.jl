@@ -11,7 +11,8 @@ end
 
 function SIILifePX(tf::TimeFrame,
                    bkts_be::Buckets,
-                   oth_be::Other,
+                   asset_other::AssetOther,
+                   liab_other::LiabOther,
                    capmkt_be::CapMkt,
                    dyn::Dynamic,
                    inv_dfs::Vector{DataFrame},
@@ -22,8 +23,8 @@ function SIILifePX(tf::TimeFrame,
   me.balance =  deepcopy(balance_be)
   me.shock = df_sii_life_general[1,:PX]
   ## select bucket to be shocked
-  select!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
-  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
+  select!(me, bkts_be, liab_other, capmkt_be, inv_dfs, dyn)
+  shock!(me, bkts_be, asset_other, liab_other, capmkt_be, inv_dfs, dyn)
   return me
 end
 
@@ -39,12 +40,13 @@ end
 
 function shock!(me::SIILifePX,
                 buckets::Buckets,
-                oth_be::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
   me.balance = me.balance[me.balance[:SCEN] .== :be, :]
-  add!(me, :PX, capmkt_be, invest_dfs, buckets, oth_be, dyn,
+  add!(me, :PX, capmkt_be, invest_dfs, buckets, asset_other, liab_other, dyn,
        (sii_px, bkts) -> pxshock!(bkts, sii_px) )
   return me
 end
@@ -67,7 +69,7 @@ end
 ## identify those buckets that are subject to mortality risk (fast version)
 function select!(me::SIILifePX,
                  bkts::Buckets,
-                 oth_be::Other,
+                 liab_oth_be::LiabOther,
                  capmkt_be::CapMkt,
                  invest_dfs::Any,
                  dyn::Dynamic)

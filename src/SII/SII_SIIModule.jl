@@ -7,14 +7,16 @@ function balance_det_init(me::SIIModule,
                  capmkt::CapMkt,
                  invest_dfs::Any,
                  buckets::Buckets,
-                 other::Other,
+                 asset_other::AssetOther,
+                 liab_other::LiabOther,
                  dyn::Dynamic,
                  shock!!::Any)
 
   fluct = Fluct(capmkt.tf, capmkt.n_mc, 1.0)
   cpm = deepcopy(capmkt)
   bkts = deepcopy(buckets)
-  oth = deepcopy(other)
+  asset_oth = deepcopy(asset_other)
+  liab_oth = deepcopy(liab_other)
   if (shock!! == nothing)
     inv = Invest([:sii_inv, cpm, invest_dfs]..., bkts.n_c)
   else
@@ -26,7 +28,7 @@ function balance_det_init(me::SIIModule,
     if me.shock_type == :InvestBuckets  shock!!(me, inv, bkts) end
   end
 
-  cfl = CFlow(bkts, inv, oth, fluct, dyn)
+  cfl = CFlow(bkts, inv, asset_oth, liab_oth, fluct, dyn)
 
   return balance_det_init(cfl, scen)
 end
@@ -37,18 +39,20 @@ function add!(me::SIIModule,
               capmkt::CapMkt,
               invest_dfs::Any,
               buckets::Buckets,
-              oth::Other,
+              asset_oth::AssetOther,
+              liab_oth::LiabOther,
               dyn::Dynamic,
               shock!!::Any)
   append!(me.balance,
-          balance_det_init(me,  scen, capmkt, invest_dfs,  buckets, oth, dyn, shock!!))
+          balance_det_init(me,  scen, capmkt, invest_dfs,  buckets,
+                           asset_oth, liab_oth, dyn, shock!!))
 end
 
 ## basic own funds
 bof(me::SIIModule, scen::Symbol) =
-  me.balance[me.balance[:SCEN] .== scen, :ASSET_EOC][1,1] +
+  me.balance[me.balance[:SCEN] .== scen, :INVEST_EOC][1,1] +
             me.balance[me.balance[:SCEN] .== scen, :TPG_EOC][1,1] +
-              me.balance[me.balance[:SCEN] .== scen, :OTHER_EOC][1,1] +
+              me.balance[me.balance[:SCEN] .== scen, :L_OTHER_EOC][1,1] +
                 me.balance[me.balance[:SCEN] .== scen, :BONUS_EOC][1,1]
 
 ## future discretionary benefits

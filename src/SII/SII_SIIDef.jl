@@ -10,7 +10,8 @@ end
 
 function SIIDef(tf::TimeFrame,
                 bkts_be::Buckets,
-                oth_be::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 dyn::Dynamic,
                 inv_dfs::Vector{DataFrame},
@@ -21,11 +22,11 @@ function SIIDef(tf::TimeFrame,
                 df_sii_def_type1_prob::DataFrame)
   me = SIIDef()
   me.tf = tf
-
   me.corr = array(df_sii_def_corr)
 
   me.type1 =  SIIDefType1(me.tf, invest_be, sp_cqs, df_sii_def_type1_prob)
-  me.type2 =  SIIDefType2(me.tf, bkts_be, oth_be, capmkt_be, dyn, inv_dfs,
+  me.type2 =  SIIDefType2(me.tf, bkts_be, asset_other, liab_other,
+                          capmkt_be, dyn, inv_dfs,
                           balance)
 
   return me

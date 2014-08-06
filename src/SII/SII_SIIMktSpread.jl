@@ -30,13 +30,14 @@ end
 
 function shock!(me::SIIMktSpread,
                 buckets::Buckets,
-                other::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
   me.balance =me.balance[me.balance[:SCEN] .== :be, :]
   for sm in [:CD_UP, :CD_DOWN]
-    add!(me, sm, capmkt_be, invest_dfs, buckets, other, dyn,
+    add!(me, sm, capmkt_be, invest_dfs, buckets, asset_other, liab_other, dyn,
          (sii_eq, inv) -> mkteqshock!(inv, sii_eq, sm) )
   end
   return me

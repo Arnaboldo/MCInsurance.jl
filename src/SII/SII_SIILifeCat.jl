@@ -11,7 +11,8 @@ end
 
 function SIILifeCat(tf::TimeFrame,
                     bkts_be::Buckets,
-                    oth_be::Other,
+                    asset_other::AssetOther,
+                    liab_other::LiabOther,
                     capmkt_be::CapMkt,
                     dyn::Dynamic,
                     inv_dfs::Vector{DataFrame},
@@ -21,8 +22,8 @@ function SIILifeCat(tf::TimeFrame,
   me.tf = tf
   me.balance =  deepcopy(balance_be)
   me.shock = df_sii_life_general[1,:CAT]
-  select!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
-  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
+  select!(me, bkts_be, liab_other, capmkt_be, inv_dfs, dyn)
+  shock!(me, bkts_be, asset_other, liab_other, capmkt_be, inv_dfs, dyn)
   return me
 end
 
@@ -38,12 +39,13 @@ end
 
 function shock!(me::SIILifeCat,
                 buckets::Buckets,
-                oth_be::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
   me.balance = me.balance[me.balance[:SCEN] .== :be, :]
-  add!(me, :CAT, capmkt_be, invest_dfs, buckets, oth_be, dyn,
+  add!(me, :CAT, capmkt_be, invest_dfs, buckets, asset_other, liab_other, dyn,
        (sii_cat, bkts) -> catshock!(bkts, sii_cat) )
   return me
 end
@@ -65,7 +67,7 @@ end
 ## identify those buckets that are subject to mortality risk (fast version)
 function select!(me::SIILifeCat,
                  bkts::Buckets,
-                 oth_be::Other,
+                 liab_oth_be::LiabOther,
                  capmkt_be::CapMkt,
                  invest_dfs::Any,
                  dyn::Dynamic)

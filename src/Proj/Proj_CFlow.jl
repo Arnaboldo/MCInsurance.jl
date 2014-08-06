@@ -6,24 +6,32 @@ function CFlow(tf::TimeFrame, n_mc::Int)
   cf = zeros(Float64, n_mc, tf.n_c, n_cf )
   v_0 = zeros(Float64, 1, 1, n_v)
   v = zeros(Float64, n_mc, tf.n_c, n_v )
+  model_new_tax_credit = true
+  tax_credit_init = 0.0
+  tax_credit = zeros(Float64, n_mc, tf.n_c)
   discount_init = Array(Float64,0)
-  CFlow(n_mc, n_cf, n_v, tf, cf, v_0, v, discount_init)
+  CFlow(n_mc, n_cf, n_v, tf, cf, v_0, v,
+        model_new_tax_credit, tax_credit_init, tax_credit, discount_init)
 end
 
 function CFlow(bkts::Buckets,
-                 invest::Invest,
-                 other::Other,
-                 fluct::Fluct,
-                 dyn::Dynamic)
+               invest::Invest,
+               asset_other::AssetOther,
+               liab_other::LiabOther,
+               fluct::Fluct,
+               dyn::Dynamic)
   cflow = CFlow(bkts.tf, invest.cap_mkt.n_mc)
-  cflow.v_0 = vinit(invest, bkts, other)
+  cflow.v_0 = vinit(invest, bkts, liab_other)
   cflow.discount_init =
     meandiscrf(invest.c, invest.c.yield_rf_init, 1, bkts.n_c)
+  cflow.model_new_tax_credit = asset_other.model_new_tax_credit
+  cflow.tax_credit_init = asset_other.tax_credit_init
   for mc = 1:cflow.n_mc
-    other_mc = deepcopy(other)
+    liab_other_mc = deepcopy(liab_other)
     for t = 1:cflow.tf.n_c
       discount = meandiscrf(invest.c, invest.c.yield_rf_eoc[mc,t], t, bkts.n_c)
-      projectcycle!(cflow, mc, t, bkts, invest, other_mc, fluct, discount, dyn)
+      projectcycle!(cflow, mc, t, bkts, invest,
+                    liab_other_mc, fluct, discount, dyn)
     end
   end
   cflow
@@ -110,25 +118,28 @@ end
 
 function balance_det_init(cfl::CFlow, scen::Symbol, prec::Int = -1)
   bonus_eoc =  cfl.discount_init[1:cfl.tf.n_c] ⋅ dfcf(cfl,1)[:BONUS]
+  tax_credit_eoc =  cfl.discount_init[1:cfl.tf.n_c] ⋅ dfcf(cfl,1)[:TAX_CREDIT]
   if prec >= 0
     bonus_eoc = round(bonus_eoc, prec)
   end
-  return hcat(dfv0(cfl, prec), DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
+  return hcat(dfv0(cfl, prec), DataFrame(BONUS_EOC = bonus_eoc,
+                                         TAX_CREDIT_EOC = tax_credit_eoc,
+                                         SCEN = scen))
 end
 
-function balance_det(cfl::CFlow, scen::Symbol, prec::Int = -1)
-  bonus_eoc =  cfl.discount_init[1:cfl.tf.n_c] ⋅ dfcf(cfl,1)[:BONUS]
-  if prec >= 0
-    bonus_eoc = round(bonus_eoc, prec)
-  end
-  return hcat(dfv0(cfl, prec), DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
-end
+# function balance_det(cfl::CFlow, scen::Symbol, prec::Int = -1)
+#   bonus_eoc =  cfl.discount_init[1:cfl.tf.n_c] ⋅ dfcf(cfl,1)[:BONUS]
+#   if prec >= 0
+#     bonus_eoc = round(bonus_eoc, prec)
+#   end
+#   return hcat(dfv0(cfl, prec), DataFrame(BONUS_EOC = bonus_eoc, SCEN = scen))
+# end
 
 ## Private ---------------------------------------------------------------------
 
 function vinit(invest::Invest,
                buckets::Buckets,
-               other::Other)
+               l_oth::LiabOther)
   # Returns the initial balance sheet *without* accounting for
   # the value of future discretionary benefits.
   # They are implicitly included in SURPLUS_EOC
@@ -148,10 +159,10 @@ function vinit(invest::Invest,
              prepend_c(invest.ig[invest.id[:cash]].cost, [0.0, 0.0]),
              vcat(0, bkt.portion_c))
   end
-  v_0[1,1,OTHER_EOC] = pvboc(other,1,discount)
-  v_0[1,1,ASSET_EOC] = invest.mv_total_init
+  v_0[1,1,L_OTHER_EOC] = pvboc(l_oth,1,discount)
+  v_0[1,1,INVEST_EOC] = invest.mv_total_init
   v_0[1,1,SURPLUS_EOC] =
-    v_0[1,1,ASSET_EOC] + v_0[1,1,TPG_EOC] + v_0[1,1,OTHER_EOC]
+    v_0[1,1,INVEST_EOC] + v_0[1,1,TPG_EOC] + v_0[1,1,L_OTHER_EOC]
   return v_0
 end
 
@@ -160,7 +171,7 @@ function projectcycle!(me::CFlow,
                        t::Int,
                        buckets::Buckets,
                        invest::Invest,
-                       other::Other,
+                       liab_other::LiabOther,
                        fluct::Fluct,
                        discount::Vector{Float64},
                        dyn::Dynamic
@@ -169,11 +180,11 @@ function projectcycle!(me::CFlow,
   for bkt in buckets.all
     bucketprojectboc!(me, bkt, fluct, mc, t)
   end
-  new_debt = getdebt(other, t)
+  new_debt = getdebt(liab_other, t)
   investeoc!(me, invest, mc, t, new_debt, dyn)
   me.cf[mc,t,C_EOC] +=  costs(invest,t)
-  me.cf[mc, t, OTHER] += paydebt(other, t)
-  me.v[mc, t, OTHER_EOC] += pveoc(other, t, discount)
+  me.cf[mc, t, L_OTHER] += paydebt(liab_other, t)
+  me.v[mc, t, L_OTHER_EOC] += pveoc(liab_other, t, discount)
   for bkt in buckets.all
     bucketprojecteoc!(me, bkt, fluct, invest, discount, mc, t, dyn)
   end
@@ -182,13 +193,27 @@ function projectcycle!(me::CFlow,
   else
     me.cf[mc, t, DELTA_TPG] =  me.v[mc, t, TPG_EOC] - me.v[mc, t-1, TPG_EOC]
   end
-  # assets before bonus, dividend, surplus
+  # assets before bonus, dividend, surplus, tax
   assetspreeoc!(me, invest, mc, t)
   # prepare dyn for bonus allocation and dividend declaration
   dyn.update!(dyn, t, me.cf[mc, t, :], me.v[mc, t, :])
   for bkt in buckets.all
     bucketbonuseoc!(me, bkt, invest, mc, t, dyn)
   end
+  me.cf[mc, t, PROFIT] =
+    sum(me.cf[mc, t,
+              [QX, PX, SX, PREM, C_BOC, C_EOC, DELTA_TPG, BONUS, INVEST]])
+
+  tax_profit = dyn.taxprofit(mc, t, me, dyn)
+  tax_credit_pre_eoc = (t == 1 ? me.tax_credit_init : me.tax_credit[mc, t-1])
+
+  me.cf[mc, t, TAX] = min(0, tax_credit_pre_eoc + tax_profit)
+  me.cf[mc, t, TAX_CREDIT] =  me.cf[mc, t, TAX] - min(0.0, tax_profit)
+  me.tax_credit[mc, t] =
+    tax_credit_pre_eoc +
+    (me.model_new_tax_credit ? max(0.0, tax_profit) : 0.0) -
+    me.cf[mc, t, TAX_CREDIT]
+  me.cf[mc, t, TAX] = min(0, tax_profit)
   # dividends, bonus, surplus, final assets
   surpluseoc!(me, invest, mc, t, dyn)
 end
@@ -210,7 +235,7 @@ function investeoc!(me::CFlow,
                     t::Int,
                     new_debt::Float64,
                     dyn::Dynamic)
-  mv_bop = (t == 1 ? me.v_0[1,1,ASSET_EOC] : me.v[mc,t-1,ASSET_EOC])
+  mv_bop = (t == 1 ? me.v_0[1,1,INVEST_EOC] : me.v[mc,t-1,INVEST_EOC])
   mv_bop -= new_debt  ## new debt is negative but increases assets
   mv_bop += me.cf[mc,t,PREM] + me.cf[mc,t,C_BOC]
   mv_boc = mv_bop
@@ -239,10 +264,10 @@ function bucketprojecteoc!(me::CFlow,
     bkt.lx_boc * fluct.fac[mc,t,fluct.d[C_EOC]] * bkt.cond[t,C_EOC]
   me.v[mc,t,TPG_EOC] +=
     bkt.lx_boc * prob[t,PX] * tpgeoc(prob[ t:bkt.n_c, :],
-                                        discount[1:(bkt.n_c+1-t)],
-                                        bkt.cond[ t:bkt.n_c, :],
-                                        invest.ig[invest.id[:cash]].cost,
-                                        bkt.portion_c)
+                                     discount[1:(bkt.n_c+1-t)],
+                                     bkt.cond[ t:bkt.n_c, :],
+                                     invest.ig[invest.id[:cash]].cost,
+                                     bkt.portion_c)
 end
 
 function bucketbonuseoc!(me::CFlow,
@@ -263,9 +288,9 @@ function assetspreeoc!(me::CFlow,
                        invest::Invest,
                        mc::Int,
                        t::Int)
-  me.v[mc,t,ASSET_EOC] = invest.mv_total_eop[mc, t * me.tf.n_dt]
-  for j in [QX, SX, PX, C_EOC, OTHER, BONUS]
-    me.v[mc,t,ASSET_EOC] += me.cf[mc, t, j]
+  me.v[mc,t,INVEST_EOC] = invest.mv_total_eop[mc, t * me.tf.n_dt]
+  for j in [QX, SX, PX, C_EOC, L_OTHER, BONUS]
+    me.v[mc,t,INVEST_EOC] += me.cf[mc, t, j]
   end
 end
 
@@ -275,9 +300,11 @@ function surpluseoc!(me::CFlow,
                      t::Int,
                      dyn::Dynamic)
   me.cf[mc, t, DIVID] = dyn.dividend(mc, t, invest, me, dyn)
-  me.v[mc, t, ASSET_EOC] += me.cf[mc, t, DIVID]
+  me.v[mc, t, INVEST_EOC] +=  me.cf[mc, t, DIVID] +  me.cf[mc, t, TAX]
   me.v[mc, t, SURPLUS_EOC] =
-    me.v[mc, t, ASSET_EOC] + me.v[mc, t, TPG_EOC] + me.v[mc, t, OTHER_EOC]
+    me.v[mc, t, INVEST_EOC] +
+    me.v[mc, t, TPG_EOC] +
+    me.v[mc, t, L_OTHER_EOC]
 end
 
 function cfdisccycles(me::CFlow, ind::Vector{Int}, invest::Invest)

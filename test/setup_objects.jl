@@ -40,7 +40,8 @@ dyn = Dynamic(invest,
               invest_det.c.yield_mkt_eoc[1,1], ## approx only
               invest_det.c.yield_rf_eoc[1,1])  ## approx only
 
-other = Other() ## No other liabilities
+liab_other = LiabOther() ## No other liabilities
+asset_other = AssetOther() ## No other assets
 
-cflow    = CFlow(buckets, invest, other, fluct, dyn)
+cflow    = CFlow(buckets, invest, asset_other, liab_other, fluct, dyn)
 

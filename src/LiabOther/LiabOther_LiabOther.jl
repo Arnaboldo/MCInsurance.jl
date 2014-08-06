@@ -1,25 +1,25 @@
 ## Constructors ----------------------------------------------------------------
-function Other()
-  Other(Array(Debt, 0), Array(Debt, 0))
+function LiabOther()
+  LiabOther(Array(Debt, 0), Array(Debt, 0))
 end
 
 ## Interface  ------------------------------------------------------------------
 
-function pvboc(me::Other, t::Int, discount::Vector{Float64})
+function pvboc(me::LiabOther, t::Int, discount::Vector{Float64})
   value = 0.0
   value += pvboc(me.debt_subord, t, discount)
   value += pvboc(me.debt_regular, t, discount)
   return value
 end
 
-function pveoc(me::Other, t::Int, discount::Vector{Float64})
+function pveoc(me::LiabOther, t::Int, discount::Vector{Float64})
   value = 0.0
   value += pveoc(me.debt_subord, t, discount)
   value += pveoc(me.debt_regular, t, discount)
   return value
 end
 
-function paydebt(me::Other, t::Int)
+function paydebt(me::LiabOther, t::Int)
   value = 0.0
   if length(me.debt_subord) > 0
     value += mapreduce(x -> paydebt(x,t), +, me.debt_subord)
@@ -30,7 +30,7 @@ function paydebt(me::Other, t::Int)
   return value
 end
 
-function getdebt(me::Other, t::Int)
+function getdebt(me::LiabOther, t::Int)
   v = 0.0
   v += getdebt(me.debt_subord, t)
   v += getdebt(me.debt_regular, t)
@@ -55,7 +55,7 @@ function goingconcern(me::Vector{Debt}, gc_c::Vector{Float64})
   return(new_debt_vec)
 end
 
-function goingconcern!(me::Other, gc_c::Vector{Float64})
+function goingconcern!(me::LiabOther, gc_c::Vector{Float64})
   me.debt_subord = goingconcern(me.debt_subord, gc_c)
   me.debt_regular = goingconcern(me.debt_regular, gc_c)
 end

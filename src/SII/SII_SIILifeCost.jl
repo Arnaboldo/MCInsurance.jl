@@ -11,7 +11,8 @@ end
 
 function SIILifeCost(tf::TimeFrame,
                      bkts_be::Buckets,
-                     oth_be::Other,
+                     asset_other::AssetOther,
+                     liab_other::LiabOther,
                      capmkt_be::CapMkt,
                      dyn::Dynamic,
                      inv_dfs::Vector{DataFrame},
@@ -22,7 +23,7 @@ function SIILifeCost(tf::TimeFrame,
   me.balance =  deepcopy(balance_be)
   me.shock_cost = df_sii_life_general[1,:COST]
   me.shock_infl = df_sii_life_general[1,:COST_INFL]
-  shock!(me, bkts_be, oth_be, capmkt_be, inv_dfs, dyn)
+  shock!(me, bkts_be, asset_other, liab_other, capmkt_be, inv_dfs, dyn)
   return me
 end
 
@@ -30,12 +31,13 @@ end
 
 function shock!(me::SIILifeCost,
                 buckets::Buckets,
-                oth_be::Other,
+                asset_other::AssetOther,
+                liab_other::LiabOther,
                 capmkt_be::CapMkt,
                 invest_dfs::Any,
                 dyn::Dynamic)
   me.balance = me.balance[me.balance[:SCEN] .== :be, :]
-  add!(me, :COST, capmkt_be, invest_dfs, buckets, oth_be, dyn,
+  add!(me, :COST, capmkt_be, invest_dfs, buckets, asset_other, liab_other, dyn,
        (sii_cost, inv, bkts) -> costshock!!(inv, bkts, sii_cost) )
   return me
 end

@@ -4,6 +4,7 @@ type DynamicHook
   exp_yield_market::Float64 ## with respect to risk-neutral probabilities
   yield_mkt_init::Float64
   yield_rf_init::Float64
+  tax_profit::Float64
 end
 
 
@@ -25,7 +26,7 @@ function Dynamic(invest::Invest,
     delta = 1.0
     state_econ_quotient =
       (invest.c.yield_mkt_eoc[mc,t]/max(eps(),invest.c.yield_rf_eoc[mc,t])-1)/
-        (dyn.hook.yield_mkt_init/ max(eps(),dyn.hook.yield_rf_init) - 1)
+      (dyn.hook.yield_mkt_init/ max(eps(),dyn.hook.yield_rf_init) - 1)
 
     if state_econ_quotient < 0.5
       delta += 0.15
@@ -41,9 +42,9 @@ function Dynamic(invest::Invest,
       (invest.c.yield_mkt_eoc[mc,t] /
          max(eps(), dyn.bonus_factor + invest.c.yield_rf_eoc[mc,t])
        ) /
-        (dyn.hook.yield_mkt_init /
-           max(eps(), bonus_rate_init + dyn.hook.yield_rf_init)
-         )
+      (dyn.hook.yield_mkt_init /
+         max(eps(), bonus_rate_init + dyn.hook.yield_rf_init)
+       )
 
 
     delta += 0.25 * min(4.0, max(0.0, bi_quotient - 1.2))
@@ -112,9 +113,9 @@ function Dynamic(invest::Invest,
                        dyn::Dynamic)
     return -dyn.capital_dividend *
       max(0,
-          cf.v[mc, t, ASSET_EOC] +
+          cf.v[mc, t, INVEST_EOC] +
             cf.v[mc, t, TPG_EOC]+
-              cf.v[mc, t, OTHER_EOC]
+            cf.v[mc, t, L_OTHER_EOC]
           )
   end
 
@@ -127,12 +128,18 @@ function Dynamic(invest::Invest,
     return 0
   end
   ## -------------------------------------------------------------------------
+  function dyntaxprofit(mc::Int, t::Int, cfl::CFlow, dyn::Dynamic)
+    return cfl.cf[mc, t, PROFIT] * dyn.hook.tax_profit
+  end
+  ## -------------------------------------------------------------------------
   me.probsx = dynprobsx
   me.alloc! = dynalloc!
   me.bonusrate = dynbonusrate
   me.dividend = dyndividend
+  me.taxprofit = dyntaxprofit
   me.expense = dynexpense
-  me.hook = DynamicHook(exp_yield_market, yield_mkt_init, yield_rf_init)
+  me.hook = DynamicHook(exp_yield_market, yield_mkt_init, yield_rf_init,
+                        df_general[1,:tax_profit])
   return me
 end
 ##------------------------------------------------------------------------------

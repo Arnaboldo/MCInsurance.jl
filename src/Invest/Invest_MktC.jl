@@ -42,7 +42,8 @@ function MktC(info::Vector{InvestInfo},
                        2)[:,1:n_mean_c]),
            1)
   end
-  return MktC(yield_mkt_eoc, yield_rf_init, yield_rf_eoc, yield_grid_rf,
+  return MktC(yield_mkt_eoc, vec(mean(yield_mkt_eoc, 1)),
+              yield_rf_init, yield_rf_eoc, yield_grid_rf,
               mean_disc_rf)
 end
 

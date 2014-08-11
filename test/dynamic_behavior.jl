@@ -1,7 +1,6 @@
 import MCInsurance.Dynamic
 
 type DynamicHook
-  exp_yield_market::Float64 ## with respect to risk-neutral probabilities
   yield_mkt_init::Float64
   yield_rf_init::Float64
   tax_profit::Float64
@@ -10,7 +9,6 @@ end
 
 function Dynamic(invest::Invest,
                  df_general::DataFrame,
-                 exp_yield_market::Float64,
                  yield_mkt_init::Float64,
                  yield_rf_init::Float64
                  )
@@ -63,7 +61,7 @@ function Dynamic(invest::Invest,
     if t > 1 # allocation is boc.  For t= 1 we use original allocation
       ## market performance indicator weighted with expected yield
       mkt_perf_ind = 0.5 * (invest.c.yield_mkt_eoc[mc,t-1] +
-                              dyn.hook.exp_yield_market
+                              invest.c.mean_yield_mkt_eoc[t]
                             ) /  max(0, invest.c.yield_rf_eoc[mc,t-1])
 
       alloc_cash = 1 - 0.5 * (1 - exp( - max(1, mkt_perf_ind) + 1))
@@ -138,7 +136,7 @@ function Dynamic(invest::Invest,
   me.dividend = dyndividend
   me.taxprofit = dyntaxprofit
   me.expense = dynexpense
-  me.hook = DynamicHook(exp_yield_market, yield_mkt_init, yield_rf_init,
+  me.hook = DynamicHook(yield_mkt_init, yield_rf_init,
                         df_general[1,:tax_profit])
   return me
 end

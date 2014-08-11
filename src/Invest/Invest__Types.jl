@@ -1,6 +1,6 @@
 export IGStocks, IGRiskfreeBonds, IGCash, Invest, InvestAlloc, project!
 export InvestInfo
-export meandiscrf, goingconcern!, prepend_c
+export meandiscrf, goingconcern!, prepend_c, slice_c
 
 ## Investment Groups: IG #########################################
 ## Investment groups may differ from asset groups as one
@@ -114,6 +114,7 @@ end
 
 type MktC         ## mkt indicators per cycle (not period!) --------------------
   yield_mkt_eoc::Array{Float64,2}      ## benchmark for market yield per cycle
+  mean_yield_mkt_eoc::Vector{Float64}  ## expected market yield per cycle
   yield_rf_init::Float64               ## initial cash yield per cycle
   yield_rf_eoc::Array{Float64,2}       ## cash yield per cycle
   yield_grid_rf::Array{Float64,2}      ## grid for interpolation

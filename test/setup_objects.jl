@@ -36,7 +36,6 @@ fluct    = Fluct(tf, n_mc, 1.0)
 
 dyn = Dynamic(invest,
               df_general,
-              0.03,   ## with respect to risk-neutral probabilities, approx only
               invest_det.c.yield_mkt_eoc[1,1], ## approx only
               invest_det.c.yield_rf_eoc[1,1])  ## approx only
 

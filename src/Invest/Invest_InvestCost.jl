@@ -42,3 +42,11 @@ function prepend_c(me::InvestCost, pre_c::Vector{Float64})
   result.abs_c = vcat(pre_c[2], result.abs_c)
   return result
 end
+
+slice_c(me::InvestCost, c_start::Int, c_end::Int) =
+  InvestCost(me.rel_c[c_start:c_end],
+             me.abs_c[c_start:c_end],
+             me.rel[c_start:c_end],
+             me.abs[c_start:c_end],
+             me.total[c_start:c_end])
+

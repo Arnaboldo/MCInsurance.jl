@@ -90,6 +90,10 @@ function forwardbop(me::ManualShortRate,
   return [ 0. for mc in 1:me.n_mc]
 end
 
+procinfo2det(me::ManualShortRate) = procinfo(me)
+
+isstoch(me::ManualShortRate) = false
+
 ## Private ---------------------------------------------------------------------
 function cycle2period!(me::ManualShortRate, tf::TimeFrame)
   ## assumption: init, yield are given with respect to cycles
@@ -97,4 +101,9 @@ function cycle2period!(me::ManualShortRate, tf::TimeFrame)
   me.init *= tf.dt
 end
 
+function procinfo(me::ManualShortRate)
+  proc_info = infoskeleton(me)
+  proc_info.yield_determ = deepcopy(me.yield)
+  return proc_info
+end
 

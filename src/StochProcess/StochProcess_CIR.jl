@@ -87,6 +87,8 @@ function forwardbop(me::CIR, t::Int, delta_t::Int)
   return (B * me.yield[:,t,1] -log(A)) / delta_t
 end
 
+procinfo2det(me::CIR) = procinfo(me)
+
 ## Private ---------------------------------------------------------------------
 function cycle2period!(me::CIR, tf::TimeFrame)
   # assumption: init, yield_infty, cov, noise are given with respect to cycles
@@ -112,4 +114,10 @@ function yieldbop(me::CIR,
     end
   end
   return yield
+end
+
+function procinfo(me::CIR)
+  proc_info = infoskeleton(me)
+  proc_info.param = [me.a, me.yield_infty]
+  return proc_info
 end

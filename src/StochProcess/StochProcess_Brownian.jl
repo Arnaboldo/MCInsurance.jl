@@ -88,6 +88,8 @@ end
 determbop(me::Brownian) =
   [ me.init[d] + (t-1) * me.drift[d] for t = 1:(me.n_p+1), d= 1:me.n ]
 
+procinfo2det(me::Brownian) = procinfo(me)
+
 ## Private ---------------------------------------------------------------------
 function cycle2period!(me::Brownian, tf::TimeFrame)
   # assumption: drift, cov, noise  are given with respect to cycles
@@ -97,3 +99,8 @@ function cycle2period!(me::Brownian, tf::TimeFrame)
   me.noise .*= sqrt(tf.dt)
 end
 
+function procinfo(me::Brownian)
+  proc_info = infoskeleton(me)
+  proc_info.param = me.drift
+  return proc_info
+end

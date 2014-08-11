@@ -75,6 +75,13 @@ end
 determbop(me::GeomBrownian) =
   [ me.init[d] * exp((t-1) * me.drift[d]) for t = 1:(me.n_p+1), d= 1:me.n ]
 
+
+function procinfo2det(me::GeomBrownian)
+  proc_info = procinfo(me)
+  variance = [me.cov[i,i] for i in 1:me.n]
+  proc_info.param = proc_info.param .- variance / 2.0
+  return proc_info
+end
 ## Private ---------------------------------------------------------------------
 function cycle2period!(me::GeomBrownian, tf::TimeFrame)
   # assumption: drift, cov, noise are given with respect to cycles
@@ -84,3 +91,8 @@ function cycle2period!(me::GeomBrownian, tf::TimeFrame)
   me.noise .*= sqrt(tf.dt)
 end
 
+function procinfo(me::GeomBrownian)
+  proc_info = infoskeleton(me)
+  proc_info.param = me.drift
+  return proc_info
+end

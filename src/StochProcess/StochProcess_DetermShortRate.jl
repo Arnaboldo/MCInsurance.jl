@@ -80,6 +80,9 @@ function forwardbop(me::DetermShortRate,
   return [forward_bop for mc = 1:me.n_mc]
 end
 
+procinfo2det(me::DetermShortRate) = procinfo(me)
+
+isstoch(me::DetermShortRate) = false
 
 ## Private ---------------------------------------------------------------------
 function cycle2period!(me::DetermShortRate, tf::TimeFrame)
@@ -87,5 +90,11 @@ function cycle2period!(me::DetermShortRate, tf::TimeFrame)
   me.yield .*= tf.dt
   me.yield_input .*= tf.dt
   me.init *= tf.dt
+end
+
+function procinfo(me::DetermShortRate)
+  proc_info = infoskeleton(me)
+  proc_info.yield_determ = deepcopy(me.yield_input)
+  return proc_info
 end
 

@@ -1,4 +1,14 @@
 ## Constructors ----------------------------------------------------------------
+## Minimum Constructor
+function StochProcessInfor(proc_type::Symbol, proc_name::Symbol)
+  cpnt = Array(Symbol, 0)
+  init = Array(Float64, 0)
+  v_determ_bop = Array(Float64, nrow(capmkt_2), 0)
+  StochProcessInfo(proc_type, proc_name, cpnt, init, v_determ_bop, false)
+end
+
+
+## Contruct from DataFrames
 function StochProcessInfo(name::Symbol,
                           df_capmkt_1::DataFrame,
                           df_capmkt_2::DataFrame)

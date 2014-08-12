@@ -3,6 +3,7 @@
 function SII(buckets::Buckets,
              asset_other::AssetOther,
              liab_other::LiabOther,
+             yield_mkt_init::Float64,
              capmkt_dfs::Vector{DataFrame},
              invest_dfs::Vector{DataFrame},
              dyn_dfs::Vector{DataFrame}
@@ -20,7 +21,7 @@ function SII(buckets::Buckets,
 
   invest_be = Invest([:be, capmkt_be, invest_dfs]..., bkts_be.n_c)
   ## initialize dyn prior to any shock so that shock impacts dynamic rules
-  dyn = Dynamic([invest_be, buckets, liab_oth_be, dyn_dfs]...)
+  dyn = Dynamic([invest_be, buckets, liab_oth_be, yield_mkt_init, dyn_dfs]...)
 
 
   bal_cols = [MCInsurance.col_V, :BONUS_EOC, :TAX_CREDIT_EOC, :SCEN]
@@ -51,6 +52,7 @@ end
 function SII(buckets::Buckets,
              asset_other::AssetOther,
              liab_other::LiabOther,
+             yield_mkt_init::Float64,
              df_lc_various::DataFrame,
              df_sii_corr::DataFrame,
              df_sii_rating::DataFrame,
@@ -61,7 +63,8 @@ function SII(buckets::Buckets,
              invest_dfs::Vector{DataFrame},
              dyn_dfs::Vector{DataFrame})
 
-  me = SII(buckets, asset_other, liab_other, capmkt_dfs, invest_dfs, dyn_dfs)
+  me = SII(buckets, asset_other, liab_other, yield_mkt_init,
+           capmkt_dfs, invest_dfs, dyn_dfs)
 
   asset_other_no_dt = deepcopy(me.asset_oth_be)
   ## existing tax credit is still modeled

@@ -119,6 +119,7 @@ type MktC         ## mkt indicators per cycle (not period!) --------------------
   yield_rf_eoc::Array{Float64,2}       ## cash yield per cycle
   yield_grid_rf::Array{Float64,2}      ## grid for interpolation
   mean_disc_rf::Array{Float64, 3}      ## expected cumul. riskfree discount
+  yield_eoc::Array{Float64,2}          ## investment yield
 end
 
 type InvestAlloc  ## asset allocation ------------------------------------------
@@ -131,6 +132,7 @@ end
 
 type Invest      ## investment portfolio and valuation --------------------------
   name::Symbol                      ## name of investment scheme
+  tf::TimeFrame                     ## time frame same as cap_mkt
   cap_mkt::CapMkt                   ## capital market
   n::Int                            ## # investment groups
   ig::Vector{IG}                    ## investment groups: IG

@@ -46,6 +46,7 @@ type Bucket
   lx_boc::Float64             ## current fraction of policy holders in-force
   lx_boc_next::Float64        ## next cycle fraction of policy holders in-force
   bonus_rate::Float64         ## current bonus rate
+  bonus_rate_hypo::Float64    ## hypothet. bonus rate, cond for sx=f_sx*sx_price
   portion_c::Vector{Float64}  ## Factor per cycle, portion wrt whole portfolio
   ## for SII calculation
   select::Dict{Symbol,Bool}   ## selection indicator for various scenarios

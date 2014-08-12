@@ -235,16 +235,18 @@ function investeoc!(me::CFlow,
                     t::Int,
                     new_debt::Float64,
                     dyn::Dynamic)
-  mv_bop = (t == 1 ? me.v_0[1,1,INVEST_EOC] : me.v[mc,t-1,INVEST_EOC])
-  mv_bop -= new_debt  ## new debt is negative but increases assets
-  mv_bop += me.cf[mc,t,PREM] + me.cf[mc,t,C_BOC]
-  mv_boc = mv_bop
-  for t_p in ((t-1) * me.tf.n_dt+1):(t * me.tf.n_dt)
-    dyn.alloc!(mc, t, invest, dyn)
-    project!( invest, mc, t_p, mv_bop)
-    mv_bop = invest.mv_total_eop[mc,t_p]
-  end
-  me.cf[mc,t,INVEST] += invest.mv_total_eop[mc, t * me.tf.n_dt] - mv_boc
+  mv_boc = (t == 1 ? me.v_0[1,1,INVEST_EOC] : me.v[mc,t-1,INVEST_EOC])
+  mv_boc -= new_debt  ## new debt is negative but increases assets
+  mv_boc += me.cf[mc,t,PREM] + me.cf[mc,t,C_BOC]
+#   mv_boc = mv_bop
+#   for t_p in ((t-1) * me.tf.n_dt+1):(t * me.tf.n_dt)
+#     dyn.alloc!(invest, mc, t, dyn)
+#     project!( invest, mc, t_p, mv_bop)
+#     mv_bop = invest.mv_total_eop[mc,t_p]
+#   end
+#   me.cf[mc,t,INVEST] += mv_bop - mv_boc
+#   yield[mc, t] = log(mv_bop/max(mv_boc, eps()))
+  me.cf[mc,t,INVEST] = projecteoc!(invest, mc, t, dyn, mv_boc)
 end
 
 function bucketprojecteoc!(me::CFlow,

@@ -23,7 +23,7 @@ for mc = 1:n_mc
       for t_p in ((t-1) * tf.n_dt+1):(t * tf.n_dt)
         yield += invest.yield_total[mc, t_p]
       end
-      dyn.alloc!(mc, t, invest, dyn)
+      dyn.alloc!(invest, mc, t, dyn)
       buckets.all[b].bonus_rate =
         dyn.bonusrate( mc, t,  buckets.all[b], invest, dyn)
       prob_b[t:buckets.all[b].n_c, QX] =

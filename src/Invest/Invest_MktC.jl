@@ -10,6 +10,7 @@ function MktC(info::Vector{InvestInfo},
   yield_mkt_eoc = Array(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c )
   yield_grid_rf = Array(Float64, cap_mkt.tf.n_c, n_mean_grid)
   mean_disc_rf = Array(Float64, n_mean_c, cap_mkt.tf.n_c, n_mean_grid)
+  yield_eoc = zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_c)
 
   ind_cash = cap_mkt.id[info[id[:cash]].proc_name]
 
@@ -44,7 +45,7 @@ function MktC(info::Vector{InvestInfo},
   end
   return MktC(yield_mkt_eoc, vec(mean(yield_mkt_eoc, 1)),
               yield_rf_init, yield_rf_eoc, yield_grid_rf,
-              mean_disc_rf)
+              mean_disc_rf, yield_eoc)
 end
 
 

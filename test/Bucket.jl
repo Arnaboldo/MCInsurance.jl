@@ -60,7 +60,7 @@ for b = 1:buckets.n
             tmp_exp_ben[yr-tf.init+1, SX,b] +=
               getprobsx(lc,i,df_lc_prod)[yr-lc_start+1]*
                 cond_cf_b[yr-lc_start+1,SX] *
-                  lc.all[i, :be_sx_fac]
+                  lc.all[i, :f_sx]
 
           end
         end
@@ -140,7 +140,7 @@ for b = 1:buckets.n
                             df_lc_prod[lc.all[i, :prod_id],:cost_be_name]),
                    delta_t_infl)
     cond_cf[i] = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
-    ssx[i] =  getprobsx(lc, i, df_lc_prod) * lc.all[i, :be_sx_fac]
+    ssx[i] =  getprobsx(lc, i, df_lc_prod) * lc.all[i, :f_sx]
   end
   ## calculate average sx for bucket
   prob_sx = zeros(Float64,2*lc.age_max)

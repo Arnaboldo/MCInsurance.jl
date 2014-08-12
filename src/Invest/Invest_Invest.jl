@@ -73,7 +73,7 @@ function Invest(name::Symbol,
 
   mkt_c = MktC(info, cap_mkt, id, n_mean_mc, n_mean_c, n_mean_grid)
 
-  Invest(name, cap_mkt, n_ig, ig, id, alloc,
+  Invest(name, cap_mkt.tf, cap_mkt, n_ig, ig, id, alloc,
          mv_total_init, mv_total_eop, yield_total, mkt_c, false)
 end
 
@@ -140,6 +140,18 @@ function project!(me::Invest,
   me.yield_total[mc,t] = me.mv_total_eop[mc,t]/max(eps(), mv_total_bop) - 1
 end
 
+
+function projecteoc!(me::Invest, mc::Int, t_c::Int,
+                     dyn::Dynamic, mv_total_boc::Float64)
+  mv_total_bop = mv_total_boc
+  for t_p in ((t_c-1) * me.tf.n_dt+1):(t_c * me.tf.n_dt)
+    dyn.alloc!(me, mc, t_c, dyn)
+    project!( me, mc, t_p, mv_total_bop)
+    mv_total_bop = me.mv_total_eop[mc,t_p]
+  end
+  me.c.yield_eoc[mc, t_c] = log(mv_total_bop / max(mv_total_boc, eps()))
+  return mv_total_bop-mv_total_boc
+end
 
 function costs(me::Invest, cycle::Int)
   inv_costs = 0.0

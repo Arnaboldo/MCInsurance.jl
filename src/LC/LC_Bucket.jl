@@ -63,17 +63,17 @@ end
 function ==(b1::Bucket, b2::Bucket)
   ==(b1.n, b2.n) &&
     ==(b1.n_c, b2.n_c) &&
-      ==(b1.cat, b2.cat) &&
-        ==(b1.cond, b2.cond) &&
-          ==(b1.tpg_price, b2.tpg_price) &&
-            ==(b1.prob_be, b2.prob_be) &&
-              ==(b1.sx_weights, b2.sx_weights)
+    ==(b1.cat, b2.cat) &&
+    ==(b1.cond, b2.cond) &&
+    ==(b1.tpg_price, b2.tpg_price) &&
+    ==(b1.prob_be, b2.prob_be) &&
+    ==(b1.sx_weights, b2.sx_weights)
 end
 
 function ==(buckets_1::Buckets, buckets_2::Buckets)
   ==(buckets_1.n, buckets_2.n) &&
     ==(buckets_1.all, buckets_2.all) &&
-      ==(buckets_1.tf, buckets_2.tf)
+    ==(buckets_1.tf, buckets_2.tf)
 end
 
 function add!(me::Buckets,
@@ -123,7 +123,7 @@ function add!(me::Buckets,
   prob_be = zeros( Float64, n_c, 3)
   prob_be_tmp = getprob(lc, i, df_prod, df_qx, cat[CAT_QXBE],
                         age_range,
-                        lc.all[i, :be_sx_fac]
+                        lc.all[i, :f_sx]
                         )
   for X in [QX,SX]
     prob_be[:,X] =
@@ -132,14 +132,14 @@ function add!(me::Buckets,
   prob_be[:,SX] .*= [ abs(x)>eps() ? 1 : 0 for x in cond[:,SX]]
   prob_be[:,PX] = 1 .- prob_be[:,QX] - prob_be[:,SX]
 
-  prob_stat = getprob(lc, i, df_prod, df_qx, lc.all[i, :qx_name], age_range)
+  prob_price = getprob(lc, i, df_prod, df_qx, lc.all[i, :qx_name], age_range)
   tpg_price_tmp =
-    tpgveceoc(prob_stat,
-             exp(-cumsum(convert(Array,
-                                 interest[1:lc.all[i,:dur],
-                                          df_prod[lc.all[i,:prod_id],
-                                                  :interest_name]]))),
-             cond_cf)
+    tpgveceoc(prob_price,
+              exp(-cumsum(convert(Array,
+                                  interest[1:lc.all[i,:dur],
+                                           df_prod[lc.all[i,:prod_id],
+                                                   :interest_name]]))),
+              cond_cf)
   tpg_price = insertc(tf_cond, lc.all[i, :y_start], tpg_price_tmp, true)
   if lc.all[i, :y_start] < me.tf.init
     tpg_price_init = tpg_price_tmp[ me.tf.init-lc.all[i, :y_start]]
@@ -151,12 +151,14 @@ function add!(me::Buckets,
     me.n += 1
     push!(me.all, Bucket(1, n_c, dur, cat, cond, cond_nb,
                          tpg_price, tpg_price_init,
-                         prob_be, cond[:,SX], 1.0, 1.0, 0.0,
+                         prob_be, cond[:,SX], 1.0, 1.0,
+                         0.0, lc.all[i,:bonus_rate_hypo],
                          ones(Float64, n_c),
                          Dict{Symbol,Bool}(),
                          false))
   else
-    merge!(me, b, n_c, cat, cond, cond_nb, tpg_price, tpg_price_init, prob_be)
+    merge!(me, b, n_c, cat, cond, cond_nb, tpg_price, tpg_price_init,
+           lc.all[i, :bonus_rate_hypo], prob_be)
   end
 end
 
@@ -190,11 +192,13 @@ function merge!(me::Buckets,
                 cond_nb::Array{Float64,2},       # cond. cash-flows
                 tpg_price::Vector{Float64},
                 tpg_price_init::Float64,
+                bonus_rate_hypo::Float64,
                 prob_be::Array{Float64,2} )   # biom. prob
   if n_c > me.all[b].n_c
     grow!(me.all[b], n_c, prob_be[:,QX])
   end
   me.all[b].n += 1
+  cond_sx_b = sum(me.all[b].cond[:,SX])
   for j = 1:N_COND
     me.all[b].cond[:,j] += cond[:,j]
     me.all[b].cond_nb[:,j] += cond_nb[:,j]
@@ -205,6 +209,9 @@ function merge!(me::Buckets,
     (cond[:,SX] .* prob_be[:,SX] +
        me.all[b].sx_weights .* me.all[b].prob_be[:,SX]
      ) ./  min(-eps(), cond[:,SX] + me.all[b].sx_weights )
+  me.all[b].bonus_rate_hypo =
+    (sum(cond[:,SX]) * bonus_rate_hypo + cond_sx_b * me.all[b].bonus_rate_hypo)/
+    sum(me.all[b].cond[:,SX])
   me.all[b].sx_weights += cond[:,SX]
 end
 

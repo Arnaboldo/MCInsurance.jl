@@ -52,9 +52,9 @@ function shock!(me::SIILifeQX,
 end
 
 function qxshock!(bkt::Bucket,  qx::SIILifeQX)
-  bkt.prob_be[:,QX] = min(1, (1 + qx.shock) * bkt.prob_be[:,QX])
-  bkt.prob_be[:,SX] = min(1 .- bkt.prob_be[:,QX], bkt.prob_be[:,SX])
-  bkt.prob_be[:,PX] =  1.0 .- bkt.prob_be[:,QX] - bkt.prob_be[:,SX]
+  bkt.prob_ie[:,QX] = min(1, (1 + qx.shock) * bkt.prob_ie[:,QX])
+  bkt.prob_ie[:,SX] = min(1 .- bkt.prob_ie[:,QX], bkt.prob_ie[:,SX])
+  bkt.prob_ie[:,PX] =  1.0 .- bkt.prob_ie[:,QX] - bkt.prob_ie[:,SX]
 end
 
 
@@ -81,21 +81,22 @@ function select!(me::SIILifeQX,
   me.bkt_select = Array(Bool, bkts.n)
 
   invest = Invest([:sii_inv, capmkt_be, invest_dfs]..., bkts.n_c)
+  fixed = Fixed(invest, bkts)
   discount = meandiscrf(invest.c, invest.c.yield_rf_init, 1, bkts.n_c)
 
   for (b, bkt) in enumerate(bkts.all)
-    tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_be),
+    tpg_be =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt.prob_ie),
                      vcat(1.0, discount),
                      vcat(zeros(Float64, 1, N_COND), bkt.cond),
-                     prepend_c(invest.ig[invest.id[:cash]].cost, [0.0, 0.0]),
-                     vcat(0, bkt.portion_c))
+                     vcat(0, invest.ig[invest.id[:cash]].cost.rel_c),
+                     vcat(0, bkt.portion_c .* fixed.cost_abs_gc_c))
     bkt_test = deepcopy(bkt)
     qxshock!(bkt_test, me)
-    tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_be),
+    tpg_shock =  tpgeoc(vcat(zeros(Float64, 1, 3), bkt_test.prob_ie),
                         vcat(1.0, discount),
                         vcat(zeros(Float64, 1, N_COND), bkt_test.cond),
-                        prepend_c(invest.ig[invest.id[:cash]].cost, [0.0, 0.0]),
-                        vcat(0, bkt.portion_c))
+                        vcat(0, invest.ig[invest.id[:cash]].cost.rel_c),
+                        vcat(0, bkt.portion_c .* fixed.cost_abs_gc_c))
     me.bkt_select[b] = (tpg_shock < tpg_be)
   end
 end

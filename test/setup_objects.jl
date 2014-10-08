@@ -34,13 +34,14 @@ end
 
 fluct    = Fluct(tf, n_mc, 1.0)
 
-dyn = Dynamic(invest,
-              df_general,
-              invest_det.c.yield_mkt_eoc[1,1], ## approx only
-              invest_det.c.yield_rf_eoc[1,1])  ## approx only
 
 liab_other = LiabOther() ## No other liabilities
 asset_other = AssetOther() ## No other assets
 
-cflow    = CFlow(buckets, invest, asset_other, liab_other, fluct, dyn)
+dyn = Dynamic([invest, buckets, liab_other,
+              invest.c.mean_yield_mkt_eoc[1], dyn_dfs]...)
+
+fixed = Fixed(invest, buckets)
+
+cflow  = CFlow(buckets, invest, asset_other, liab_other, fixed, fluct, dyn)
 

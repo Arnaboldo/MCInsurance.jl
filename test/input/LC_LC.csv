@@ -1,4 +1,4 @@
-process,ph_id,prod_name,y_start,is,c_end_PREM,c_start_PREM,c_start_PX,c_end_PX,c_start_SX,c_end_SX,c_start_QX,c_end_QX,f_sx,bonus_rate_hypo
+process,ph_id,prod_name,y_start,is,c_end_PREM,c_start_PREM,c_start_PX,c_end_PX,c_start_SX,c_end_SX,c_start_QX,c_end_QX,f_sx_ie,bonus_rate_hypo
 true,3,A_CB_CP,1990,1000.0,10,1,10,Inf,1,10,0,0,0.9,0.02
 true,1,M_CB_CP,2005,2000.0,30,1,30,30,1,30,1,30,0.9,0.02
 true,2,A_CB_CP,2010,3000.0,5,1,10,Inf,1,10,0,0,0.9,0.02

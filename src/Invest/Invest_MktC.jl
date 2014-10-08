@@ -56,8 +56,8 @@ function meandiscrf(me::MktC,
                     t::Int,
                     t_final::Int = 0)
   len = (t_final == 0 ?
-           length(me.mean_disc_rf) :
-           min(length(me.mean_disc_rf), t_final - t + 1) )
+           length(me.mean_disc_rf[1,:,1]) :
+           min(length(me.mean_disc_rf[1,:,1]), t_final - t + 1) )
 
   if yield_rf > me.yield_grid_rf[t, end]
     return  vec(me.mean_disc_rf[1:len, t, end])

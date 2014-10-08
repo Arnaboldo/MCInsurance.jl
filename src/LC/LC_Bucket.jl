@@ -26,7 +26,7 @@ function Buckets(lc::LC,
   bkts.gc_c = zeros(Float64, bkts.n_c)
   for bkt in bkts.all
     bkt.portion_c = zeros(Float64, bkt.n_c)
-    bkt.portion_c[1:bkt.dur] += cumprod(bkt.prob_be[1:bkt.dur,PX]) * bkt.n
+    bkt.portion_c[1:bkt.dur] += cumprod(bkt.prob_ie[1:bkt.dur,PX]) * bkt.n
     bkts.gc_c[1:bkt.dur] .+= bkt.portion_c[1:bkt.dur]
   end
   for bkt in bkts.all
@@ -66,7 +66,7 @@ function ==(b1::Bucket, b2::Bucket)
     ==(b1.cat, b2.cat) &&
     ==(b1.cond, b2.cond) &&
     ==(b1.tpg_price, b2.tpg_price) &&
-    ==(b1.prob_be, b2.prob_be) &&
+    ==(b1.prob_ie, b2.prob_ie) &&
     ==(b1.sx_weights, b2.sx_weights)
 end
 
@@ -119,27 +119,29 @@ function add!(me::Buckets,
   end
 
   # age_range refers to age_cycles from the inception of the contract
-  age_range = (lc.all[i,:ph_age_start]+1) .+ [0: lc.all[i,:dur] - 1]
-  prob_be = zeros( Float64, n_c, 3)
-  prob_be_tmp = getprob(lc, i, df_prod, df_qx, cat[CAT_QXBE],
-                        age_range,
-                        lc.all[i, :f_sx]
-                        )
+  prob_ie = zeros( Float64, n_c, 3)
+  prob_ie_tmp = probie(lc, i, df_prod, df_qx, cat[CAT_QXBE])
   for X in [QX,SX]
-    prob_be[:,X] =
-      insertc(tf_cond, lc.all[i, :y_start], prob_be_tmp[:,X], true)
+    prob_ie[:,X] =
+      insertc(tf_cond, lc.all[i, :y_start], prob_ie_tmp[:,X], true)
   end
-  prob_be[:,SX] .*= [ abs(x)>eps() ? 1 : 0 for x in cond[:,SX]]
-  prob_be[:,PX] = 1 .- prob_be[:,QX] - prob_be[:,SX]
+  prob_ie[:,SX] .*= [ abs(x)>eps() ? 1 : 0 for x in cond[:,SX]]
+  prob_ie[:,PX] = 1 .- prob_ie[:,QX] - prob_ie[:,SX]
 
-  prob_price = getprob(lc, i, df_prod, df_qx, lc.all[i, :qx_name], age_range)
+  prof_price =
+    profile(lc,
+            i,
+            df_prod,
+            loadings(df_load, df_prod[lc.all[i, :prod_id],:cost_price_name]))
+  cond_cf_price = condcf(lc.all[i,:is], lc.all[i,:prem], df_prod, prof_price)
+  prob_price = probprice(lc, i, df_prod, df_qx)
   tpg_price_tmp =
     tpgveceoc(prob_price,
               exp(-cumsum(convert(Array,
                                   interest[1:lc.all[i,:dur],
                                            df_prod[lc.all[i,:prod_id],
                                                    :interest_name]]))),
-              cond_cf)
+              cond_cf_price)
   tpg_price = insertc(tf_cond, lc.all[i, :y_start], tpg_price_tmp, true)
   if lc.all[i, :y_start] < me.tf.init
     tpg_price_init = tpg_price_tmp[ me.tf.init-lc.all[i, :y_start]]
@@ -151,14 +153,14 @@ function add!(me::Buckets,
     me.n += 1
     push!(me.all, Bucket(1, n_c, dur, cat, cond, cond_nb,
                          tpg_price, tpg_price_init,
-                         prob_be, cond[:,SX], 1.0, 1.0,
+                         prob_ie, cond[:,SX], 1.0, 1.0,
                          0.0, lc.all[i,:bonus_rate_hypo],
                          ones(Float64, n_c),
                          Dict{Symbol,Bool}(),
                          false))
   else
     merge!(me, b, n_c, cat, cond, cond_nb, tpg_price, tpg_price_init,
-           lc.all[i, :bonus_rate_hypo], prob_be)
+           lc.all[i, :bonus_rate_hypo], prob_ie)
   end
 end
 
@@ -193,9 +195,9 @@ function merge!(me::Buckets,
                 tpg_price::Vector{Float64},
                 tpg_price_init::Float64,
                 bonus_rate_hypo::Float64,
-                prob_be::Array{Float64,2} )   # biom. prob
+                prob_ie::Array{Float64,2} )   # biom. prob
   if n_c > me.all[b].n_c
-    grow!(me.all[b], n_c, prob_be[:,QX])
+    grow!(me.all[b], n_c, prob_ie[:,QX])
   end
   me.all[b].n += 1
   cond_sx_b = sum(me.all[b].cond[:,SX])
@@ -205,9 +207,9 @@ function merge!(me::Buckets,
   end
   me.all[b].tpg_price += tpg_price
   me.all[b].tpg_price_init += tpg_price_init
-  me.all[b].prob_be[:,SX] =
-    (cond[:,SX] .* prob_be[:,SX] +
-       me.all[b].sx_weights .* me.all[b].prob_be[:,SX]
+  me.all[b].prob_ie[:,SX] =
+    (cond[:,SX] .* prob_ie[:,SX] +
+       me.all[b].sx_weights .* me.all[b].prob_ie[:,SX]
      ) ./  min(-eps(), cond[:,SX] + me.all[b].sx_weights )
   me.all[b].bonus_rate_hypo =
     (sum(cond[:,SX]) * bonus_rate_hypo + cond_sx_b * me.all[b].bonus_rate_hypo)/
@@ -218,10 +220,10 @@ end
 ## grow duration of table Bucket.cond if current duration is too short
 function grow!(me::Bucket,
                n_c::Int,
-               prob_be_qx::Vector{Float64})
+               prob_ie_qx::Vector{Float64})
   cond = zeros(Float64, n_c, N_COND)
   cond_nb = zeros(Float64, n_c, N_COND)
-  prob_be = zeros(Float64, n_c, 2)
+  prob_ie = zeros(Float64, n_c, 2)
   sx_weights = zeros(Float64, n_c)
   tpg_price = zeros(Float64, n_c)
   for j = 1:N_COND
@@ -229,15 +231,15 @@ function grow!(me::Bucket,
     cond_nb[1:me.n_c,j] = me.cond_nb[:,j]
   end
   tpg_price[1:me.n_c] = me.tpg_price
-  prob_be[:,QX] =  prob_be_qx
-  prob_be[1:me.n_c,SX] = me.prob_be[:,SX]
+  prob_ie[:,QX] =  prob_ie_qx
+  prob_ie[1:me.n_c,SX] = me.prob_ie[:,SX]
   sx_weights[1:me.n_c] = me.sx_weights
 
   me.n_c = n_c
   me.cond = cond
   me.cond_nb = cond_nb
   me.tpg_price = tpg_price
-  me.prob_be = prob_be
+  me.prob_ie = prob_ie
   me.sx_weights = sx_weights
 end
 
@@ -252,8 +254,8 @@ function show(io::IO, me::Bucket)
   println( io, "size = $(size(me.cond))")
   print(   io, "tpg_price:    guaranteed technical provisions for pricing, ")
   println( io, "size = $(size(me.tpg_price))")
-  print(   io, "prob_be:    best estimate prob qx, sx, ")
-  println( io, "size = $(size(me.prob_be))")
+  print(   io, "prob_ie:    best estimate prob qx, sx, ")
+  println( io, "size = $(size(me.prob_ie))")
 end
 
 function getind(me::Buckets,  cat::Vector{Any})

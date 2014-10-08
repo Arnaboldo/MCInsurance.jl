@@ -36,21 +36,21 @@ for i in 1:lc.n
   if sx_dur(i) != 0
     # First sx-value is correct
     @test_approx_eq_eps(df_lc_prod[lc.all[i, :prod_id], :start_SX],
-                        getprobsx(lc,i,df_lc_prod)[1],
+                        MCInsurance.probsxraw(lc,i,df_lc_prod)[1],
                         tol)
     # Last sx-value is correct
     if sx_dur(i) > 1 # sx_dur = 1: we take first value regardless of last value
       @test_approx_eq_eps(df_lc_prod[lc.all[i, :prod_id], :end_SX],
-                          getprobsx(lc,i,df_lc_prod)[sx_dur(i)],
+                          MCInsurance.probsxraw(lc,i,df_lc_prod)[sx_dur(i)],
                           tol)
     end
     # sx-values are linear
     if sx_dur(i) >=3  # we need at least 3 points to check linearity
       for d = 3:sx_dur(i)
-        @test_approx_eq_eps(getprobsx(lc,i,df_lc_prod)[2]-
-                              getprobsx(lc,i,df_lc_prod)[1],
-                              getprobsx(lc,i,df_lc_prod)[d]-
-                                getprobsx(lc,i,df_lc_prod)[d-1],
+        @test_approx_eq_eps(MCInsurance.probsxraw(lc,i,df_lc_prod)[2]-
+                              MCInsurance.probsxraw(lc,i,df_lc_prod)[1],
+                              MCInsurance.probsxraw(lc,i,df_lc_prod)[d]-
+                                MCInsurance.probsxraw(lc,i,df_lc_prod)[d-1],
                                 tol
                             )
       end
@@ -122,11 +122,11 @@ for i = 1:lc.n
   ## high. This is due to the fact that absolute cost/profit
   ## loadings are so high that a lapse benefit of 90% premium
   ## sum is only sustainable at a very high premium level.
-  load = loadings(df_lc_load, df_lc_prod[lc.all[i, :prod_id],:cost_name])
+  load = loadings(df_lc_load, df_lc_prod[lc.all[i, :prod_id],:cost_price_name])
   age_range = [lc.all[i,:ph_age_start]:(lc.all[i,:ph_age_start]
                                         + lc.all[i,:dur] - 1)]
   qx = df_lc_qx[age_range .+ 1, lc.all[i, :qx_name]]
-  prob_sx = getprobsx(lc, i, df_lc_prod)
+  prob_sx = MCInsurance.probsxraw(lc, i, df_lc_prod)
   px = 1 .- qx - prob_sx
   interest = convert(Array,
                      df_lc_interest[1:length(age_range),
@@ -134,7 +134,7 @@ for i = 1:lc.n
                                                :interest_name] ] )
   v = cumprod(exp(-interest))
   prof = profile(lc, i, df_lc_prod, load)
-  prob = getprob(lc, i, df_lc_prod,  df_lc_qx )
+  prob = MCInsurance.probprice(lc, i, df_lc_prod,  df_lc_qx )
   interest = convert(Array,
                      df_lc_interest[1:lc.all[i,:dur],
                                     df_lc_prod[lc.all[i,:prod_id],
@@ -175,7 +175,7 @@ for i = 1:lc.n
   age_range = [lc.all[i,:ph_age_start]:(lc.all[i,:ph_age_start]
                                         + lc.all[i,:dur] - 1)]
   prob[:,QX] = df_lc_qx[age_range .+ 1, lc.all[i, :qx_name]]
-  prob[:,SX] = getprobsx(lc, i, df_lc_prod)
+  prob[:,SX] = MCInsurance.probsxraw(lc, i, df_lc_prod)
   prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
   load =  loadings(df_lc_load, df_lc_prod[lc.all[i, :prod_id],:cost_be_name])
   prof = profile(lc, i, df_lc_prod, load)
@@ -189,7 +189,7 @@ for i = 1:lc.n
       tmp_tpg[tau] +=
         cum_px * exp(r[t]) * v[t] / v[tau] * cond_cf[t,PREM]
       tmp_tpg[tau] +=
-        cum_px * v[t] / v[tau] * (cond_cf[t,C_EOC])
+        cum_px * v[t] / v[tau] * (cond_cf[t,C_DIR_EOC])
       tmp_tpg[tau] +=
         cum_px * v[t] / v[tau] *  prob[t,QX]*cond_cf[t,QX]
       tmp_tpg[tau] +=

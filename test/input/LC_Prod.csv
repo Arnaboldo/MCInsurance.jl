@@ -1,4 +1,4 @@
-name,prof_start_QX,prof_end_QX,prof_start_SX,prof_end_SX,prof_start_PX,prof_end_PX,prof_start_PREM,prof_end_PREM,start_SX,end_SX,cost_name,cost_be_name,qx_name,interest_name
+name,prof_start_QX,prof_end_QX,prof_start_SX,prof_end_SX,prof_start_PX,prof_end_PX,prof_start_PREM,prof_end_PREM,start_SX,end_SX,cost_price_name,cost_be_name,qx_name,interest_name
 N_CB_CP,1.0,1.0,0.9,0.9,1.0,1.0,1.0,1.0,0.2,0.02,cost_std,cost_be_01,QX,t_2000
 M_CB_CP,1.0,1.0,0.9,0.9,1.0,1.0,1.0,1.0,0.2,0.02,cost_02,cost_be_01,QX,t_2000
 T_CB_CP,1.0,1.0,0.1,0.0,0.0,0.0,1.0,1.0,0.3,0.02,cost_std,cost_be_00,QX,t_1990

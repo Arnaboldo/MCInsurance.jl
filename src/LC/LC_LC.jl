@@ -80,14 +80,14 @@ function condcf(is::Float64,
   cf[:,PX]    = - prof[:,PX] * is
   cf[:,PREM]  =   prof[:,PREM] * prem
   cf[:,C_BOC] = - prof[:,C_INIT_ABS] - prof[:, C_INIT_IS] * is
-  cf[:,C_EOC] = - prof[:,C_ABS] - prof[:,C_IS] * is - prof[:,C_PREM] * prem
+  cf[:,C_DIR_EOC] = - prof[:,C_ABS] - prof[:,C_IS] * is - prof[:,C_PREM] * prem
   return cf
 end
 
 ## surrender probabilities: linearly increasing or decreasing
-function getprobsx( lc::LC, i::Int, products::DataFrame )
+## may still need to be scaled, see probgeneral.
+function probsxraw( lc::LC, i::Int, products::DataFrame)
   prob_sx = zeros( Float64,lc.all[i,:dur])
-
   if !((lc.all[i, :c_start_SX]==0) | (lc.all[i, :c_end_SX]==0))
     prob_sx[lc.all[i, :c_start_SX]:lc.all[i, :c_end_SX] ] =
       linspace(products[lc.all[i,:prod_id], :start_SX],
@@ -97,30 +97,34 @@ function getprobsx( lc::LC, i::Int, products::DataFrame )
   return prob_sx
 end
 
-function getprob(lc::LC,
-                 i::Int,
-                 products::DataFrame,
-                 qx_df::DataFrame
-                 )
-  return getprob(lc, i, products, qx_df, lc.all[i, :qx_name],
-                 (lc.all[i,:ph_age_start]+1) .+ [0: lc.all[i,:dur] - 1])
-end
-
-function getprob(lc::LC,
-                 i::Int,
-                 df_prod::DataFrame,
-                 df_qx::DataFrame,
-                 qx_name::Symbol,
-                 age_range::Vector{Int},
-                 f_sx::Float64 = 1.0
-                 )
+function probgeneral(lc::LC,
+                     i::Int,
+                     df_prod::DataFrame,
+                     df_qx::DataFrame,
+                     qx_name::Symbol,
+                     f_sx::Real
+                     )
+  age_range = (lc.all[i,:ph_age_start]+1) .+ [0: lc.all[i,:dur] - 1]
   prob    = zeros( Float64, length(age_range), 3)
   ## qx_df starts with age_period = 1, i.e. age = 0. Hence +1
   prob[:,QX] = df_qx[age_range, qx_name]
-  prob[:,SX] = f_sx * getprobsx(lc, i, df_prod)
+  prob[:,SX] = f_sx * probsxraw(lc, i, df_prod)
   prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
   return prob
 end
+
+probie(lc::LC,
+       i::Int,
+       df_prod::DataFrame,
+       df_qx::DataFrame,
+       qx_name::Symbol) =
+  probgeneral(lc, i, df_prod, df_qx, qx_name, lc.all[i, :f_sx_ie])
+
+probprice(lc::LC,
+          i::Int,
+          products::DataFrame,
+          qx_df::DataFrame) =
+  probgeneral(lc, i, products, qx_df, lc.all[i, :qx_name], 1)
 
 
 ## price of an insurance contract
@@ -170,27 +174,52 @@ function tpgeoc (prob::Array{Float64,2},
 end
 
 function tpgeoc (prob::Array{Float64,2},
+                 discount_1c::Vector{Float64},
+                 cond_cf::Array{Float64,2},
+                 inv_cost_abs_gc_c::Vector{Float64})
+  dur = size(cond_cf,1)
+  tpg = 0.0
+  fcp = 0.0
+  if dur > 0
+    for t in (dur-1):-1:1
+      ## absolute invstment costs are already going concern
+      tpg = tpgprev(tpg,
+                    reshape(prob[t+1,:], size(prob,2)),
+                    discount_1c[t+1],
+                    reshape(cond_cf[t+1,:], size(cond_cf,2)))
+       fcp = discount_1c[t+1] * (inv_cost_abs_gc_c[t+1] + fcp)
+    end
+  end
+  return tpg + fcp
+  #    return tpg + discount[2:end] ⋅ inv_cost_abs_gc_c[2:end] / discount[1]
+end
+
+
+function tpgeoc (prob::Array{Float64,2},
                  discount::Vector{Float64},
                  cond_cf::Array{Float64,2},
-                 inv_cost::InvestCost,
-                 portion_c::Vector{Float64})
+                 inv_cost_rel_c::Vector{Float64},
+                 inv_cost_abs_gc_c::Vector{Float64})
   discount_1c = discount ./ [1, discount[1:end-1]]
   dur = size(cond_cf,1)
   tpg = 0.0
+  fcp = 0.0
   if dur > 0
     for t in (dur-1):-1:1
-      ## absolute invstment costs are already going concern for the decreasing
-      ## volume of the contract portfolio but not yet for individual
-      ## buckets.
+      ## absolute invstment costs are already going concern
       tpg = tpgprev(tpg,
                     reshape(prob[t+1,:], size(prob,2)),
                     discount_1c[t+1],
                     reshape(cond_cf[t+1,:], size(cond_cf,2)),
-                    inv_cost.rel_c[t+1],
-                    portion_c[t+1] * inv_cost.abs_c[t+1])
+                    inv_cost_rel_c[t+1])
+      fcp = fcpprev(fcp,
+                    discount_1c[t+1],
+                    inv_cost_abs_gc_c[t+1],
+                    inv_cost_rel_c[t+1])
     end
   end
-  return tpg
+  return tpg + fcp
+  #    return tpg + discount[2:end] ⋅ inv_cost_abs_gc_c[2:end] / discount[1]
 end
 
 
@@ -211,35 +240,51 @@ function tpgveceoc (prob::Array{Float64,2},
 end
 
 function tpgveceoc (prob::Array{Float64,2},
+                    discount_1c::Vector{Float64},
+                    cond_cf::Array{Float64,2},
+                    inv_cost_abs_gc_c::Vector{Float64})
+  dur = size(cond_cf,1)
+  tpg = zeros(Float64, dur)
+  fcp = zeros(Float64, dur)
+  for t in (dur-1):-1:1
+    tpg[t] = tpgprev(tpg[t+1],
+                     reshape(prob[t+1,:], size(prob,2)),
+                     discount_1c[t+1],
+                     reshape(cond_cf[t+1,:], size(cond_cf,2)) )
+    fcp[t] = discount_1c[t+1] * (inv_cost_abs_gc_c[t+1] + fcp[t+1])
+   end
+  return tpg + fcp
+end
+
+function tpgveceoc (prob::Array{Float64,2},
                     discount::Vector{Float64},
                     cond_cf::Array{Float64,2},
-                    inv_cost::InvestCost,
-                    portion_c::Vector{Float64})
-
+                    inv_cost_rel_c::Vector{Float64},
+                    inv_cost_abs_gc_c::Vector{Float64})
   discount_1c = discount ./ [1, discount[1:end-1]]
   dur = size(cond_cf,1)
   tpg = zeros(Float64, dur)
-  tpg[dur] = 0.0
+  fcp = zeros(Float64, dur)
   for t in (dur-1):-1:1
     tpg[t] = tpgprev(tpg[t+1],
                      reshape(prob[t+1,:], size(prob,2)),
                      discount_1c[t+1],
                      reshape(cond_cf[t+1,:], size(cond_cf,2)) ,
-                     inv_cost.rel_c[t+1],
-                     portion_c[t+1] * inv_cost.abs_c[t+1])
+                     inv_cost_rel_c[t+1])
+    fcp[t] = fcpprev(fcp[t+1],
+                     discount_1c[t+1],
+                     inv_cost_abs_gc_c[t+1],
+                     inv_cost_rel_c[t+1])
   end
-  return tpg
+  return tpg + fcp
 end
-
-
-
 
 function tpgprev(tpg::Float64,
                  prob::Vector{Float64},
                  discount_1c::Float64,
                  cond_cf::Vector{Float64})
   cond_cf[PREM] + cond_cf[C_BOC] +
-    discount_1c * (cond_cf[C_EOC] +  prob[QX] * cond_cf[QX]
+    discount_1c * (cond_cf[C_DIR_EOC] +  prob[QX] * cond_cf[QX]
                    + prob[SX] * cond_cf[SX] + prob[PX] * (cond_cf[PX] + tpg))
 end
 
@@ -247,13 +292,20 @@ function tpgprev(tpg::Float64,
                  prob::Vector{Float64},
                  discount_1c::Float64,
                  cond_cf::Vector{Float64},
-                 inv_cost_rel::Float64,
-                 inv_cost_abs::Float64,)
+                 inv_cost_rel::Float64)
   (cond_cf[PREM] + cond_cf[C_BOC] +
-     discount_1c * (cond_cf[C_EOC] +  inv_cost_abs + prob[QX] * cond_cf[QX] +
+     discount_1c * (cond_cf[C_DIR_EOC] + prob[QX] * cond_cf[QX] +
                       prob[SX] * cond_cf[SX] + prob[PX] * (cond_cf[PX] + tpg))) /
-    (1 - discount_1c * inv_cost_rel)
+    (1 + discount_1c * inv_cost_rel)
 end
+
+function fcpprev(fcp::Float64,
+                 discount_1c::Float64,
+                 fc::Float64,
+                 inv_cost_rel::Float64)
+  return discount_1c * (fc + fcp) /  (1 + discount_1c * inv_cost_rel)
+end
+
 
 
 ## combine all pertinent information into lc.all
@@ -308,8 +360,8 @@ function lc!(lc::LC,
                    i,
                    df_prod,
                    loadings(df_load,
-                            df_prod[lc.all[i, :prod_id],:cost_name]))
-    prob = getprob(lc, i, df_prod,  qx_df )
+                            df_prod[lc.all[i, :prod_id],:cost_price_name]))
+    prob = probprice(lc, i, df_prod,  qx_df)
     interest = convert(Array,
                        tech_interest[1:lc.all[i,:dur],
                                      df_prod[lc.all[i,:prod_id],

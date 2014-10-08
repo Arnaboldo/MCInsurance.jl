@@ -1,11 +1,11 @@
-export LiabOther, pveoc, pvboc, paydebt, plandebt!, getdebt
+export LiabOther, pveoc, pvboc, paydebt, paycoupon, plandebt!, getdebt
 export Debt, goingconcern!
 
 type  Debt
   t_init::Int
   t_final::Int
   nominal::Float64
-  interest::Float64
+  coupon::Float64
 end
 
 type LiabOther

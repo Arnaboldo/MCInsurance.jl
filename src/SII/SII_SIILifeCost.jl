@@ -57,9 +57,9 @@ function costshock!!(inv::Invest, bkts::Buckets, cost::SIILifeCost)
   end
   for bkt in bkts.all
     bkt.cond[:,C_BOC] .*= shock_boc[1:n_c]
-    bkt.cond[:,C_EOC] .*= shock_eoc[1:n_c]
+    bkt.cond[:,C_DIR_EOC] .*= shock_eoc[1:n_c]
     bkt.cond_nb[:,C_BOC] .*= shock_boc[1:n_c]
-    bkt.cond_nb[:,C_EOC] .*= shock_eoc[1:n_c]
+    bkt.cond_nb[:,C_DIR_EOC] .*= shock_eoc[1:n_c]
   end
 end
 

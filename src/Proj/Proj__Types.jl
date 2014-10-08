@@ -1,25 +1,29 @@
-## column names for CFlow.v.  QX, SX, PX, PREM, C_BOC, C_EOC: 1:6
-export  DELTA_TPG, BONUS, INVEST, L_OTHER, PROFIT, TAX, DIVID
+export  C_EOC, DELTA_TPG, BONUS, INVEST, L_OTHER, PROFIT, TAX, TAX_CREDIT, DIVID
 export TPG_EOC, L_OTHER_EOC, INVEST_EOC, SURPLUS_EOC, CYCLE
-export Fluct
+export Fluct, Fixed
 export CFlow, dfcf, dfv0, dfv, disccf, pvdfcf, vinit
-export balance_det_init, balance_det
+export balance_det_init, balance_det, proveoc, proveocvec
 export Dynamic, getprob
 
-const DELTA_TPG, BONUS, INVEST, L_OTHER, PROFIT, TAX, TAX_CREDIT, DIVID,  = 7:14
+const C_EOC = 6
+const DELTA_TPG, BONUS, INVEST, L_OTHER, PROFIT, TAX,  DIVID  = 7:14
 
 const TPG_EOC, L_OTHER_EOC, INVEST_EOC, SURPLUS_EOC, CYCLE = 1:5
 
 const col_CF = [:QX, :SX, :PX, :PREM, :C_BOC, :C_EOC,
                 :DELTA_TPG, :BONUS, :INVEST, :L_OTHER,
-                :PROFIT, :TAX, :TAX_CREDIT, :DIVID]
+                :PROFIT, :TAX, :DIVID]
 
 const col_V = [:TPG_EOC, :L_OTHER_EOC, :INVEST_EOC,
                :SURPLUS_EOC, :CYCLE]
 const col_V_TYPES = [Float64, Float64, Float64, Float64, Int]
 
-const col_FLUCT = [:QX, :SX, :C_BOC, :C_EOC]
+const col_FLUCT = [:QX, :SX, :C_BOC, :C_DIR_EOC]
 
+type Fixed
+  cost_abs_c::Vector{Float64}
+  cost_abs_gc_c::Vector{Float64}
+end
 
 type Fluct
   n::Int                        ## # of GeomBrownian 1d-processes
@@ -40,6 +44,7 @@ type CFlow
   model_new_tax_credit::Bool      ## true: model arsing tax credit
   tax_credit_init::Float64        ## initial tax credit
   tax_credit::Array{Float64,2}    ## nominal values necessary for projection
+  tax_credit_util::Array{Float64,2} ## utilization of tax credit
   discount_init::Array{Float64,1} ## discount rates at beginning of projection
 end
 

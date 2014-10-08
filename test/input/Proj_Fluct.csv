@@ -1,6 +1,6 @@
-cols,init,drift,std,corr.QX,corr.SX,corr.C_BOC,corr.C_EOC
+cols,init,drift,std,corr.QX,corr.SX,corr.C_BOC,corr.C_DIR_EOC
 QX,1,0,0.25,1,0.5,0,0
 SX,1,0,0.25,0.5,1,0,0
 C_BOC,1,0,0.25,0,0,1,0.2
-C_EOC,1,0,0.25,0,0,0.2,1
+C_DIR_EOC,1,0,0.25,0,0,0.2,1
 

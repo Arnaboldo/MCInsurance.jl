@@ -12,10 +12,21 @@ function pvboc(me::LiabOther, t::Int, discount::Vector{Float64})
   return value
 end
 
-function pveoc(me::LiabOther, t::Int, discount::Vector{Float64})
+function pveoc(me::LiabOther, t::Int, disc_1c::Vector{Float64})
   value = 0.0
-  value += pveoc(me.debt_subord, t, discount)
-  value += pveoc(me.debt_regular, t, discount)
+  value += pveoc(me.debt_subord, t, disc_1c)
+  value += pveoc(me.debt_regular, t, disc_1c)
+  return value
+end
+
+function paycoupon(me::LiabOther, t::Int)
+  value = 0.0
+  if length(me.debt_subord) > 0
+    value += mapreduce(x -> paycoupon(x,t), +, me.debt_subord)
+  end
+  if length(me.debt_regular) > 0
+    value += mapreduce(x -> paycoupon(x,t), +, me.debt_regular)
+  end
   return value
 end
 
@@ -49,7 +60,7 @@ function goingconcern(me::Vector{Debt}, gc_c::Vector{Float64})
       push!(new_debt_vec, Debt(debt.t_init,
                                t,
                                diff_nom[t],
-                               debt.interest))
+                               debt.coupon))
     end
   end
   return(new_debt_vec)

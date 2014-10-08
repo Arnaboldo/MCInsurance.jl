@@ -27,13 +27,13 @@ for b = 1:buckets.n
     cond_start[PX] =     lc.all[i, :c_start_PX]
     cond_start[PREM] =   1
     cond_start[C_BOC] =  1
-    cond_start[C_EOC] =  1
+    cond_start[C_DIR_EOC] =  1
     cond_end[QX] =       lc.all[i, :c_end_QX]
     cond_end[SX] =       lc.all[i, :c_end_SX]
     cond_end[PX] =       min(1000,lc.all[i, :c_end_PX])
     cond_end[PREM] =     lc.all[i, :c_end_PREM]
     cond_end[C_BOC] =    lc.all[i, :dur]
-    cond_end[C_EOC] =    lc.all[i, :dur]
+    cond_end[C_DIR_EOC] =    lc.all[i, :dur]
 
     delta_t_infl =  tf.init - lc.all[i, :y_start]
     prof = profile(lc,
@@ -58,10 +58,9 @@ for b = 1:buckets.n
                 cond_cf_b[yr- lc_start+1, QX]
           elseif j == SX
             tmp_exp_ben[yr-tf.init+1, SX,b] +=
-              getprobsx(lc,i,df_lc_prod)[yr-lc_start+1]*
+              MCInsurance.probsxraw(lc,i,df_lc_prod)[yr-lc_start+1]*
                 cond_cf_b[yr-lc_start+1,SX] *
-                  lc.all[i, :f_sx]
-
+                  lc.all[i, :f_sx_ie]
           end
         end
       end
@@ -74,11 +73,11 @@ for b = 1:buckets.n
                         tol)
     if j in [QX,SX]
       ## Test that expected QX, SX benefits coincide
-      #           println("$j $b $t $(buckets.all[b].prob_be[t,j])")
+      #           println("$j $b $t $(buckets.all[b].prob_ie[t,j])")
       #          println("$(buckets.all[b].cat)")
       #         println("$(lc_bucket[b])")
       @test_approx_eq_eps(tmp_exp_ben[t,j,b],
-                          buckets.all[b].cond[t,j] * buckets.all[b].prob_be[t,j],
+                          buckets.all[b].cond[t,j] * buckets.all[b].prob_ie[t,j],
                           tol)
     end
   end
@@ -100,7 +99,7 @@ for b = 1:buckets.n
   for t = 1:b_n_c
     #   if t >
     for X in (QX,SX)
-      prob_b[ t:b_n_c, X] = buckets.all[b].prob_be[t:b_n_c, X]
+      prob_b[ t:b_n_c, X] = buckets.all[b].prob_ie[t:b_n_c, X]
     end
     prob_b[:,PX] = 1 .- prob_b[:,QX] - prob_b[:,SX]
     tpg[t,b] = tpgeoc(prob_b[t:b_n_c,:],
@@ -140,7 +139,7 @@ for b = 1:buckets.n
                             df_lc_prod[lc.all[i, :prod_id],:cost_be_name]),
                    delta_t_infl)
     cond_cf[i] = condcf(lc.all[i,:is], lc.all[i,:prem], df_lc_prod, prof)
-    ssx[i] =  getprobsx(lc, i, df_lc_prod) * lc.all[i, :f_sx]
+    ssx[i] =  MCInsurance.probsxraw(lc, i, df_lc_prod) * lc.all[i, :f_sx_ie]
   end
   ## calculate average sx for bucket
   prob_sx = zeros(Float64,2*lc.age_max)

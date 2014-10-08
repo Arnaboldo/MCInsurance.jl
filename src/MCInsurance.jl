@@ -50,6 +50,7 @@ include("AssetOther/AssetOther_AssetOther.jl")
 include("LiabOther/LiabOther_Debt.jl")
 include("LiabOther/LiabOther_LiabOther.jl")
 
+include("Proj/Proj_Fixed.jl")
 include("Proj/Proj_Fluct.jl")
 include("Proj/Proj_CFlow.jl")
 include("Proj/Proj_Dynamic.jl")

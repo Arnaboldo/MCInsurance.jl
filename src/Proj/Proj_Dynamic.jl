@@ -17,8 +17,8 @@ function Dynamic(df_general::DataFrame)
 end
 
 ## Interface functions ---------------------------------------------------------
-defaultprobsx(mc::Int, t::Int, bkt::Bucket, invest::Invest, fluct::Fluct,
-              dyn::Dynamic) =  bkt.prob_be[t:bkt.n_c, SX]
+defaultprobsx(mc::Int, t::Int, dyn::Dynamic, invest::Invest,
+              bkt::Bucket, fluct::Fluct) =  bkt.prob_ie[t:bkt.n_c, SX]
 
 defaultalloc!(invest::Invest, mc::Int, t::Int, dyn::Dynamic) = nothing
 
@@ -30,14 +30,14 @@ defaultexpense(mc::Int, t::Int, invest::Invest, cf::CFlow, dyn::Dynamic) = 0
 
 defaulttaxprofit(mc::Int, t::Int, cf::CFlow, dyn::Dynamic) = 0
 
-function getprob(dyn::Dynamic, bkt::Bucket, mc::Int, t::Int,
-                 invest::Invest, fluct::Fluct)
-  prob  = Array(Float64, bkt.n_c, 3)
-  prob[t:bkt.n_c, QX] = fluct.fac[mc, t, QX] * bkt.prob_be[t:bkt.n_c, QX]
-  prob[t:bkt.n_c, SX] = dyn.probsx(mc, t, bkt, invest, fluct, dyn)
+function getprob(mc::Int, t::Int, dyn::Dynamic, invest::Invest,
+                 bkt::Bucket, fluct::Fluct, len::Int)
+  prob  = Array(Float64, len, 3)
+  prob[t:len, QX] = fluct.fac[mc, t, QX] * bkt.prob_ie[t:len, QX]
+  prob[t:len, SX] = dyn.probsx(mc, t, dyn, invest, bkt, fluct, len)
   prob[:,PX] = 1 .- prob[:,QX] - prob[:,SX]
   return prob
 end
 
-defaultupdate!(me::Dynamic, t::Int, cf::Array{Float64,3}, v::Array{Float64,3}) =
+defaultupdate!(me::Int, t::Int, cflow::CFlow, dyn::Dynamic) =
   nothing

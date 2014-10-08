@@ -20,13 +20,18 @@ df_lc_prod = readtable(joinpath(dirname(@__FILE__), "input/LC_Prod.csv"))
 df_lc_ph = readtable(joinpath(dirname(@__FILE__), "input/LC_PH.csv"))
 df_lc_lc = readtable(joinpath(dirname(@__FILE__), "input/LC_LC.csv"))
 df_proj_fluct = readtable(joinpath(dirname(@__FILE__), "input/Proj_Fluct.csv"))
+df_dyn = readtable(joinpath(dirname(@__FILE__),  "input/Proj_Dyn.csv"))
 
 ## convert references from string to symbol
 df_lc_lc[:prod_name] = convert(DataArray{Symbol,1}, df_lc_lc[:prod_name])
 df_lc_load[:name] = convert(DataArray{Symbol,1}, df_lc_load[:name])
-for col in (:name, :cost_name, :cost_be_name, :qx_name, :interest_name)
+for col in [:name, :cost_price_name, :cost_be_name, :qx_name, :interest_name]
   df_lc_prod[col] = convert(DataArray{Symbol,1}, df_lc_prod[col])
 end
 for col in (:ph_gender, :ph_qx_be_name)
   df_lc_ph[col] = convert(DataArray{Symbol,1}, df_lc_ph[col])
 end
+
+dyn_dfs = Array(DataFrame,0)
+push!(dyn_dfs, df_general)
+push!(dyn_dfs, df_dyn)

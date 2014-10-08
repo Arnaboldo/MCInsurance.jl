@@ -1,4 +1,4 @@
-export N_COND, QX, SX, PX, PREM, C_BOC, C_EOC,
+export N_COND, QX, SX, PX, PREM, C_BOC, C_DIR_EOC,
 N_PROF, C_INIT_ABS, C_INIT_IS, C_ABS, C_IS, C_PREM,
 N_CAT, CAT_AGE, CAT_GENDER, CAT_QXBE, CAT_INTEREST, CAT_INFL, CAT_RISK,
 L_INIT_ABS, L_INIT_IS, L_ABS, L_IS, L_PREM, L_INFL
@@ -11,7 +11,7 @@ export Bucket, Buckets, getcat, getind, add!, listcontracts
 ## Probabilities prob: QX, SX, PXdummy
 ## Conditional Cashflows cond:
 const N_COND = 6
-const QX, SX, PX, PREM, C_BOC, C_EOC = 1:N_COND
+const QX, SX, PX, PREM, C_BOC, C_DIR_EOC = 1:N_COND
 ## Profile prof
 ## (similar to cond but C_Init -> C_INIT_ABS, (nothing) ->  C_INIT_IS)
 ## QX, SX, PX, PREM, C_INIT_ABS, C_ABS, C_IS, C_PREM, C_INIT_IS
@@ -41,7 +41,7 @@ type Bucket
   cond_nb::Array{Float64,2}   ## conditional cash-flows for new business only
   tpg_price::Vector{Float64}  ## technical prov. based on pricing parameters
   tpg_price_init::Float64     ## init. techn. prov. based on pricing parameters
-  prob_be::Array{Float64,2}   ## best estimate: QX, SX
+  prob_ie::Array{Float64,2}   ## initial estimate: QX, SX
   sx_weights::Vector{Float64} ## weights for est. average be SX
   lx_boc::Float64             ## current fraction of policy holders in-force
   lx_boc_next::Float64        ## next cycle fraction of policy holders in-force

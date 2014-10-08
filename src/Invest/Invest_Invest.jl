@@ -14,6 +14,7 @@ function Invest(name::Symbol,
   n_ig =            length(info)
   ig =              Array(IG, n_ig)
   mv_total_init =   0.0
+  mv_total_bop =    zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
   mv_total_eop =    zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
   yield_total =     zeros(Float64, cap_mkt.n_mc, cap_mkt.tf.n_p )
   asset_target =    Array(Any,0)
@@ -74,7 +75,7 @@ function Invest(name::Symbol,
   mkt_c = MktC(info, cap_mkt, id, n_mean_mc, n_mean_c, n_mean_grid)
 
   Invest(name, cap_mkt.tf, cap_mkt, n_ig, ig, id, alloc,
-         mv_total_init, mv_total_eop, yield_total, mkt_c, false)
+         mv_total_init, mv_total_bop, mv_total_eop, yield_total, mkt_c, false)
 end
 
 # Constructor from DataFrames
@@ -127,7 +128,7 @@ function project!(me::Invest,
   ## t | | ------------------> | t+1
   ##   | mv_total_alloc        project
   ##   mv_total_bop (pre alloc)
-
+  me.mv_total_bop[mc,t] = mv_total_bop
   mv_bop = mv_total_bop * me.alloc.ig_target
   me.mv_total_eop[mc,t] = 0
   for i = 1:me.n
@@ -141,15 +142,15 @@ function project!(me::Invest,
 end
 
 
-function projecteoc!(me::Invest, mc::Int, t_c::Int,
-                     dyn::Dynamic, mv_total_boc::Float64)
+function projecteoc!(mc::Int, t_c::Int,
+                     dyn::Dynamic, invest::Invest, mv_total_boc::Float64)
   mv_total_bop = mv_total_boc
-  for t_p in ((t_c-1) * me.tf.n_dt+1):(t_c * me.tf.n_dt)
-    dyn.alloc!(me, mc, t_c, dyn)
-    project!( me, mc, t_p, mv_total_bop)
-    mv_total_bop = me.mv_total_eop[mc,t_p]
+  for t_p in ((t_c-1) * invest.tf.n_dt+1):(t_c * invest.tf.n_dt)
+    dyn.alloc!(mc, t_c, dyn, invest)
+    project!( invest, mc, t_p, mv_total_bop)
+    mv_total_bop = invest.mv_total_eop[mc,t_p]
   end
-  me.c.yield_eoc[mc, t_c] = log(mv_total_bop / max(mv_total_boc, eps()))
+  invest.c.yield_eoc[mc, t_c] = log(mv_total_bop / max(mv_total_boc, eps()))
   return mv_total_bop-mv_total_boc
 end
 

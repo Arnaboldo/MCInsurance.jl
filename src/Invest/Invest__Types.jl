@@ -10,14 +10,6 @@ export meandiscrf, goingconcern!, prepend_c, slice_c
 
 
 type InvestCost
-#   norm_rel_c::Vector{Float64}       ## costs relative to investment volumen (mv)
-#   norm_abs_c::Vector{Float64}       ## absolute costs per period
-#   norm_rel::Vector{Float64}         ## costs relative to investment volumen (mv)
-#   norm_abs::Vector{Float64}         ## absolute costs per period
-#   infl_rel_c::Vector{Float64}       ## inflation for relative costs
-#   infl_abs_c::Vector{Float64}       ## inflation for absolute costs
-#   infl_rel::Vector{Float64}         ## inflation for relative costs
-#   infl_abs::Vector{Float64}         ## inflation for absolute costs
   rel_c::Vector{Float64}            ## relative costs per cycle incl. inflation
   abs_c::Vector{Float64}            ## absolute costs per cycle incl. inflation
   rel::Vector{Float64}              ## relative costs per period incl. inflation
@@ -139,6 +131,7 @@ type Invest      ## investment portfolio and valuation -------------------------
   id::Dict{Symbol, Int}             ## id (vector index) of IG
   alloc::InvestAlloc                ## initial target asset allocation
   mv_total_init::Float64            ## initial market value
+  mv_total_bop::Array{Float64,2}    ## market value at beginning of period
   mv_total_eop::Array{Float64,2}    ## market value at end of period
   yield_total::Array{Float64,2}     ## investment yield per period
   c::MktC                           ## market information per cycle

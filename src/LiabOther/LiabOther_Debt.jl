@@ -8,91 +8,92 @@
 
 
 
-function pvboc(me::Debt, t::Int, discount::Vector{Float64})
+function pvboc(debt::Debt, t::Int, disc_1c::Vector{Float64})
+  ## interest:     x             o             o             o             o
   ##                             t                                     t_final
   ## |-------------|-------------|-------------|-------------|-------------|
-  ##    t_initial         t                                       t_final
-  ##             pvboc
+  ##    t_initial         t            t+1                        t_final
+  ##                           pveoc
   ##                \-----------------------------------------------------/
   ##                                n_cycles = t_final - t + 1
-  ##  discount[1:dur] = discount_be[t:t_final]:
-  ##               <-------------|<------------|<-------------|<-----------|
-  ##                 discount[1]   discount[2]              discount[n_cycles]
-  ##                  cf_fut[1]     cf_fut[2]                cf_fut[n_cycles]
-  n_cycles = me.t_final - t + 1
-  if  n_cycles <= 0
+  ##  disc_1c[1:n_cycles] relates to cycles [t:t_final]
+  ##               <·············|<------------|<-------------|<-----------|
+  ##                  disc_1c[1]    disc_1c[2]                disc_1c[n_cycles]
+  n_cycles = debt.t_final - t + 1
+  if  (debt.t_final < t) | ( t < debt.t_init)
     return 0.0
   else
-    cf_fut = me.nominal * ones(Float64, n_cycles) * (exp(me.interest) - 1)
-    cf_fut[n_cycles] += me.nominal
-    return discount[1:n_cycles] ⋅ cf_fut
+    interest = debt.nominal * (exp(debt.coupon) - 1)
+    pv_boc = debt.nominal
+    for τ = (n_cycles - 1) : -1 : 0
+      pv_boc = disc_1c[τ + 1] * (interest + pv_boc)
+    end
+    return pv_boc
   end
 end
 
-function pvboc(me::Vector{Debt}, t::Int, discount::Vector{Float64})
+function pvboc(debts::Vector{Debt}, t::Int, disc_1c::Vector{Float64})
   pv_boc = 0.0
-  for debt in me
-    pv_boc += pvboc(debt, t, discount)
+  for debt in debts
+    pv_boc += pvboc(debt, t, disc_1c)
     ## index of discount reflects paymebt BOC rather than EOC.
     ## Example: t_init = t+1 => no discount
-    if debt.t_init == t
-      pv_boc -= debt.nominal
-    elseif debt.t_init > t
-      pv_boc -= discount[debt.t_init - t] * debt.nominal
-    end
   end
   return pv_boc
 end
 
 
-function pveoc(me::Debt, t::Int, discount::Vector{Float64})
+function pveoc(debt::Debt, t::Int, disc_1c::Vector{Float64})
+  ## interest:     x             x             o             o             o
   ##                             t                                     t_final
   ## |-------------|-------------|-------------|-------------|-------------|
-  ##    t_initial         t                                       t_final
+  ##    t_initial         t            t+1                        t_final
   ##                           pveoc
   ##                \-----------------------------------------------------/
   ##                                n_cycles = t_final - t + 1
-  ##  discount[1:n_cycles] = discount_be[t:t_final]:
+  ##  disc_1c[1:n_cycles] relates to cycles [t:t_final]
   ##               <·············|<------------|<-------------|<-----------|
-  ##                 discount[1]   discount[2]              discount[n_cycles]
-  ##                                cf_fut[1]               cf_fut[n_cycles-1]
-  n_cycles = me.t_final - t + 1
-  if  n_cycles <= 1
+  ##                  disc_1c[1]    disc_1c[2]                disc_1c[n_cycles]
+  n_cycles = debt.t_final - t + 1
+  if  (debt.t_final <= t) | ( t < debt.t_init)
     return 0.0
   else
-    cf_fut = me.nominal * ones(Float64, n_cycles - 1) * (exp(me.interest) - 1)
-    cf_fut[n_cycles-1] += me.nominal
-    return (discount[2:n_cycles] ⋅ cf_fut) / discount[1]
+    coupon = debt.nominal * debt.coupon
+    pv_eoc = debt.nominal
+    for τ = (n_cycles - 1) : -1 : 1
+      pv_eoc = disc_1c[τ + 1] * (coupon + pv_eoc)
+    end
+    return pv_eoc
   end
 end
 
-function pveoc(me::Vector{Debt}, t::Int, discount::Vector{Float64})
+function pveoc(debts::Vector{Debt}, t::Int, disc_1c::Vector{Float64})
   pv_eoc = 0.0
-  for debt in me
-    pv_eoc += pveoc(debt, t, discount)
-    ## index of discount reflects paymebt BOC rather than EOC.
-    ## Example: t_init = t+1 => no discount
-    if debt.t_init > t
-      pv_eoc -= discount[debt.t_init - t] * debt.nominal / discount[1]
-    end
+  for debt in debts
+    pv_eoc += pveoc(debt, t, disc_1c)
   end
   return pv_eoc
 end
 
-function paydebt(me::Debt, t::Int)
-  payment = 0.0
-  if me.t_init <= t <= me.t_final
-    payment += me.nominal * me.interest
+function paycoupon(debt::Debt, t::Int)
+  if debt.t_init <= t <= debt.t_final
+    return  debt.coupon * debt.nominal
+  else
+    return 0.0
   end
-  if t == me.t_final
-    payment += me.nominal
-  end
-  return payment
 end
 
-function getdebt(me::Vector{Debt}, t::Int)
+function paydebt(debt::Debt, t::Int)
+  if t == debt.t_final
+    return debt.nominal
+  else
+    return 0
+  end
+end
+
+function getdebt(debts::Vector{Debt}, t::Int)
   debt_nominal = 0.0
-  for debt in me
+  for debt in debts
     if t == debt.t_init
       debt_nominal += debt.nominal
     end

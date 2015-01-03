@@ -153,9 +153,13 @@ function balance_det(cfl::CFlow,
                      cost_rel::Vector{Float64},
                      scen::Symbol, prec::Int = -1)
   bonus_eoc = proveocvec(cfl,  cfl.discount_init,  cost_rel, BONUS)
-  ## tax credit assets are not backed by investments -> no investment costs
+  ## tax credit assets are not backed by investments ⇒ no investment costs
+  ## tax credits cannot be utilized after end of projection
+  ## ⇒ tax_credit_eoc[end] == 0
   tax_credit_eoc =
-    reverse(cumsum(reverse(vec(cfl.tax_credit_util[1,:]) .* cfl.discount_init)))
+    [reverse(cumsum(reverse(vec(cfl.tax_credit_util[1,2:end]) .*
+                            cfl.discount_init[2:end]))),
+     0]
   if prec >= 0
     bonus_eoc = Float64[round(bon, prec) for bon in bonus_eoc]
     tax_credit_eoc = Float64[round(tc, prec) for tc in tax_credit_eoc]
@@ -255,9 +259,10 @@ function vinit(invest::Invest,
   v_0[1,1,L_OTHER_EOC] = pvboc(l_oth, 1, disc_1c)
   v_0[1,1,INVEST_EOC] = invest.mv_total_init
   v_0[1,1,SURPLUS_EOC] =
-    v_0[1,1,INVEST_EOC] + v_0[1,1,TPG_EOC] + v_0[1,1,L_OTHER_EOC]
+    -(v_0[1,1,INVEST_EOC] + v_0[1,1,TPG_EOC] + v_0[1,1,L_OTHER_EOC])
   return v_0
 end
+
 
 function projectcycle!(cfl::CFlow,
                        mc::Int,

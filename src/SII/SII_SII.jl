@@ -15,6 +15,7 @@ function SII(buckets::Buckets,
 
   asset_oth_be = deepcopy(asset_other)
 
+  ## may not be necessary if we input the modified one anyway
   liab_oth_be = deepcopy(liab_other)
   liab_oth_be.debt_subord = Array(Debt, 0)
 
@@ -67,7 +68,9 @@ function SII(buckets::Buckets,
            capmkt_dfs, invest_dfs, dyn_dfs)
 
   asset_other_no_dt = deepcopy(me.asset_oth_be)
+
   ## existing tax credit is still modeled
+  warn("not picked up in cflow as new tax credit is set directly")
   asset_other_no_dt.model_new_tax_credit = false
 
 
